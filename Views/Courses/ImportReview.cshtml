@@ -1,0 +1,901 @@
+﻿@model StudentManagementSystem.ViewModels.ImportReviewViewModel
+@{
+    ViewData["Title"] = "Review Course Import";
+
+    // Safe access to properties with null checks
+    var validCoursesCount = Model.ImportResult?.ValidCourses?.Count ?? 0;
+    var invalidCoursesCount = Model.ImportResult?.InvalidCourses?.Count ?? 0;
+    var totalRows = Model.ImportResult?.TotalRows ?? 0;
+    var totalCoursesCount = validCoursesCount + invalidCoursesCount;
+    var hasValidCourses = validCoursesCount > 0;
+    var hasInvalidCourses = invalidCoursesCount > 0;
+    var message = Model.ImportResult?.Message ?? "No import data available.";
+    var errorCount = Model.ImportResult?.Errors?.Count ?? 0;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-search me-2"></i>Review Course Import
+        </h2>
+        <div>
+            <a href="@Url.Action("Import")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Upload
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-2 col-md-4 mb-3">
+            <div class="card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="text-muted small">Valid Courses</div>
+                            <div class="h5 mb-0 text-success">@validCoursesCount</div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-3">
+            <div class="card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="text-muted small">Invalid Courses</div>
+                            <div class="h5 mb-0 text-warning">@invalidCoursesCount</div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-3">
+            <div class="card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="text-muted small">Total Rows</div>
+                            <div class="h5 mb-0 text-info">@totalRows</div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-list-alt fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 col-md-12 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle me-2"></i>Import Summary
+                    </h6>
+                    <p class="card-text">@message</p>
+                    @if (errorCount > 0)
+                    {
+                        <div class="mt-2">
+                            <small class="text-danger">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                @errorCount validation errors found
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (hasValidCourses)
+    {
+        <!-- Bulk Actions Toolbar -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <div class="form-check me-3">
+                                <input class="form-check-input" type="checkbox" id="selectAllValid">
+                                <label class="form-check-label fw-bold" for="selectAllValid">
+                                    Select All
+                                </label>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cog me-1"></i>Bulk Actions
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" id="selectAllBtn"><i class="fas fa-check-square me-2"></i>Select All</a></li>
+                                    <li><a class="dropdown-item" href="#" id="deselectAllBtn"><i class="fas fa-square me-2"></i>Deselect All</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#" id="selectValidBtn"><i class="fas fa-check-circle me-2"></i>Select Valid Only</a></li>
+                                    @if (hasInvalidCourses)
+                                    {
+                                        <li><a class="dropdown-item" href="#" id="selectWithErrorsBtn"><i class="fas fa-exclamation-circle me-2"></i>Select With Errors</a></li>
+                                    }
+                                </ul>
+                            </div>
+                            <span class="badge bg-primary ms-3" id="selectedCount">0 selected</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-success" id="importSelectedBtn">
+                                <i class="fas fa-play me-1"></i>Import Selected
+                            </button>
+                            <button type="button" class="btn btn-danger" id="removeSelectedBtn">
+                                <i class="fas fa-trash me-1"></i>Remove Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Filters Sidebar -->
+            <div class="col-lg-3 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-filter me-2"></i>Filters & Settings
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- Quick Search -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Quick Search</label>
+                            <input type="text" class="form-control form-control-sm" id="quickSearch" placeholder="Search...">
+                        </div>
+
+                        <!-- Department Filter -->
+                        @if (Model.ImportResult?.ValidCourses?.Any() == true)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Department</label>
+                                <select class="form-select form-select-sm" id="departmentFilter">
+                                    <option value="">All Departments</option>
+                                    @foreach (var dept in Model.ImportResult.ValidCourses
+                                                                .Where(s => !string.IsNullOrEmpty(s.Department))
+                                                                .Select(s => s.Department!)
+                                                                .Distinct())
+                                    {
+                                        <option value="@dept">@dept</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+
+                        <!-- Credits Filter -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Credits</label>
+                            <select class="form-select form-select-sm" id="creditsFilter">
+                                <option value="">All Credits</option>
+                                @for (int i = 1; i <= 6; i++)
+                                {
+                                    <option value="@i">@i credits</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Course Status</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="filterValid" checked>
+                                <label class="form-check-label small" for="filterValid">Valid Courses</label>
+                            </div>
+                            @if (hasInvalidCourses)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="filterInvalid">
+                                    <label class="form-check-label small" for="filterInvalid">Invalid Courses</label>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-outline-primary" id="applyFilters">
+                                <i class="fas fa-check me-1"></i>Apply Filters
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" id="resetFilters">
+                                <i class="fas fa-undo me-1"></i>Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Import Settings -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-cogs me-2"></i>Import Settings
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <form id="importForm" asp-action="ImportExecute" method="post">
+                            @if (Model.ImportSettings != null)
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Duplicate Handling</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="Skip" checked>
+                                        <label class="form-check-label small">
+                                            Skip existing
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="Override">
+                                        <label class="form-check-label small">
+                                            Override existing
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="CreateNew">
+                                        <label class="form-check-label small">
+                                            Create new records
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Ready to import:</strong>
+                                <span id="importCount">@validCoursesCount</span> courses
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fas fa-play me-1"></i>Start Import
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Courses Table -->
+            <div class="col-lg-9">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-table me-2"></i>Courses Preview
+                                    <span class="badge bg-primary ms-2" id="tableCount">@validCoursesCount</span>
+                                </h5>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-secondary" id="exportTableBtn">
+                                        <i class="fas fa-download me-1"></i>Export
+                                    </button>
+                                    <button class="btn btn-outline-secondary" id="refreshTableBtn">
+                                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+                            <table class="table table-striped table-hover table-bordered mb-0" id="importTable">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th width="50" class="text-center">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="tableSelectAll">
+                                            </div>
+                                        </th>
+                                        <th width="70">
+                                            <a href="#" class="sort-link text-white text-decoration-none" data-sort="serial">
+                                                #
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="#" class="sort-link text-white text-decoration-none" data-sort="courseCode">
+                                                Course Code
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="#" class="sort-link text-white text-decoration-none" data-sort="courseName">
+                                                Course Name
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="#" class="sort-link text-white text-decoration-none" data-sort="department">
+                                                Department
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </a>
+                                        </th>
+                                        <th width="80">
+                                            <a href="#" class="sort-link text-white text-decoration-none" data-sort="credits">
+                                                Credits
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </a>
+                                        </th>
+                                        <th width="80">
+                                            <a href="#" class="sort-link text-white text-decoration-none" data-sort="semester">
+                                                Semester
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </a>
+                                        </th>
+                                        <th width="100" class="text-center">Status</th>
+                                        <th width="120" class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.ImportResult?.ValidCourses != null)
+                                    {
+                                        foreach (var course in Model.ImportResult.ValidCourses)
+                                        {
+                                            <tr class="course-row" data-course-code="@course.CourseCode" data-department="@course.Department" data-credits="@course.Credits" data-semester="@course.Semester" data-valid="true">
+                                                <td class="text-center">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input course-checkbox" type="checkbox" value="@course.CourseCode">
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">@course.SerialNumber</td>
+                                                <td class="fw-bold">@course.CourseCode</td>
+                                                <td class="text-nowrap">@course.CourseName</td>
+                                                <td>@course.Department</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-info">@course.Credits</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-secondary">@course.Semester</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>Valid</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button class="btn btn-outline-info btn-sm view-course" data-bs-toggle="tooltip" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-warning btn-sm edit-course" data-bs-toggle="tooltip" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+
+                                    <!-- Invalid Courses -->
+                                    @if (Model.ImportResult?.InvalidCourses?.Count > 0)
+                                    {
+                                        foreach (var invalid in Model.ImportResult.InvalidCourses)
+                                        {
+                                            <tr class="course-row table-danger" data-valid="false">
+                                                <td class="text-center">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input course-checkbox" type="checkbox" value="@invalid.CourseCode">
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">@invalid.RowNumber</td>
+                                                <td class="fw-bold">@invalid.CourseCode</td>
+                                                <td class="text-nowrap">@invalid.CourseName</td>
+                                                <td colspan="3">
+                                                    <small class="text-danger">
+                                                        <i class="fas fa-exclamation-circle me-1"></i>
+                                                        @invalid.ErrorMessage
+                                                    </small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Invalid</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-outline-secondary btn-sm view-error" data-error="@invalid.ErrorMessage" data-bs-toggle="tooltip" title="View Error">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    Showing <span id="showingCount">@validCoursesCount</span> of
+                                    <span id="totalCount">@totalCoursesCount</span> courses
+                                </small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" id="prevPageBtn" disabled>
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary" id="nextPageBtn">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-book fa-4x text-muted mb-3"></i>
+                <h4>No valid courses found to import.</h4>
+                <p class="text-muted">Please check your Excel file format and try again.</p>
+                <div class="mt-4">
+                    <a href="@Url.Action("Import")" class="btn btn-primary me-2">
+                        <i class="fas fa-upload me-2"></i>Upload Another File
+                    </a>
+                    <a href="@Url.Action("DownloadTemplate")" class="btn btn-outline-info">
+                        <i class="fas fa-download me-2"></i>Download Template
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Course Detail Modal -->
+<div class="modal fade" id="courseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Course Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="courseModalBody">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .table-container {
+            position: relative;
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .sort-link {
+            cursor: pointer;
+            user-select: none;
+        }
+
+            .sort-link:hover {
+                opacity: 0.8;
+            }
+
+        .course-row {
+            transition: all 0.2s ease;
+        }
+
+            .course-row:hover {
+                background-color: rgba(0, 123, 255, 0.1) !important;
+            }
+
+        .table-checkbox {
+            transform: scale(1.2);
+        }
+
+        .badge {
+            font-size: 0.75em;
+        }
+
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        /* Custom scrollbar */
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+            .table-container::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Selection functionality
+            const selectAllValid = document.getElementById('selectAllValid');
+            const tableSelectAll = document.getElementById('tableSelectAll');
+            const courseCheckboxes = document.querySelectorAll('.course-checkbox');
+            const selectedCount = document.getElementById('selectedCount');
+            const tableCount = document.getElementById('tableCount');
+            const showingCount = document.getElementById('showingCount');
+            const importCount = document.getElementById('importCount');
+
+            // Bulk action buttons
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const deselectAllBtn = document.getElementById('deselectAllBtn');
+            const selectValidBtn = document.getElementById('selectValidBtn');
+            const selectWithErrorsBtn = document.getElementById('selectWithErrorsBtn');
+            const importSelectedBtn = document.getElementById('importSelectedBtn');
+            const removeSelectedBtn = document.getElementById('removeSelectedBtn');
+
+            // Filter elements
+            const quickSearch = document.getElementById('quickSearch');
+            const departmentFilter = document.getElementById('departmentFilter');
+            const creditsFilter = document.getElementById('creditsFilter');
+            const filterValid = document.getElementById('filterValid');
+            const filterInvalid = document.getElementById('filterInvalid');
+            const applyFilters = document.getElementById('applyFilters');
+            const resetFilters = document.getElementById('resetFilters');
+
+            // Table controls
+            const exportTableBtn = document.getElementById('exportTableBtn');
+            const refreshTableBtn = document.getElementById('refreshTableBtn');
+            const prevPageBtn = document.getElementById('prevPageBtn');
+            const nextPageBtn = document.getElementById('nextPageBtn');
+
+            let currentSort = { field: 'serial', direction: 'asc' };
+            let currentPage = 1;
+            const pageSize = 10;
+            let filteredCourses = Array.from(document.querySelectorAll('.course-row'));
+
+            // Selection functions
+            function updateSelectedCount() {
+                const selected = document.querySelectorAll('.course-checkbox:checked').length;
+                if (selectedCount) {
+                    selectedCount.textContent = selected + ' selected';
+                }
+            }
+
+            function selectAll(select) {
+                courseCheckboxes.forEach(checkbox => {
+                    if (checkbox.closest('tr').style.display !== 'none') {
+                        checkbox.checked = select;
+                    }
+                });
+                updateSelectedCount();
+            }
+
+            function selectByType(type) {
+                courseCheckboxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    const isValid = row.dataset.valid === 'true';
+
+                    if (type === 'valid' && isValid) {
+                        checkbox.checked = true;
+                    } else if (type === 'invalid' && !isValid) {
+                        checkbox.checked = true;
+                    } else {
+                        checkbox.checked = false;
+                    }
+                });
+                updateSelectedCount();
+            }
+
+            // Event listeners for selection
+            if (selectAllValid) {
+                selectAllValid.addEventListener('change', function () {
+                    selectAll(this.checked);
+                });
+            }
+
+            if (tableSelectAll) {
+                tableSelectAll.addEventListener('change', function () {
+                    selectAll(this.checked);
+                });
+            }
+
+            courseCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedCount);
+            });
+
+            // Bulk action event listeners
+            if (selectAllBtn) {
+                selectAllBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    selectAll(true);
+                });
+            }
+
+            if (deselectAllBtn) {
+                deselectAllBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    selectAll(false);
+                });
+            }
+
+            if (selectValidBtn) {
+                selectValidBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    selectByType('valid');
+                });
+            }
+
+            if (selectWithErrorsBtn) {
+                selectWithErrorsBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    selectByType('invalid');
+                });
+            }
+
+            // Filtering functionality
+            function applyTableFilters() {
+                const searchTerm = quickSearch?.value.toLowerCase() || '';
+                const department = departmentFilter?.value || '';
+                const credits = creditsFilter?.value || '';
+                const showValid = filterValid?.checked || false;
+                const showInvalid = filterInvalid?.checked || false;
+
+                let visibleCount = 0;
+
+                filteredCourses.forEach(row => {
+                    const courseCode = row.cells[2]?.textContent?.toLowerCase() || '';
+                    const courseName = row.cells[3]?.textContent?.toLowerCase() || '';
+                    const dept = row.cells[4]?.textContent || '';
+                    const rowCredits = row.dataset.credits || '';
+                    const isValid = row.dataset.valid === 'true';
+
+                    const matchesSearch = !searchTerm ||
+                        courseCode.includes(searchTerm) ||
+                        courseName.includes(searchTerm);
+                    const matchesDept = !department || dept === department;
+                    const matchesCredits = !credits || rowCredits === credits;
+                    const matchesStatus = (isValid && showValid) || (!isValid && showInvalid);
+
+                    const shouldShow = matchesSearch && matchesDept && matchesCredits && matchesStatus;
+                    row.style.display = shouldShow ? '' : 'none';
+
+                    if (shouldShow) visibleCount++;
+                });
+
+                if (showingCount) {
+                    showingCount.textContent = visibleCount;
+                }
+                updatePagination();
+            }
+
+            // Sorting functionality
+            function sortTable(field, direction) {
+                const tbody = document.querySelector('#importTable tbody');
+                if (!tbody) return;
+
+                const rows = Array.from(tbody.querySelectorAll('.course-row'));
+
+                rows.sort((a, b) => {
+                    let aValue, bValue;
+
+                    switch (field) {
+                        case 'serial':
+                            aValue = parseInt(a.cells[1]?.textContent) || 0;
+                            bValue = parseInt(b.cells[1]?.textContent) || 0;
+                            break;
+                        case 'courseCode':
+                            aValue = a.cells[2]?.textContent || '';
+                            bValue = b.cells[2]?.textContent || '';
+                            break;
+                        case 'courseName':
+                            aValue = a.cells[3]?.textContent || '';
+                            bValue = b.cells[3]?.textContent || '';
+                            break;
+                        case 'department':
+                            aValue = a.cells[4]?.textContent || '';
+                            bValue = b.cells[4]?.textContent || '';
+                            break;
+                        case 'credits':
+                            aValue = parseInt(a.dataset.credits) || 0;
+                            bValue = parseInt(b.dataset.credits) || 0;
+                            break;
+                        case 'semester':
+                            aValue = parseInt(a.dataset.semester) || 0;
+                            bValue = parseInt(b.dataset.semester) || 0;
+                            break;
+                        default:
+                            return 0;
+                    }
+
+                    if (direction === 'asc') {
+                        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+                    } else {
+                        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+                    }
+                });
+
+                // Reappend sorted rows
+                rows.forEach(row => tbody.appendChild(row));
+
+                // Update sort indicators
+                updateSortIndicators(field, direction);
+            }
+
+            function updateSortIndicators(field, direction) {
+                document.querySelectorAll('.sort-link').forEach(link => {
+                    const icon = link.querySelector('i');
+                    if (link.dataset.sort === field) {
+                        icon.className = direction === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+                    } else {
+                        icon.className = 'fas fa-sort ms-1';
+                    }
+                });
+            }
+
+            // Pagination
+            function updatePagination() {
+                const visibleRows = filteredCourses.filter(row => row.style.display !== 'none');
+                const totalPages = Math.ceil(visibleRows.length / pageSize);
+
+                if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+                if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+
+                // Show/hide rows based on current page
+                visibleRows.forEach((row, index) => {
+                    const startIndex = (currentPage - 1) * pageSize;
+                    const endIndex = startIndex + pageSize;
+                    row.style.display = (index >= startIndex && index < endIndex) ? '' : 'none';
+                });
+
+                if (showingCount) {
+                    showingCount.textContent = Math.min(visibleRows.length, currentPage * pageSize);
+                }
+            }
+
+            // Event listeners for filters and sorting
+            if (applyFilters) {
+                applyFilters.addEventListener('click', applyTableFilters);
+            }
+
+            if (resetFilters) {
+                resetFilters.addEventListener('click', function () {
+                    if (quickSearch) quickSearch.value = '';
+                    if (departmentFilter) departmentFilter.value = '';
+                    if (creditsFilter) creditsFilter.value = '';
+                    if (filterValid) filterValid.checked = true;
+                    if (filterInvalid) filterInvalid.checked = false;
+                    applyTableFilters();
+                });
+            }
+
+            document.querySelectorAll('.sort-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const field = this.dataset.sort;
+                    const direction = currentSort.field === field && currentSort.direction === 'asc' ? 'desc' : 'asc';
+
+                    currentSort = { field, direction };
+                    sortTable(field, direction);
+                });
+            });
+
+            // Pagination event listeners
+            if (prevPageBtn) {
+                prevPageBtn.addEventListener('click', function () {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        updatePagination();
+                    }
+                });
+            }
+
+            if (nextPageBtn) {
+                nextPageBtn.addEventListener('click', function () {
+                    const visibleRows = filteredCourses.filter(row => row.style.display !== 'none');
+                    const totalPages = Math.ceil(visibleRows.length / pageSize);
+
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        updatePagination();
+                    }
+                });
+            }
+
+            // Initialize
+            updateSelectedCount();
+            applyTableFilters();
+
+            // View course details
+            document.querySelectorAll('.view-course').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const row = this.closest('tr');
+                    const courseCode = row.cells[2]?.textContent || '';
+                    const courseName = row.cells[3]?.textContent || '';
+
+                    const modalBody = document.getElementById('courseModalBody');
+                    if (modalBody) {
+                        modalBody.innerHTML = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Course Code:</strong> ${courseCode}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Course Name:</strong> ${courseName}
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <strong>Department:</strong> ${row.cells[4]?.textContent || ''}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Credits:</strong> ${row.cells[5]?.textContent || ''}
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <strong>Semester:</strong> ${row.cells[6]?.textContent || ''}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    const modalElement = document.getElementById('courseModal');
+                    if (modalElement) {
+                        const modal = new bootstrap.Modal(modalElement);
+                        modal.show();
+                    }
+                });
+            });
+
+            // View error details
+            document.querySelectorAll('.view-error').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const error = this.dataset.error || 'Unknown error';
+                    alert('Error: ' + error);
+                });
+            });
+
+            // Export functionality
+            if (exportTableBtn) {
+                exportTableBtn.addEventListener('click', function () {
+                    // Implement export logic here
+                    alert('Export functionality would be implemented here');
+                });
+            }
+
+            // Refresh table
+            if (refreshTableBtn) {
+                refreshTableBtn.addEventListener('click', function () {
+                    location.reload();
+                });
+            }
+        });
+    </script>
+}

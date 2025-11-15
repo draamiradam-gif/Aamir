@@ -1,0 +1,51 @@
+﻿@using StudentManagementSystem.Models.ViewModels
+@model DuplicateViewModel
+
+@{
+    ViewData["Title"] = "Duplicate Branch";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Duplicate Branch</h3>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Duplicate">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="EntityType" />
+                        <input type="hidden" asp-for="SourceId" />
+
+                        <div class="form-group">
+                            <label asp-for="NewName" class="control-label">New Branch Name</label>
+                            <input asp-for="NewName" class="form-control" />
+                            <span asp-validation-for="NewName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="TargetParentId" class="control-label">Target Department</label>
+                            <select asp-for="TargetParentId" class="form-control" asp-items="ViewBag.Departments">
+                                <option value="">-- Keep Same Department --</option>
+                            </select>
+                            <span asp-validation-for="TargetParentId" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group form-check">
+                            <input asp-for="CopySubItems" class="form-check-input" />
+                            <label asp-for="CopySubItems" class="form-check-label">
+                                Copy Sub-Branches
+                            </label>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-primary">Duplicate Branch</button>
+                            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

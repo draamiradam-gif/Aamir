@@ -1,0 +1,97 @@
+﻿@model IEnumerable<Department>
+
+@{
+    ViewData["Title"] = "Departments Dashboard";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Departments Dashboard</h1>
+        <a asp-action="Create" class="btn btn-primary">Add New Department</a>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count()</h3>
+                    <p>Total Departments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Sum(d => d.Branches?.Count ?? 0)</h3>
+                    <p>Total Branches</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Sum(d => d.Courses?.Count ?? 0)</h3>
+                    <p>Total Courses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Sum(d => d.Students?.Count ?? 0)</h3>
+                    <p>Total Students</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Departments Table -->
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Department</th>
+                        <th>College</th>
+                        <th>University</th>
+                        <th>Branches</th>
+                        <th>Courses</th>
+                        <th>Students</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var department in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@department.Name</strong><br>
+                                <small class="text-muted">@department.DepartmentCode</small>
+                            </td>
+                            <td>@department.College?.Name</td>
+                            <td>@department.College?.University?.Name</td>
+                            <td>
+                                <span class="badge bg-info">@department.Branches.Count</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">@department.Courses.Count</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">@department.Students.Count</span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a asp-action="Details" asp-route-id="@department.Id" class="btn btn-sm btn-info">View</a>
+                                    <a asp-action="Edit" asp-route-id="@department.Id" class="btn btn-sm btn-warning">Edit</a>
+                                    <a asp-action="ManageBranches" asp-route-id="@department.Id" class="btn btn-sm btn-secondary">Branches</a>
+                                    <a asp-action="Duplicate" asp-route-id="@department.Id" class="btn btn-sm btn-primary">Copy</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,186 @@
+﻿@model StudentManagementSystem.Models.Course
+@{
+    ViewData["Title"] = "Course Prerequisites";
+    var course = ViewBag.Course as StudentManagementSystem.Models.Course;
+    var prerequisites = ViewBag.Prerequisites as List<StudentManagementSystem.Models.CoursePrerequisite> ?? new List<StudentManagementSystem.Models.CoursePrerequisite>();
+    var availableCourses = ViewBag.AvailableCourses as List<StudentManagementSystem.Models.Course> ?? new List<StudentManagementSystem.Models.Course>();
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-sitemap"></i> Prerequisites - @course?.CourseCode
+        </h2>
+        <a href="@Url.Action("Details", new { id = course?.Id })" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Course
+        </a>
+    </div>
+
+    @if (course == null)
+    {
+        <div class="alert alert-danger">
+            <h4>Course not found!</h4>
+            <a href="@Url.Action("Index")" class="btn btn-primary">Back to Courses</a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Current Prerequisites -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Current Prerequisites</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (prerequisites.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Course Code</th>
+                                            <th>Course Name</th>
+                                            <th>Minimum Grade</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var prereq in prerequisites)
+                                        {
+                                            <tr>
+                                                <td>@prereq.PrerequisiteCourse?.CourseCode</td>
+                                                <td>@prereq.PrerequisiteCourse?.CourseName</td>
+                                                <td>
+                                                    @if (prereq.MinGrade.HasValue)
+                                                    {
+                                                        <span class="badge bg-info">@prereq.MinGrade.Value.ToString("0.0")</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">Not specified</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <form method="post" asp-action="RemovePrerequisite" class="d-inline">
+                                                        <input type="hidden" name="prerequisiteId" value="@prereq.Id" />
+                                                        <input type="hidden" name="courseId" value="@course.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                                onclick="return confirm('Are you sure you want to remove this prerequisite?')">
+                                                            <i class="fas fa-trash"></i> Remove
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-ban fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No Prerequisites</h5>
+                                <p class="text-muted">This course doesn't have any prerequisites.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Add New Prerequisite -->
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Add New Prerequisite</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (availableCourses.Any())
+                        {
+                            <form method="post" asp-action="AddPrerequisite">
+                                <input type="hidden" name="courseId" value="@course.Id" />
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Select Course</label>
+                                        <select name="prerequisiteCourseId" class="form-control" required>
+                                            <option value="">-- Select a course --</option>
+                                            @foreach (var availableCourse in availableCourses)
+                                            {
+                                                <option value="@availableCourse.Id">
+                                                    @availableCourse.CourseCode - @availableCourse.CourseName
+                                                </option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Minimum Grade (Optional)</label>
+                                        <input type="number" name="minGrade" class="form-control"
+                                               step="0.1" min="0" max="100" placeholder="e.g., 70.0" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> No available courses to add as prerequisites.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Info Sidebar -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Course Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl>
+                            <dt>Course Code:</dt>
+                            <dd>@course.CourseCode</dd>
+
+                            <dt>Course Name:</dt>
+                            <dd>@course.CourseName</dd>
+
+                            <dt>Department:</dt>
+                            <dd>@course.Department</dd>
+
+                            <dt>Credits:</dt>
+                            <dd>@course.Credits</dd>
+
+                            <dt>Current Prerequisites:</dt>
+                            <dd>@prerequisites.Count</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card mt-3">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0">Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="@Url.Action("Details", new { id = course.Id })" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-info-circle"></i> Course Details
+                            </a>
+                            <a href="@Url.Action("Edit", new { id = course.Id })" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-edit"></i> Edit Course
+                            </a>
+                            <a href="@Url.Action("Enroll", new { id = course.Id })" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-user-plus"></i> Manage Enrollment
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

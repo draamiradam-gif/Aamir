@@ -1,0 +1,40 @@
+﻿@{
+    ViewData["Title"] = "Database Check";
+}
+
+<div class="container">
+    <h2>Database Status</h2>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">
+            <strong>Error:</strong> @ViewBag.Error
+        </div>
+    }
+
+    <div class="alert @(ViewBag.CanConnect ? "alert-success" : "alert-danger")">
+        <strong>Database Connection:</strong> @(ViewBag.CanConnect ? "Success" : "Failed")
+    </div>
+
+    @if (ViewBag.CanConnect)
+    {
+        <div class="alert @(ViewBag.StudentsTableExists ? "alert-success" : "alert-warning")">
+            <strong>Students Table:</strong> @(ViewBag.StudentsTableExists ? "Exists" : "Does not exist")
+        </div>
+
+        <div class="alert alert-info">
+            <strong>Student Count:</strong> @ViewBag.StudentCount
+        </div>
+
+        <h3>Existing Tables:</h3>
+        <ul>
+            @if (ViewBag.Tables != null)
+            {
+                foreach (System.Data.DataRow row in ViewBag.Tables.Rows)
+                {
+                    <li>@row["TABLE_NAME"]</li>
+                }
+            }
+        </ul>
+    }
+</div>

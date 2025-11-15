@@ -1,0 +1,216 @@
+﻿@model Branch
+@{
+    ViewData["Title"] = "Create Branch";
+    var isSubBranch = ViewBag.ParentBranch != null;
+    var parentDepartment = ViewBag.ParentDepartment ?? ViewBag.ParentBranch?.Department;
+}
+
+@if (parentDepartment != null)
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        @if (ViewBag.ParentBranch != null)
+        {
+            <text>
+                Creating sub-branch under: <strong>@ViewBag.ParentBranch.Name</strong>
+                <br>
+                <small class="text-muted">Department: @parentDepartment.Name</small>
+            </text>
+        }
+        else
+        {
+            <text>
+                Creating branch for department: <strong>@parentDepartment.Name</strong>
+            </text>
+        }
+    </div>
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-plus-circle me-2"></i>Create @(isSubBranch ? "Sub-Branch" : "Branch")
+            </h1>
+            <p class="text-muted mb-0">Add a new academic @(isSubBranch ? "sub-branch" : "branch") or specialization</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-info-circle me-2"></i>Branch Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <!-- Hidden field to ensure DepartmentId is preserved -->
+                    <input type="hidden" asp-for="DepartmentId" />
+
+                    @if (ViewBag.ParentBranch != null)
+                    {
+                        <input type="hidden" asp-for="ParentBranchId" />
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold">@(isSubBranch ? "Sub-Branch" : "Branch") Name *</label>
+                            <input asp-for="Name" class="form-control" placeholder="Enter @(isSubBranch ? "sub-branch" : "branch") name">
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="BranchCode" class="form-label fw-semibold">@(isSubBranch ? "Sub-Branch" : "Branch") Code *</label>
+                            <input asp-for="BranchCode" class="form-control" placeholder="Enter @(isSubBranch ? "sub-branch" : "branch") code">
+                            <span asp-validation-for="BranchCode" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="DepartmentId" class="form-label fw-semibold">Department *</label>
+                            @if (ViewBag.ParentBranch != null || parentDepartment != null)
+                            {
+                                <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.DepartmentId" disabled>
+                                    <option value="">Select Department</option>
+                                </select>
+                                <small class="text-muted">Department is inherited from @(ViewBag.ParentBranch != null ? "parent branch" : "parent department")</small>
+                                <input type="hidden" asp-for="DepartmentId" />
+                            }
+                            else
+                            {
+                                <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.DepartmentId">
+                                    <option value="">Select Department</option>
+                                </select>
+                            }
+                            <span asp-validation-for="DepartmentId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ParentBranchId" class="form-label fw-semibold">Parent Branch</label>
+                            @if (ViewBag.ParentBranch != null)
+                            {
+                                <select asp-for="ParentBranchId" class="form-select" asp-items="ViewBag.ParentBranchId" disabled>
+                                    <option value="">None (Main Branch)</option>
+                                </select>
+                                <small class="text-muted">Parent branch is pre-selected</small>
+                                <input type="hidden" asp-for="ParentBranchId" />
+                            }
+                            else
+                            {
+                                <select asp-for="ParentBranchId" class="form-select" asp-items="ViewBag.ParentBranchId">
+                                    <option value="">None (Main Branch)</option>
+                                </select>
+                            }
+                            <span asp-validation-for="ParentBranchId" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter @(isSubBranch ? "sub-branch" : "branch") description"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" checked role="switch">
+                            <label asp-for="IsActive" class="form-check-label fw-semibold">Active @(isSubBranch ? "Sub-Branch" : "Branch")</label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>Create @(isSubBranch ? "Sub-Branch" : "Branch")
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-lightbulb me-2"></i>@(isSubBranch ? "Sub-Branch" : "Branch") Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0">
+                    <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>About @(isSubBranch ? "Sub-Branches" : "Branches")</h6>
+                    <ul class="mb-0 small">
+                        @if (isSubBranch)
+                        {
+                            <li><strong>Sub-Branches</strong> are specialized tracks under main branches</li>
+                            <li>They inherit the department from their parent branch</li>
+                            <li><strong>Examples:</strong></li>
+                            <li class="ms-3">Computer Science → Artificial Intelligence</li>
+                            <li class="ms-3">Electrical Engineering → Power Systems</li>
+                            <li>Sub-branches allow for more specialized academic programs</li>
+                        }
+                        else
+                        {
+                            <li><strong>Main Branch:</strong> Primary academic programs and specializations</li>
+                            <li><strong>Sub-Branch:</strong> Specialized tracks under main branches</li>
+                            <li><strong>Examples:</strong></li>
+                            <li class="ms-3">Computer Science (Main) → AI, Cybersecurity (Sub)</li>
+                            <li class="ms-3">Electrical Engineering (Main) → Power Systems, Electronics (Sub)</li>
+                            <li>Branches organize courses and student specializations</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Check if this is a sub-branch creation
+            var isSubBranch = @((ViewBag.ParentBranch != null).ToString().ToLower());
+
+            if (!isSubBranch) {
+                // Only enable department change functionality for main branches
+                $('#DepartmentId').change(function () {
+                    var departmentId = $(this).val();
+                    var $parentBranchSelect = $('#ParentBranchId');
+
+                    if (departmentId) {
+                        $.getJSON('@Url.Action("ByDepartment", "Branches")',
+                            { departmentId: departmentId },
+                            function (data) {
+                                $parentBranchSelect.empty();
+                                $parentBranchSelect.append('<option value="">None (Main Branch)</option>');
+
+                                $.each(data, function (index, item) {
+                                    $parentBranchSelect.append('<option value="' + item.id + '">' + item.name + '</option>');
+                                });
+                            }
+                        );
+                    } else {
+                        $parentBranchSelect.empty();
+                        $parentBranchSelect.append('<option value="">None (Main Branch)</option>');
+                    }
+                });
+            } else {
+                // Disable department selection for sub-branches
+                $('#DepartmentId').prop('disabled', true);
+            }
+        });
+    </script>
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

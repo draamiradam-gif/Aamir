@@ -1,0 +1,182 @@
+﻿@{
+    @*ViewData["Title"] = "Academic Management System";*@
+
+    ViewData["Title"] = "Home";
+}
+
+<div class="container-fluid py-4">
+    <div class="text-center mb-5">
+        <i class="fas fa-university fa-4x text-primary mb-3"></i>
+        <h1 class="display-4 fw-bold text-primary mb-2">Academic Management System</h1>
+        <p class="lead text-muted">Comprehensive platform for managing academic institutions</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-5">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-university bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="fw-bold">@ViewBag.TotalUniversities</h2>
+                            <p class="mb-0">Universities</p>
+                        </div>
+                        <i class="fas fa-university fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-university bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="fw-bold">@ViewBag.TotalColleges</h2>
+                            <p class="mb-0">Colleges</p>
+                        </div>
+                        <i class="fas fa-school fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-university bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="fw-bold">@ViewBag.TotalStudents</h2>
+                            <p class="mb-0">Students</p>
+                        </div>
+                        <i class="fas fa-user-graduate fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-university bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="fw-bold">@ViewBag.TotalCourses</h2>
+                            <p class="mb-0">Courses</p>
+                        </div>
+                        <i class="fas fa-book fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card card-university">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0"><i class="fas fa-rocket me-2"></i>Quick Actions</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a asp-controller="Home" asp-action="Hierarchy" class="btn btn-outline-primary w-100 h-100 py-3">
+                                <i class="fas fa-sitemap fa-2x mb-2"></i>
+                                <h5>Academic Hierarchy</h5>
+                                <small class="text-muted">View complete structure</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-controller="University" asp-action="Create" class="btn btn-outline-success w-100 h-100 py-3">
+                                <i class="fas fa-university fa-2x mb-2"></i>
+                                <h5>Create University</h5>
+                                <small class="text-muted">Add new institution</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-controller="College" asp-action="Create" class="btn btn-outline-info w-100 h-100 py-3">
+                                <i class="fas fa-school fa-2x mb-2"></i>
+                                <h5>Add College</h5>
+                                <small class="text-muted">Create new college</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-controller="Students" asp-action="Index" class="btn btn-outline-warning w-100 h-100 py-3">
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <h5>Manage Students</h5>
+                                <small class="text-muted">Student records</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Cards -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card card-university h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-university me-2"></i>University Structure</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a asp-controller="University" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-building me-2"></i>Universities
+                        </a>
+                        <a asp-controller="College" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-school me-2"></i>Colleges
+                        </a>
+                        <a asp-controller="Departments" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-building me-2"></i>Departments
+                        </a>
+                        <a asp-controller="Branches" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-code-branch me-2"></i>Branches
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card card-university h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Student Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a asp-controller="Students" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-users me-2"></i>Students
+                        </a>
+                        <a asp-controller="Courses" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-book me-2"></i>Courses
+                        </a>
+                        <a asp-controller="Semesters" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-calendar-alt me-2"></i>Semesters
+                        </a>
+                        <a asp-controller="QRCode" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-qrcode me-2"></i>QR Attendance
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card card-university h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Analytics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a asp-controller="Dashboard" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                        <a asp-controller="University" asp-action="Dashboard" class="list-group-item list-group-item-action">
+                            <i class="fas fa-university me-2"></i>University Analytics
+                        </a>
+                        <a asp-controller="Home" asp-action="Hierarchy" class="list-group-item list-group-item-action">
+                            <i class="fas fa-sitemap me-2"></i>Structure Overview
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

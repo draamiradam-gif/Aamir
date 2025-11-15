@@ -1,0 +1,257 @@
+﻿@model Course
+@{
+    ViewData["Title"] = "Create Course";
+}
+
+@if (ViewBag.ParentSemester != null)
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Creating course for semester: <strong>@ViewBag.ParentSemester.Name</strong>
+    </div>
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-plus-circle me-2"></i>Create Course
+            </h1>
+            <p class="text-muted mb-0">Add a new course to the curriculum</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="SelectFromExisting" asp-route-semesterId="@ViewBag.ParentSemester?.Id"
+               class="btn btn-outline-info">
+                <i class="fas fa-list me-2"></i>Select from Existing
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-info-circle me-2"></i>Course Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post" id="courseForm">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CourseCode" class="form-label fw-semibold">Course Code *</label>
+                            <input asp-for="CourseCode" class="form-control" placeholder="e.g., CS101">
+                            <span asp-validation-for="CourseCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CourseName" class="form-label fw-semibold">Course Name *</label>
+                            <input asp-for="CourseName" class="form-control" placeholder="Enter course name">
+                            <span asp-validation-for="CourseName" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter course description"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Credits" class="form-label fw-semibold">Credits *</label>
+                            <input asp-for="Credits" class="form-control" type="number" min="1" max="6" value="3">
+                            <span asp-validation-for="Credits" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="DepartmentId" class="form-label fw-semibold">Department</label>
+                            <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.DepartmentId">
+                                <option value="">-- Select Department --</option>
+                            </select>
+                            <span asp-validation-for="DepartmentId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="SemesterId" class="form-label fw-semibold">Semester</label>
+                            <select asp-for="SemesterId" class="form-select" asp-items="ViewBag.SemesterId">
+                                <option value="">-- Select Semester --</option>
+                            </select>
+                            <span asp-validation-for="SemesterId" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Legacy fields (keep for compatibility) -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Department" class="form-label fw-semibold">Department Name *</label>
+                            <input asp-for="Department" class="form-control" placeholder="Enter department name">
+                            <span asp-validation-for="Department" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Semester" class="form-label fw-semibold">Semester Number *</label>
+                            <input asp-for="Semester" class="form-control" type="number" min="1" max="8" value="1">
+                            <span asp-validation-for="Semester" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="MaxStudents" class="form-label fw-semibold">Max Students</label>
+                            <input asp-for="MaxStudents" class="form-control" type="number" min="1" max="100" value="30">
+                            <span asp-validation-for="MaxStudents" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="MinGPA" class="form-label fw-semibold">Min GPA</label>
+                            <input asp-for="MinGPA" class="form-control" type="number" step="0.01" min="0.0" max="4.0" value="2.0">
+                            <span asp-validation-for="MinGPA" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="MinPassedHours" class="form-label fw-semibold">Min Passed Hours</label>
+                            <input asp-for="MinPassedHours" class="form-control" type="number" min="0" value="0">
+                            <span asp-validation-for="MinPassedHours" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Prerequisites Section -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-light">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-list-check me-2"></i>Prerequisites
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Select Prerequisites</label>
+                                <div class="prerequisites-list" style="max-height: 200px; overflow-y: auto;">
+                                    @foreach (var course in Model.AvailablePrerequisites)
+                                    {
+                                        <div class="form-check">
+                                            <input class="form-check-input prerequisite-checkbox"
+                                                   type="checkbox"
+                                                   name="SelectedPrerequisiteIds"
+                                                   value="@course.Id"
+                                                   id="prereq_@course.Id"
+                                                   @(Model.SelectedPrerequisiteIds?.Contains(course.Id) == true ? "checked" : "")>
+                                            <label class="form-check-label" for="prereq_@course.Id">
+                                                <strong>@course.CourseCode</strong> - @course.CourseName
+                                                @if (!string.IsNullOrEmpty(course.Description))
+                                                {
+                                                    <br>
+                                            
+                                                    <small class="text-muted">@course.Description</small>
+                                                }
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                                @if (!Model.AvailablePrerequisites.Any())
+                                {
+                                    <p class="text-muted">No courses available for prerequisites.</p>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(Model.PrerequisiteCodes))
+                            {
+                                <div class="alert alert-info">
+                                    <strong>Selected Prerequisites:</strong> @Model.PrerequisiteCodes
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-4 mt-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" checked role="switch">
+                            <label asp-for="IsActive" class="form-check-label fw-semibold">Active Course</label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>Create Course
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-lightbulb me-2"></i>Course Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0">
+                    <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>About Courses</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>Course Code:</strong> Unique identifier for the course</li>
+                        <li><strong>Credits:</strong> Academic weight of the course (1-6 credits)</li>
+                        <li><strong>Prerequisites:</strong> Courses that must be completed before taking this course</li>
+                        <li><strong>Max Students:</strong> Maximum number of students allowed to enroll</li>
+                        <li><strong>Min GPA:</strong> Minimum GPA required to enroll in this course</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-warning border-0 mt-3">
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Options</h6>
+                    <p class="mb-2">You can either:</p>
+                    <ul class="mb-0 small">
+                        <li><strong>Create New Course:</strong> Fill out the form to create a completely new course</li>
+                        <li><strong>Select from Existing:</strong> Choose from existing courses and add them to this semester</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Auto-fill legacy fields from dropdowns
+            $('#DepartmentId').change(function () {
+                var selectedText = $(this).find('option:selected').text();
+                if (selectedText && selectedText !== '-- Select Department --') {
+                    // Extract just the department name (last part after →)
+                    var parts = selectedText.split('→');
+                    if (parts.length > 0) {
+                        $('#Department').val(parts[parts.length - 1].trim());
+                    }
+                }
+            });
+
+            $('#SemesterId').change(function () {
+                var selectedText = $(this).find('option:selected').text();
+                if (selectedText && selectedText !== '-- Select Semester --') {
+                    // Extract semester number if possible
+                    var semesterMatch = selectedText.match(/Semester\s*(\d+)/i);
+                    if (semesterMatch && semesterMatch[1]) {
+                        $('#Semester').val(semesterMatch[1]);
+                    }
+                }
+            });
+
+            // Pre-fill from parent semester if available
+            @if (ViewBag.ParentSemester != null)
+            {
+                    <text>
+                    $('#SemesterId').val('@ViewBag.ParentSemester.Id');
+                    </text>
+            }
+        });
+    </script>
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

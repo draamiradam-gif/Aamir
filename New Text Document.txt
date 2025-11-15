@@ -1,0 +1,241 @@
+    ExcelPackage.License.SetNonCommercialOrganization("Student Management System");
+
+
+Summarize the current project state
+
+List the key files and their purposes
+
+Provide the current code architecture overview
+
+yes, also when upload, if a student exists, it should tell me what data have been updated, also ask wheatear to update or not, with ability to tell it to do it directly or to ask me every time
+
+ ExcelPackage.License.SetNonCommercialOrganization("Student Management System");
+
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+dotnet run
+
+dotnet ef database drop --force
+
+
+dotnet clean
+dotnet restore
+dotnet build
+dotnet run
+
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+
+dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 8.0.0
+
+
+Email: admin@localhost
+
+Password: Admin123!
+
+#project-structure:
+Get-ChildItem -Recurse -Filter "*.csproj" | Select-Object Name, Directory
+
+# Clean the project
+dotnet clean
+
+# Delete migrations folder if it exists
+rmdir /s Migrations
+
+# Restore packages
+dotnet restore
+
+# Create new migration
+dotnet ef migrations add InitialCreate
+
+# Update database
+dotnet ef database update
+
+# Build the project
+dotnet build
+
+#delete migration
+rmdir /s "Migrations"
+
+dotnet ef database drop --force
+dotnet ef database update
+
+
+# Show only folders
+dir /ad /s
+
+# Show all files and folders
+tree /f
+
+# Or use PowerShell
+Get-ChildItem -Recurse
+
+
+tree /f > project_structure.txt
+
+# in case new migration after delete migration folder
+dotnet clean
+dotnet build
+dotnet ef migrations add InitialCreate --context ApplicationDbContext
+dotnet ef database update --context ApplicationDbContext
+
+# Create initial migration
+Add-Migration InitialCreate
+
+# Update database
+Update-Database
+
+
+dotnet ef migrations add UpdateUniversityStructure
+
+# Apply the migration to database
+dotnet ef database update
+
+
+//////////////////
+1. Use Different Ports for Development:
+In Properties/launchSettings.json, you can configure multiple profiles.
+
+2. Use IIS Express Instead:
+In Visual Studio, use IIS Express instead of the console app
+
+Or configure Kestrel to use different ports
+
+3. Build Without Running:
+When making changes, build without running:
+
+bash
+dotnet build --no-restore
+Quick Check if Process is Still Running:
+bash
+tasklist | findstr "StudentManagementSystem"
+If it shows the process, then kill it with:
+
+bash
+taskkill /F /IM "StudentManagementSystem.exe"
+Stop the running application first, then try the build and migration again!
+///////////////////////////////////////////////////
+
+
+git remote add origin https://github.com/draamiradam-gif/MySolution.git
+git branch -M main
+git push -u origin main
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Completed Features:
+Advanced Student Management with sorting, filtering, and serial numbers
+
+Excel Import/Export with preview and validation
+
+Beautiful Dashboard with analytics and charts
+
+Professional UI with responsive design
+
+🚀 What's Next?
+What would you like to work on next? Here are some ideas:
+
+Advanced Features:
+Course Management System - Add courses, enroll students, track grades
+
+Attendance Tracking - Daily attendance with reports
+
+Fee Management - Track payments, generate invoices
+
+User Roles - Admin, Teacher, Student portals
+
+Technical Enhancements:
+Real-time Notifications - Using SignalR
+
+PDF Report Generation - Student transcripts, certificates
+
+API Development - For mobile app integration
+
+Advanced Search - Elasticsearch integration
+
+UI/UX Improvements:
+Dark/Light Mode toggle
+
+Mobile App version
+
+Keyboard Shortcuts
+
+Bulk Operations
+
+System Features:
+Backup & Restore functionality
+
+Audit Logging - Track all system changes
+
+Email/SMS Integration - Notifications to students
+
+Multi-language Support
+
+What interests you most?
+Would you like to:
+
+Build a course management system?
+
+Add user roles and permissions?
+
+Create PDF report generation?
+
+Implement real-time features?
+
+Or something else entirely?
+
+

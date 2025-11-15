@@ -1,0 +1,75 @@
+﻿@model StudentManagementSystem.Models.ViewModels.DuplicateViewModel
+@{
+    ViewData["Title"] = "Duplicate College";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-copy me-2"></i>Duplicate College
+            </h1>
+            <p class="text-muted mb-0">Create a copy of the college</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-copy me-2"></i>Duplicate Settings
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Duplicate" method="post">
+                    <input type="hidden" asp-for="SourceId" />
+                    <input type="hidden" asp-for="EntityType" />
+
+                    <div class="mb-3">
+                        <label asp-for="NewName" class="form-label fw-semibold">New College Name *</label>
+                        <input asp-for="NewName" class="form-control" placeholder="Enter new college name">
+                        <span asp-validation-for="NewName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Target University</label>
+                        <select asp-for="TargetParentId" asp-items="ViewBag.UniversityId" class="form-select">
+                            <option value="">Same as Original</option>
+                        </select>
+                        <span asp-validation-for="TargetParentId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input asp-for="CopySubItems" class="form-check-input" checked role="switch">
+                            <label asp-for="CopySubItems" class="form-check-label fw-semibold">
+                                Copy associated departments
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            When enabled, all departments from the original college will be duplicated to the new college.
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-copy me-2"></i>Duplicate College
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

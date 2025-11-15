@@ -1,0 +1,98 @@
+﻿@model University
+@{
+    ViewData["Title"] = $"{Model.Name} - Colleges";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-school me-2"></i>@Model.Name - Colleges
+            </h1>
+            <p class="text-muted mb-0">Colleges associated with this university</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Colleges" asp-action="Create" asp-route-universityId="@Model.Id"
+               class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add College
+            </a>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to University
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card-university card">
+    <div class="card-header bg-white py-3">
+        <h5 class="card-title mb-0 text-dark">
+            <i class="fas fa-list me-2"></i>Colleges
+            <span class="badge bg-primary ms-2">@Model.Colleges.Count</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        @if (!Model.Colleges.Any())
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-school fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No Colleges Found</h4>
+                <p class="text-muted">This university doesn't have any colleges yet.</p>
+                <a asp-controller="Colleges" asp-action="Create" asp-route-universityId="@Model.Id"
+                   class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-2"></i>Create First College
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>College Name</th>
+                            <th>Code</th>
+                            <th class="text-center">Departments</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var college in Model.Colleges)
+                        {
+                            <tr>
+                                <td>
+                                    <h6 class="mb-1 fw-semibold">@college.Name</h6>
+                                    @if (!string.IsNullOrEmpty(college.Description))
+                                    {
+                                        <small class="text-muted">@college.Description</small>
+                                    }
+                                </td>
+                                <td>@college.CollegeCode</td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">@college.Departments.Count</span>
+                                </td>
+                                <td>
+                                    <span class="badge @(college.IsActive ? "bg-success" : "bg-secondary")">
+                                        @(college.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-controller="Colleges" asp-action="Details" asp-route-id="@college.Id"
+                                           class="btn btn-outline-primary" title="View College Details">
+                                            @college.Name
+                                        </a>
+                                        <a asp-controller="Departments" asp-action="Create" asp-route-collegeId="@college.Id"
+                                           class="btn btn-outline-success" title="Add Department">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

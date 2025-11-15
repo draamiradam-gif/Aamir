@@ -1,0 +1,55 @@
+﻿@{
+    ViewData["Title"] = "Scan QR Code";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Scan QR Code</h3>
+            </div>
+            <div class="card-body">
+                <div id="scan-result" class="mb-3"></div>
+                <form id="scan-form">
+                    <div class="mb-3">
+                        <label for="studentId" class="form-label">Student ID</label>
+                        <input type="number" class="form-control" id="studentId" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Mark Attendance</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('scan-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const studentId = document.getElementById('studentId').value;
+            const token = '@ViewBag.Token';
+
+            try {
+                const response = await fetch('@Url.Action("Scan", "QRCode")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token, studentId: parseInt(studentId) })
+                });
+
+                const result = await response.json();
+                const alertClass = result.success ? 'alert-success' : 'alert-danger';
+                document.getElementById('scan-result').innerHTML =
+                    `<div class="alert ${alertClass}">${result.message}</div>`;
+
+                if (result.success) {
+                    document.getElementById('studentId').value = '';
+                }
+            } catch (error) {
+                document.getElementById('scan-result').innerHTML =
+                    `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+        });
+    </script>
+}

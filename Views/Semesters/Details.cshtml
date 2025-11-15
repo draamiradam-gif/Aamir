@@ -1,0 +1,399 @@
+﻿@model Semester
+@{
+    ViewData["Title"] = "Semester Details";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-calendar-alt me-2"></i>@Model.Name
+            </h1>
+            <p class="text-muted mb-0">Semester details and schedule information</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                <i class="fas fa-edit me-2"></i>Edit
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Semester Information -->
+        <div class="card-university card mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-info-circle me-2"></i>Semester Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Semester Type</label>
+                            <p class="fs-5">
+                                <span class="badge bg-primary">@Model.SemesterType</span>
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Academic Year</label>
+                            <p class="fs-5">@Model.AcademicYear</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Assigned To</label>
+                            <p class="fs-6">@Model.FullPath</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Status</label>
+                            <p>
+                                <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary") fs-6">
+                                    @(Model.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Current Semester</label>
+                            <p>
+                                <span class="badge @(Model.IsCurrent ? "bg-warning" : "bg-secondary") fs-6">
+                                    @(Model.IsCurrent ? "Yes" : "No")
+                                </span>
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Registration</label>
+                            <p>
+                                <span class="badge @(Model.IsRegistrationOpen ? "bg-success" : "bg-secondary") fs-6">
+                                    @(Model.IsRegistrationOpen ? "Open" : "Closed")
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dates Information -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title fw-semibold">
+                                    <i class="fas fa-calendar me-2"></i>Semester Dates
+                                </h6>
+                                <div class="mb-2">
+                                    <small class="text-muted">Start Date:</small>
+                                    <p class="mb-0 fw-semibold">@Model.StartDate.ToString("MMM dd, yyyy")</p>
+                                </div>
+                                <div>
+                                    <small class="text-muted">End Date:</small>
+                                    <p class="mb-0 fw-semibold">@Model.EndDate.ToString("MMM dd, yyyy")</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title fw-semibold">
+                                    <i class="fas fa-user-plus me-2"></i>Registration Period
+                                </h6>
+                                <div class="mb-2">
+                                    <small class="text-muted">Registration Start:</small>
+                                    <p class="mb-0 fw-semibold">@Model.RegistrationStartDate.ToString("MMM dd, yyyy")</p>
+                                </div>
+                                <div>
+                                    <small class="text-muted">Registration End:</small>
+                                    <p class="mb-0 fw-semibold">@Model.RegistrationEndDate.ToString("MMM dd, yyyy")</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Status -->
+                <div class="mt-4">
+                    <div class="alert @(Model.IsRegistrationPeriod ? "alert-warning" : "alert-info")">
+                        <h6 class="alert-heading">
+                            <i class="fas @(Model.IsRegistrationPeriod ? "fa-exclamation-triangle" : "fa-info-circle") me-2"></i>
+                            Current Status
+                        </h6>
+                        @if (Model.IsRegistrationPeriod && Model.IsRegistrationOpen)
+                        {
+                            <p class="mb-0">Registration is currently active for this semester.</p>
+                        }
+                        else if (Model.IsCurrent)
+                        {
+                            <p class="mb-0">This is the current active semester.</p>
+                        }
+                        else if (DateTime.Now < Model.StartDate)
+                        {
+                            <p class="mb-0">This semester is scheduled to start in the future.</p>
+                        }
+                        else if (DateTime.Now > Model.EndDate)
+                        {
+                            <p class="mb-0">This semester has ended.</p>
+                        }
+                        else
+                        {
+                            <p class="mb-0">This semester is currently in session.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Associated Courses Section -->
+        <div class="card-university card">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-book me-2"></i>Courses
+                    <span class="badge bg-primary ms-2" id="courseCount">0</span>
+                </h5>
+                <!-- In Semester Details view -->
+                <a asp-controller="Courses" asp-action="Create" asp-route-semesterId="@Model.Id"
+                   class="btn btn-success">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Course
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-5" id="noCoursesMessage">
+                    <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Courses Found</h4>
+                    <p class="text-muted">This semester doesn't have any courses yet.</p>
+                    <a asp-controller="Courses" asp-action="Create" asp-route-semesterId="@Model.Id"
+                       class="btn btn-primary mt-2">
+                        <i class="fas fa-plus me-2"></i>Create First Course
+                    </a>
+                </div>
+                <div id="coursesTable" style="display: none;">
+                    <!-- Courses will be loaded here via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- In Semester Details view, add this section -->
+        <div class="card-university card mt-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-start">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-book me-2"></i>Course Management
+                </h5>
+                <div class="d-flex flex-column gap-2 align-items-start">
+                    <a asp-controller="Courses" asp-action="SelectFromExisting" asp-route-semesterId="@Model.Id"
+                       class="btn btn-info btn-sm w-100">
+                        <i class="fas fa-list me-2"></i>Select Existing Course
+                    </a>
+                    <a asp-controller="Courses" asp-action="Create" asp-route-semesterId="@Model.Id"
+                       class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-plus me-2"></i>Create New Course
+                    </a>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-edit me-2"></i>Edit Semester
+                    </a>
+                    <a asp-action="Duplicate" asp-route-id="@Model.Id" class="btn btn-outline-warning w-100">
+                        <i class="fas fa-copy me-2"></i>Duplicate Semester
+                    </a>
+                    @if (Model.IsCurrent)
+                    {
+                        <a href="#" class="btn btn-outline-info w-100" id="closeRegistrationBtn">
+                            <i class="fas fa-lock me-2"></i>Close Registration
+                        </a>
+                    }
+                    else if (Model.IsRegistrationOpen)
+                    {
+                        <a href="#" class="btn btn-outline-success w-100" id="setCurrentBtn">
+                            <i class="fas fa-star me-2"></i>Set as Current
+                        </a>
+                    }
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger w-100">
+                        <i class="fas fa-trash me-2"></i>Delete Semester
+                    </a>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Timeline -->
+        <div class="card-university card mt-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-hourglass-half me-2"></i>Timeline
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3" style="height: 8px;">
+                    @{
+                        var totalDays = (Model.EndDate - Model.StartDate).TotalDays;
+                        var daysPassed = (DateTime.Now - Model.StartDate).TotalDays;
+                        var progressPercentage = Math.Max(0, Math.Min(100, (daysPassed / totalDays) * 100));
+                    }
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width: @progressPercentage%"
+                         aria-valuenow="@progressPercentage"
+                         aria-valuemin="0"
+                         aria-valuemax="100"></div>
+                </div>
+                <div class="text-center">
+                    <small class="text-muted">
+                        @if (DateTime.Now < Model.StartDate)
+                        {
+                            <span>Starts in @((Model.StartDate - DateTime.Now).Days) days</span>
+                        }
+                        else if (DateTime.Now > Model.EndDate)
+                        {
+                            <span>Ended @((DateTime.Now - Model.EndDate).Days) days ago</span>
+                        }
+                        else
+                        {
+                            <span>@((int)progressPercentage)% completed</span>
+                        }
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Associated Entity -->
+        <div class="card-university card mt-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-link me-2"></i>Assigned To
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Department != null)
+                {
+                    <div class="text-center">
+                        <h6 class="fw-semibold">Department</h6>
+                        <p class="mb-1">@Model.Department.Name</p>
+                        <small class="text-muted">@Model.Department.DepartmentCode</small>
+                        <div class="mt-2">
+                            <a asp-controller="Departments" asp-action="Details" asp-route-id="@Model.Department.Id"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View Department
+                            </a>
+                        </div>
+                    </div>
+                }
+                else if (Model.Branch != null)
+                {
+                    <div class="text-center">
+                        <h6 class="fw-semibold">Branch</h6>
+                        <p class="mb-1">@Model.Branch.Name</p>
+                        <small class="text-muted">@Model.Branch.BranchCode</small>
+                        <div class="mt-2">
+                            <a asp-controller="Branches" asp-action="Details" asp-route-id="@Model.Branch.Id"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View Branch
+                            </a>
+                        </div>
+                    </div>
+                }
+                else if (Model.SubBranch != null)
+                {
+                    <div class="text-center">
+                        <h6 class="fw-semibold">Sub-Branch</h6>
+                        <p class="mb-1">@Model.SubBranch.Name</p>
+                        <small class="text-muted">@Model.SubBranch.BranchCode</small>
+                        <div class="mt-2">
+                            <a asp-controller="Branches" asp-action="Details" asp-route-id="@Model.SubBranch.Id"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View Sub-Branch
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Load courses for this semester
+            loadCourses();
+
+            function loadCourses() {
+                $.get('@Url.Action("GetCoursesBySemester", "Courses")', { semesterId: '@Model.Id' }, function (data) {
+                    if (data.length > 0) {
+                        $('#noCoursesMessage').hide();
+                        $('#coursesTable').show();
+                        $('#courseCount').text(data.length);
+
+                        var tableHtml = `
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Course Name</th>
+                                            <th>Code</th>
+                                            <th>Credits</th>
+                                            <th>Status</th>
+                                            <th class="text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+
+                        data.forEach(function(course) {
+                            tableHtml += `
+                                <tr>
+                                    <td>
+                                        <h6 class="mb-1 fw-semibold">${course.courseName}</h6>
+                                        <small class="text-muted">${course.description || ''}</small>
+                                    </td>
+                                    <td>${course.courseCode}</td>
+                                    <td>${course.credits}</td>
+                                    <td>
+                                        <span class="badge ${course.isActive ? 'bg-success' : 'bg-secondary'}">
+                                            ${course.isActive ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/Courses/Details/${course.id}" class="btn btn-outline-primary btn-sm">
+                                            ${course.courseName}
+                                        </a>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        tableHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+
+                        $('#coursesTable').html(tableHtml);
+                    }
+                });
+            }
+
+            // Set as current semester
+            $('#setCurrentBtn').click(function (e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to set this as the current semester?')) {
+                    $.post('@Url.Action("SetCurrent", "Semesters")', { id: '@Model.Id' }, function () {
+                        location.reload();
+                    });
+                }
+            });
+
+            // Close registration
+            $('#closeRegistrationBtn').click(function (e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to close registration for this semester?')) {
+                    $.post('@Url.Action("CloseRegistration", "Semesters")', { id: '@Model.Id' }, function () {
+                        location.reload();
+                    });
+                }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,130 @@
+﻿@model Semester
+
+@{
+    ViewData["Title"] = "Edit Semester";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Edit Semester</h3>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <!-- Same form fields as Create.cshtml but with current values -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Name" class="control-label">Semester Name</label>
+                                    <input asp-for="Name" class="form-control" />
+                                    <span asp-validation-for="Name" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="SemesterType" class="control-label">Semester Type</label>
+                                    <select asp-for="SemesterType" class="form-control">
+                                        <option value="Fall">Fall</option>
+                                        <option value="Spring">Spring</option>
+                                        <option value="Summer">Summer</option>
+                                    </select>
+                                    <span asp-validation-for="SemesterType" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="AcademicYear" class="control-label">Academic Year</label>
+                                    <input asp-for="AcademicYear" class="form-control" type="number" />
+                                    <span asp-validation-for="AcademicYear" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Assign To</label>
+                                    <select asp-for="DepartmentId" class="form-control" id="departmentSelect">
+                                        <option value="">-- Select Department --</option>
+                                        @foreach (var item in (ViewBag.DepartmentId as SelectList)!)
+                                        {
+                                            <option value="@item.Value">@item.Text</option>
+                                        }
+                                    </select>
+                                    <select asp-for="BranchId" class="form-control mt-2" id="branchSelect" style="display: none;">
+                                        <option value="">-- Select Branch --</option>
+                                        @foreach (var item in (ViewBag.BranchId as SelectList)!)
+                                        {
+                                            <option value="@item.Value">@item.Text</option>
+                                        }
+                                    </select>
+                                    <select asp-for="SubBranchId" class="form-control mt-2" id="subBranchSelect" style="display: none;">
+                                        <option value="">-- Select Sub-Branch --</option>
+                                        @foreach (var item in (ViewBag.SubBranchId as SelectList)!)
+                                        {
+                                            <option value="@item.Value">@item.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="StartDate" class="control-label">Start Date</label>
+                                    <input asp-for="StartDate" class="form-control" type="date" />
+                                    <span asp-validation-for="StartDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="EndDate" class="control-label">End Date</label>
+                                    <input asp-for="EndDate" class="form-control" type="date" />
+                                    <span asp-validation-for="EndDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="RegistrationStartDate" class="control-label">Registration Start</label>
+                                    <input asp-for="RegistrationStartDate" class="form-control" type="date" />
+                                    <span asp-validation-for="RegistrationStartDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="RegistrationEndDate" class="control-label">Registration End</label>
+                                    <input asp-for="RegistrationEndDate" class="form-control" type="date" />
+                                    <span asp-validation-for="RegistrationEndDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group form-check">
+                            <input asp-for="IsCurrent" class="form-check-input" />
+                            <label asp-for="IsCurrent" class="form-check-label">Set as Current Semester</label>
+                        </div>
+
+                        <div class="form-group form-check">
+                            <input asp-for="IsRegistrationOpen" class="form-check-input" />
+                            <label asp-for="IsRegistrationOpen" class="form-check-label">Registration Open</label>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

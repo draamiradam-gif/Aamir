@@ -1,0 +1,52 @@
+﻿@model StudentManagementSystem.Models.ViewModels.DuplicateViewModel
+
+@*@model DuplicateViewModel*@
+
+@{
+    ViewData["Title"] = "Duplicate Department";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Duplicate Department</h3>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Duplicate">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="EntityType" />
+                        <input type="hidden" asp-for="SourceId" />
+
+                        <div class="form-group">
+                            <label asp-for="NewName" class="control-label">New Department Name</label>
+                            <input asp-for="NewName" class="form-control" />
+                            <span asp-validation-for="NewName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="TargetParentId" class="control-label">Target College</label>
+                            <select asp-for="TargetParentId" class="form-control" asp-items="ViewBag.Colleges">
+                                <option value="">-- Keep Same College --</option>
+                            </select>
+                            <span asp-validation-for="TargetParentId" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group form-check">
+                            <input asp-for="CopySubItems" class="form-check-input" />
+                            <label asp-for="CopySubItems" class="form-check-label">
+                                Copy Branches and Courses
+                            </label>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-primary">Duplicate Department</button>
+                            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

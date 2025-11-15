@@ -1,0 +1,374 @@
+﻿@model StudentManagementSystem.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </h1>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <a href="@Url.Action("Index", "Students")" class="btn btn-primary">
+                <i class="fas fa-users"></i> Manage Students
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Students
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalStudents</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Average GPA
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.AverageGPA.ToString("F2")</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Average Percentage
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.AveragePercentage.ToString("F1")%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percent fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                New This Month
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.StudentsThisMonth</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Analytics -->
+    <div class="row">
+        <!-- Department Distribution -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-university"></i> Department Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="departmentChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        @foreach (var dept in Model.DepartmentStatistics)
+                        {
+                            <span class="mr-3">
+                                <i class="fas fa-circle" style="color: @GetDepartmentColor(dept.DepartmentName)"></i>
+                                @dept.DepartmentName
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GPA Distribution -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar"></i> GPA Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-bar">
+                        <canvas id="gpaChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Students & Quick Actions -->
+    <div class="row">
+        <!-- Recent Students -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-clock"></i> Recent Students
+                    </h6>
+                    <a href="@Url.Action("Index", "Students")" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="recentStudentsTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Department</th>
+                                    <th>GPA</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var student in Model.RecentStudents)
+                                {
+                                    <tr>
+                                        <td>@student.StudentId</td>
+                                        <td>@student.Name</td>
+                                        <td>@student.Department</td>
+                                        <td>@student.GPA.ToString("F2")</td>
+                                        <td>@student.Percentage.ToString("F1")%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Create", "Students")" class="btn btn-success btn-block">
+                            <i class="fas fa-plus"></i> Add New Student
+                        </a>
+                        <a href="@Url.Action("Import", "Students")" class="btn btn-info btn-block">
+                            <i class="fas fa-file-import"></i> Import from Excel
+                        </a>
+                        <a href="@Url.Action("Export", "Students")" class="btn btn-warning btn-block">
+                            <i class="fas fa-file-export"></i> Export to Excel
+                        </a>
+                        <a href="@Url.Action("AddTestData", "Students")" class="btn btn-secondary btn-block">
+                            <i class="fas fa-vial"></i> Add Test Data
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Stats -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i> System Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Imports
+                            <span class="badge bg-primary rounded-pill">@Model.TotalImports</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Exports
+                            <span class="badge bg-success rounded-pill">@Model.TotalExports</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Departments
+                            <span class="badge bg-info rounded-pill">@Model.DepartmentStatistics.Count</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+        }
+
+        .border-left-primary {
+            border-left: 0.25rem solid #4e73df !important;
+        }
+
+        .border-left-success {
+            border-left: 0.25rem solid #1cc88a !important;
+        }
+
+        .border-left-info {
+            border-left: 0.25rem solid #36b9cc !important;
+        }
+
+        .border-left-warning {
+            border-left: 0.25rem solid #f6c23e !important;
+        }
+
+        .chart-pie, .chart-bar {
+            position: relative;
+            height: 200px;
+        }
+
+        .list-group-item {
+            border: none;
+            padding: 0.75rem 0;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Department Chart
+        var departmentCtx = document.getElementById('departmentChart').getContext('2d');
+        var departmentChart = new Chart(departmentCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    @foreach (var dept in Model.DepartmentStatistics)
+                    {
+                            @Html.Raw($"'{dept.DepartmentName}',")
+                    }
+                ],
+                datasets: [{
+                    data: [
+                        @foreach (var dept in Model.DepartmentStatistics)
+                        {
+                                @Html.Raw($"{dept.StudentCount},")
+                        }
+                    ],
+                    backgroundColor: [
+                        @foreach (var dept in Model.DepartmentStatistics)
+                        {
+                                @Html.Raw($"'{GetDepartmentColor(dept.DepartmentName)}',")
+                        }
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // GPA Chart
+        var gpaCtx = document.getElementById('gpaChart').getContext('2d');
+        var gpaChart = new Chart(gpaCtx, {
+            type: 'bar',
+            data: {
+                labels: [
+                    @foreach (var gpa in Model.GPAStatistics)
+                    {
+                            @Html.Raw($"'{gpa.Range}',")
+                    }
+                ],
+                datasets: [{
+                    label: 'Number of Students',
+                    data: [
+                        @foreach (var gpa in Model.GPAStatistics)
+                        {
+                                @Html.Raw($"{gpa.StudentCount},")
+                        }
+                    ],
+                    backgroundColor: [
+                        @foreach (var gpa in Model.GPAStatistics)
+                        {
+                                @Html.Raw($"'{gpa.Color}',")
+                        }
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+
+        function refreshDashboard() {
+            location.reload();
+        }
+    </script>
+}
+
+@functions {
+    private static string GetDepartmentColor(string departmentName)
+    {
+        var colors = new Dictionary<string, string>
+        {
+            ["Computer Science"] = "#4e73df",
+            ["Engineering"] = "#1cc88a",
+            ["Business"] = "#36b9cc",
+            ["Medicine"] = "#f6c23e",
+            ["Arts"] = "#e74a3b",
+            ["Science"] = "#6f42c1",
+            ["Law"] = "#fd7e14"
+        };
+
+        return colors.ContainsKey(departmentName) ? colors[departmentName] : "#858796";
+    }
+}

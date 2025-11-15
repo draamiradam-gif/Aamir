@@ -1,0 +1,319 @@
+﻿@model StudentManagementSystem.ViewModels.QRDashboardViewModel
+
+@{
+    ViewData["Title"] = $"Attendance Dashboard - {Model.Session.SessionTitle}";
+    var expiresAt = Model.Session.CreatedAt.AddMinutes(Model.Session.DurationMinutes);
+    var isExpired = expiresAt < DateTime.Now;
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-chart-line"></i> Real-time Attendance Dashboard
+                </h3>
+                <div class="btn-group">
+                    <a asp-action="ExportAttendance" asp-route-sessionId="@Model.Session.Id" 
+                       class="btn btn-success btn-sm">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </a>
+                    @if (!isExpired)
+                    {
+                        <form asp-action="EndSession" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@Model.Session.Id" />
+                            <button type="submit" class="btn btn-warning btn-sm" 
+                                    onclick="return confirm('End this session?')">
+                                <i class="fas fa-stop"></i> End Session
+                            </button>
+                        </form>
+                    }
+                    <a asp-action="ActiveSessions" class="btn btn-info btn-sm">
+                        <i class="fas fa-list"></i> All Sessions
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Session Info -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h4>@Model.Session.SessionTitle</h4>
+                        <p class="text-muted">
+                            <strong>Course:</strong> @Model.Session.Course?.CourseCode - @Model.Session.Course?.CourseName<br>
+                            <strong>Duration:</strong> @Model.Session.DurationMinutes minutes<br>
+                            <strong>Created:</strong> @Model.Session.CreatedAt.ToString("MMM dd, yyyy HH:mm")<br>
+                            <strong>Valid Until:</strong> 
+                            <span class="@(isExpired ? "text-danger" : "text-success")">
+                                @expiresAt.ToString("MMM dd, yyyy HH:mm")
+                            </span>
+                            @if (isExpired)
+                            {
+                                <span class="badge bg-danger ms-2">EXPIRED</span>
+                            }
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <!-- Stats Cards -->
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body py-3">
+                                        <h3 id="present-count">@Model.UniqueScans</h3>
+                                        <p>Present</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body py-3">
+                                        <h3 id="absent-count">@(Model.TotalStudents - Model.UniqueScans)</h3>
+                                        <p>Absent</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body py-3">
+                                        <h3 id="attendance-percentage">@Model.AttendancePercentage.ToString("F1")%</h3>
+                                        <p>Attendance Rate</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="btn-group">
+                            <a asp-action="SessionCreated" asp-route-id="@Model.Session.Id" 
+                               class="btn btn-outline-primary">
+                                <i class="fas fa-qrcode"></i> View QR Code
+                            </a>
+                            <a href="@Url.Action("Display", new { id = Model.Session.Id })" 
+                               target="_blank" class="btn btn-outline-success">
+                                <i class="fas fa-expand"></i> Full Screen
+                            </a>
+                            <a asp-action="ExportAttendance" asp-route-sessionId="@Model.Session.Id" 
+                               class="btn btn-outline-warning">
+                                <i class="fas fa-download"></i> Export Report
+                            </a>
+                            @if (!isExpired)
+                            {
+                                <form asp-action="EndSession" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@Model.Session.Id" />
+                                    <button type="submit" class="btn btn-outline-danger" 
+                                            onclick="return confirm('End this session?')">
+                                        <i class="fas fa-stop"></i> End Session
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-time Attendance List -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>Attendance Records</h5>
+                            <!-- Auto-refresh for dashboard updates (EXISTING) -->
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="auto-refresh" checked>
+                                <label class="form-check-label" for="auto-refresh">
+                                    Auto-refresh dashboard every 10 seconds
+                                </label>
+                            </div>
+
+                            <!-- Dynamic QR for security (NEW) -->
+                            <div class="form-check form-switch mt-3">
+                                <input asp-for="Session.EnableDynamicQR" class="form-check-input" type="checkbox" id="enable-dynamic-qr">
+                                <label class="form-check-label" for="enable-dynamic-qr">
+                                    Enable dynamic QR code (changes every @Model.Session.TokenUpdateIntervalSeconds seconds for security)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="attendance-table">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Student ID</th>
+                                        <th>Student Name</th>
+                                        <th>Scan Time</th>
+                                        <th>Device</th>
+                                        <th>IP Address</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        int counter = 1;
+                                    }
+                                    @foreach (var attendance in Model.Attendances.OrderByDescending(a => a.ScannedAt))
+                                    {
+                                        <tr>
+                                            <td>@(counter++)</td>
+                                            <td>@attendance.Student?.StudentId</td>
+                                            <td>@attendance.Student?.Name</td>
+                                            <td>
+                                                <span class="text-nowrap">@attendance.ScannedAt.ToString("MMM dd")</span>
+                                                <br>
+                                                <small class="text-muted">@attendance.ScannedAt.ToString("HH:mm:ss")</small>
+                                            </td>
+                                            <td>
+                                                <small title="@attendance.DeviceInfo">
+                                                    @(attendance.DeviceInfo?.Length > 30 ? attendance.DeviceInfo.Substring(0, 30) + "..." : attendance.DeviceInfo)
+                                                </small>
+                                            </td>
+                                            <td>@attendance.IPAddress</td>
+                                            <td>
+                                                <span class="badge bg-success">Present</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        @if (!Model.Attendances.Any())
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                <h5>No Attendance Records Yet</h5>
+                                <p class="text-muted">Scanning data will appear here in real-time.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let refreshInterval;
+        let isExpired = @Json.Serialize(isExpired)
+
+        function startAutoRefresh() {
+            if (!isExpired) {
+                refreshInterval = setInterval(() => {
+                    refreshDashboard();
+                }, 10000); // 10 seconds
+            }
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        function refreshDashboard() {
+            if (isExpired) {
+                stopAutoRefresh();
+                return;
+            }
+
+            fetch('@Url.Action("DashboardData", new { id = Model.Session.Id })')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Update stats
+                    document.getElementById('present-count').textContent = data.uniqueScans;
+                    document.getElementById('absent-count').textContent = data.totalStudents - data.uniqueScans;
+                    document.getElementById('attendance-percentage').textContent = data.attendancePercentage.toFixed(1) + '%';
+
+                    // Update table
+                    updateAttendanceTable(data.attendances);
+                })
+                .catch(error => {
+                    console.error('Error refreshing dashboard:', error);
+                    // If session might be expired, check and update status
+                    checkSessionStatus();
+                });
+        }
+
+        function updateAttendanceTable(attendances) {
+            const tbody = document.querySelector('#attendance-table tbody');
+            tbody.innerHTML = '';
+
+            if (attendances.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No attendance records yet</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let counter = 1;
+            attendances.forEach(attendance => {
+                const row = document.createElement('tr');
+                const scanDate = new Date(attendance.scannedAt);
+                const dateStr = scanDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const timeStr = scanDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+                row.innerHTML = `
+                    <td>${counter++}</td>
+                    <td>${attendance.studentId || 'N/A'}</td>
+                    <td>${attendance.studentName || 'N/A'}</td>
+                    <td>
+                        <span class="text-nowrap">${dateStr}</span>
+                        <br>
+                        <small class="text-muted">${timeStr}</small>
+                    </td>
+                    <td>
+                        <small title="${attendance.deviceInfo || ''}">
+                            ${attendance.deviceInfo ? (attendance.deviceInfo.length > 30 ? attendance.deviceInfo.substring(0, 30) + '...' : attendance.deviceInfo) : 'N/A'}
+                        </small>
+                    </td>
+                    <td>${attendance.ipAddress || 'N/A'}</td>
+                    <td><span class="badge bg-success">Present</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function checkSessionStatus() {
+            // You could add an API endpoint to check session status
+            // For now, we'll just stop auto-refresh if we know it's expired
+            if (isExpired) {
+                stopAutoRefresh();
+                document.getElementById('auto-refresh').disabled = true;
+            }
+        }
+
+        // Auto-refresh toggle
+        document.getElementById('auto-refresh').addEventListener('change', function() {
+            if (this.checked && !isExpired) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        });
+
+        // Start auto-refresh on page load if not expired
+        if (!isExpired) {
+            startAutoRefresh();
+        }
+
+        // Stop auto-refresh when page becomes inactive
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else if (document.getElementById('auto-refresh').checked && !isExpired) {
+                startAutoRefresh();
+            }
+        });
+    </script>
+}

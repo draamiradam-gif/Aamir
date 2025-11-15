@@ -1,0 +1,82 @@
+﻿@model List<StudentManagementSystem.Models.University>
+
+@{
+    ViewData["Title"] = "University Structure Overview";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>University Structure Overview</h1>
+        <a asp-action="Dashboard" class="btn btn-outline-secondary">Dashboard</a>
+    </div>
+
+    @foreach (var university in Model)
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    @university.Name
+                    <span class="badge bg-light text-dark">@university.Code</span>
+                    <span class="badge bg-info">@university.CollegeCount Colleges</span>
+                </h4>
+            </div>
+            <div class="card-body">
+                @if (university.Colleges.Any())
+                {
+                    <div class="row">
+                        @foreach (var college in university.Colleges)
+                        {
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0">@college.Name</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text">@college.Description</p>
+                                        <div class="department-list">
+                                            @if (college.Departments.Any())
+                                            {
+                                                @foreach (var department in college.Departments)
+                                                {
+                                                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                                                        <div>
+                                                            <strong>@department.Name</strong>
+                                                            <br>
+                                                            <small class="text-muted">
+                                                                Code: @department.DepartmentCode |
+                                                                Students: @department.Students.Count |
+                                                                Start Year: @department.StartYear
+                                                            </small>
+                                                        </div>
+                                                        <span class="badge bg-primary">@department.Courses.Count Courses</span>
+                                                    </div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <p class="text-muted">No departments in this college.</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No colleges in this university.</p>
+                }
+            </div>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <h4>No Universities Found</h4>
+            <p>Start by creating your first university to build the academic structure.</p>
+            <a asp-action="Create" class="btn btn-primary">Create First University</a>
+        </div>
+    }
+</div>

@@ -1,0 +1,79 @@
+﻿@{
+    ViewData["Title"] = "Bulk Export QR Sessions";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Bulk Export QR Sessions</h3>
+            </div>
+            <div class="card-body">
+                <form asp-action="ExportAllSessions" method="get" id="exportForm">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate" name="startDate">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate" name="endDate">
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Export Options</h6>
+                        <ul class="mb-0">
+                            <li>Leave dates empty to export all sessions</li>
+                            <li>Export includes session details and attendance statistics</li>
+                            <li>File format: Excel (.xlsx)</li>
+                        </ul>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">Back to Dashboard</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Quick Exports</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-action="ExportAllSessions" class="btn btn-outline-primary">
+                        <i class="fas fa-download"></i> Export All Sessions
+                    </a>
+                    <a asp-action="ExportAllSessions" asp-route-startDate="@DateTime.Now.AddDays(-7).ToString("yyyy-MM-dd")"
+                       class="btn btn-outline-info">
+                        <i class="fas fa-calendar-week"></i> Last 7 Days
+                    </a>
+                    <a asp-action="ExportAllSessions" asp-route-startDate="@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")"
+                       class="btn btn-outline-warning">
+                        <i class="fas fa-calendar-alt"></i> Last 30 Days
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('exportForm').addEventListener('submit', function(e) {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+                e.preventDefault();
+                alert('Start date cannot be after end date.');
+                return false;
+            }
+        });
+    </script>
+}

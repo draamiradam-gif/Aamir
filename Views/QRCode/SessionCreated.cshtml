@@ -1,0 +1,69 @@
+﻿@model QRCodeSession
+
+@{
+    ViewData["Title"] = "QR Session Created";
+    var scanUrl = Url.Action("Scan", "QRCode", new { token = Model.Token }, Context.Request.Scheme) ?? "";
+    var encodedUrl = Uri.EscapeDataString(scanUrl);
+    var expiresAt = Model.CreatedAt.AddMinutes(Model.DurationMinutes);
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-check-circle"></i> QR Session Created Successfully
+                </h3>
+            </div>
+            <div class="card-body text-center">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Session Information</h4>
+                        <!-- Add this in the session information section: -->
+                        <div class="text-start">
+                            <p><strong>Title:</strong> @Model.SessionTitle</p>
+                            <p><strong>Course:</strong> @Model.Course?.CourseCode</p>
+                            <p><strong>Duration:</strong> @Model.DurationMinutes minutes</p>
+                            <p>
+                                <strong>QR Type:</strong>
+                                @if (Model.EnableDynamicQR)
+                                {
+                                    <span class="text-success">Dynamic (refreshes every @Model.TokenUpdateIntervalSeconds seconds)</span>
+                                }
+                                else
+                                {
+                                    <span>Static</span>
+                                }
+                            </p>
+                            <p><strong>Valid Until:</strong> @expiresAt.ToString("HH:mm")</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h4>QR Code</h4>
+                        <!-- FIXED: No null reference warning -->
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@encodedUrl"
+                             alt="QR Code"
+                             class="img-fluid border rounded"
+                             style="max-width: 200px;">
+                        <p class="text-muted mt-2">Scan this QR code to mark attendance</p>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <a href="@Url.Action("Display", new { id = Model.Id })"
+                       class="btn btn-primary btn-lg" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Open Full Screen
+                    </a>
+                    <a asp-action="Dashboard" asp-route-id="@Model.Id"
+                       class="btn btn-info btn-lg">
+                        <i class="fas fa-chart-line"></i> Live Dashboard
+                    </a>
+                    <a asp-action="Create" class="btn btn-outline-success">
+                        <i class="fas fa-plus"></i> New Session
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

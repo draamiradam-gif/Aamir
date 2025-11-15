@@ -1,0 +1,547 @@
+﻿@model StudentManagementSystem.Models.Course
+@{
+    ViewData["Title"] = "Enroll Students";
+
+    // Safe check for ViewBag data
+    var availableStudents = ViewBag.AvailableStudents as List<StudentManagementSystem.Models.Student> ?? new List<StudentManagementSystem.Models.Student>();
+    var course = Model;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-user-plus"></i> Enroll Students - @(course?.CourseCode ?? "Unknown Course")
+        </h2>
+        <div>
+            <!-- Zoom Controls -->
+            <div class="btn-group btn-group-sm me-2">
+                <button type="button" class="btn btn-outline-secondary" id="zoomOut" title="Zoom Out">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="zoomReset" title="Reset Zoom">
+                    <i class="fas fa-search"></i> 100%
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="zoomIn" title="Zoom In">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+            </div>
+            <a href="@Url.Action("Details", new { id = course?.Id })" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Course
+            </a>
+        </div>
+    </div>
+
+    @if (course == null)
+    {
+        <div class="alert alert-danger">
+            <h4>Course not found!</h4>
+            <p>The requested course could not be found.</p>
+            <a href="@Url.Action("Index")" class="btn btn-primary">Back to Courses List</a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Available Students (@availableStudents.Count)</h5>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check text-white">
+                                <input class="form-check-input" type="checkbox" id="selectAllStudents">
+                                <label class="form-check-label" for="selectAllStudents">
+                                    Select All
+                                </label>
+                            </div>
+                            <small id="tableScaleDisplay" class="text-white">100%</small>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (availableStudents.Any())
+                        {
+                            <form method="post" asp-action="EnrollStudent">
+                                <input type="hidden" name="courseId" value="@course.Id" />
+
+                                <!-- Compact scrollable table container -->
+                                <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                                    <table class="table table-striped table-hover mb-0" id="studentsTable">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th class="text-center" style="width: 50px;">Select</th>
+                                                <th style="width: 100px;">Student ID</th>
+                                                <th style="width: 180px;">Name</th>
+                                                <th style="width: 220px;">Email</th>
+                                                <th style="width: 120px;">Department</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var student in availableStudents)
+                                            {
+                                                <tr>
+                                                    <td class="text-center">
+                                                        <input type="checkbox" name="studentIds" value="@student.Id" class="form-check-input student-checkbox">
+                                                    </td>
+                                                    <td class="text-nowrap">
+                                                        <strong>@student.StudentId</strong>
+                                                    </td>
+                                                    <td class="text-nowrap text-truncate" title="@student.Name" style="max-width: 180px;">
+                                                        @student.Name
+                                                    </td>
+                                                    <td class="text-nowrap text-truncate" title="@student.Email" style="max-width: 220px;">
+                                                        @student.Email
+                                                    </td>
+                                                    <td class="text-nowrap text-truncate" title="@student.Department" style="max-width: 120px;">
+                                                        @student.Department
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="card-footer bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span id="selectedCount" class="badge bg-primary">0</span> students selected
+                                        </div>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-user-plus"></i> Enroll Selected Students
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="text-center py-5">
+                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No Available Students</h5>
+                                <p class="text-muted">All students are already enrolled in this course or no students exist.</p>
+                                <a href="@Url.Action("Index", "Students")" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Add Students
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Course Information -->
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Course Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="mb-0">
+                            <dt>Course Code:</dt>
+                            <dd>@course.CourseCode</dd>
+
+                            <dt>Course Name:</dt>
+                            <dd>@course.CourseName</dd>
+
+                            <dt>Department:</dt>
+                            <dd>@course.Department</dd>
+
+                            <dt>Semester:</dt>
+                            <dd>@course.Semester</dd>
+
+                            <dt>Credits:</dt>
+                            <dd>@course.Credits</dd>
+
+                            <dt>Current Enrollment:</dt>
+                            <dd>
+                                <span class="fw-bold">@course.CurrentEnrollment / @course.MaxStudents</span>
+                            </dd>
+
+                            <dt>Available Spots:</dt>
+                            <dd>
+                                <span class="badge @((course.MaxStudents - course.CurrentEnrollment) > 0 ? "bg-success" : "bg-danger")">
+                                    @(course.MaxStudents - course.CurrentEnrollment)
+                                </span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0">Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="@Url.Action("Details", new { id = course.Id })" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-info-circle"></i> Course Details
+                            </a>
+                            <a href="@Url.Action("Edit", new { id = course.Id })" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-edit"></i> Edit Course
+                            </a>
+                            <a href="@Url.Action("ExportEnrollments", new { id = course.Id })" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-download"></i> Export Enrollments
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <style>
+        /* Scrollable table container */
+        .table-container {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            max-height: 400px !important;
+        }
+
+        /* Sticky header for scrollable table */
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Custom scrollbar styling */
+        .table-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #6c757d;
+            border-radius: 3px;
+        }
+
+            .table-container::-webkit-scrollbar-thumb:hover {
+                background: #495057;
+            }
+
+        /* Compact table styling */
+        #studentsTable {
+            table-layout: fixed;
+            width: 100%;
+            margin: 0;
+            font-size: 0.875rem;
+        }
+
+            #studentsTable th,
+            #studentsTable td {
+                vertical-align: middle;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                padding: 6px 8px;
+            }
+
+            #studentsTable th {
+                font-weight: 600;
+                font-size: 0.8rem;
+            }
+
+        /* Text truncation with tooltip */
+        .text-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Table row hover effects */
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.08);
+        }
+
+        /* Compact zoom controls */
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        /* Zoom scale classes - COMPACT */
+        .table-scale-80 {
+            transform: scale(0.8);
+            transform-origin: top left;
+            margin-bottom: -20%;
+        }
+
+        .table-scale-90 {
+            transform: scale(0.9);
+            transform-origin: top left;
+            margin-bottom: -10%;
+        }
+
+        .table-scale-100 {
+            transform: scale(1);
+            transform-origin: top left;
+        }
+
+        .table-scale-110 {
+            transform: scale(1.1);
+            transform-origin: top left;
+        }
+
+        .table-scale-120 {
+            transform: scale(1.2);
+            transform-origin: top left;
+        }
+
+        /* Ensure table stays within bounds */
+        .table-container {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        /* Compact card styling */
+        .card {
+            margin-bottom: 1rem;
+        }
+
+        .card-body {
+            padding: 0;
+        }
+
+        /* ===== MOBILE RESPONSIVE STYLES ===== */
+        @@media (max-width: 768px) {
+            .container-fluid {
+                padding: 0 10px;
+            }
+
+            .table-container {
+                max-height: 300px !important;
+            }
+
+            .card-body {
+                padding: 0.5rem;
+            }
+
+            .btn-group {
+                margin-bottom: 10px;
+            }
+            /* Stack the header elements vertically */
+            .d-flex.justify-content-between.align-items-center.mb-4 {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start !important;
+            }
+            /* Make zoom controls full width on mobile */
+            .btn-group.btn-group-sm.me-2 {
+                width: 100%;
+                justify-content: center;
+                margin-right: 0 !important;
+                margin-bottom: 10px;
+            }
+            /* Adjust table font size for mobile */
+            #studentsTable {
+                font-size: 0.8rem;
+            }
+
+                #studentsTable th,
+                #studentsTable td {
+                    padding: 4px 6px;
+                }
+                    /* Make table columns more compact on mobile */
+                    #studentsTable th:nth-child(1),
+                    #studentsTable td:nth-child(1) {
+                        width: 40px;
+                        min-width: 40px;
+                    }
+
+                    #studentsTable th:nth-child(2),
+                    #studentsTable td:nth-child(2) {
+                        width: 80px;
+                        min-width: 80px;
+                    }
+
+                    #studentsTable th:nth-child(3),
+                    #studentsTable td:nth-child(3) {
+                        width: 120px;
+                        min-width: 120px;
+                    }
+
+                    #studentsTable th:nth-child(4),
+                    #studentsTable td:nth-child(4) {
+                        width: 150px;
+                        min-width: 150px;
+                    }
+
+                    #studentsTable th:nth-child(5),
+                    #studentsTable td:nth-child(5) {
+                        width: 100px;
+                        min-width: 100px;
+                    }
+            /* Adjust card layout for mobile */
+            .card-header h5 {
+                font-size: 1rem;
+            }
+
+            .card-header .form-check-label {
+                font-size: 0.8rem;
+            }
+            /* Make action buttons stack vertically */
+            .card-footer .d-flex {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .card-footer .btn {
+                width: 100%;
+            }
+            /* Adjust course info sidebar */
+            .col-md-4 {
+                margin-top: 20px;
+            }
+            /* Reduce font size in course info */
+            .card .card-body dl {
+                font-size: 0.9rem;
+            }
+            /* Make quick actions buttons smaller */
+            .d-grid.gap-2 .btn {
+                font-size: 0.8rem;
+                padding: 0.4rem 0.5rem;
+            }
+            /* Adjust zoom display */
+            #tableScaleDisplay {
+                font-size: 0.8rem;
+            }
+            /* Ensure table doesn't overflow horizontally */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+                /* Touch-friendly scrollbar for mobile */
+                .table-container::-webkit-scrollbar {
+                    width: 4px;
+                    height: 4px;
+                }
+        }
+
+        /* Extra small screens */
+        @@media (max-width: 480px) {
+            .card-header .text-white:not(h5) {
+                display: none;
+            }
+
+            #studentsTable th:nth-child(5),
+            #studentsTable td:nth-child(5) {
+                display: none;
+            }
+        }
+
+        /* Landscape orientation */
+        @@media (max-width: 768px) and (orientation: landscape) {
+            .table-container {
+                max-height: 250px !important;
+            }
+        }
+    </style>
+}
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            let currentScale = 100;
+            const table = $('#studentsTable');
+
+            // Zoom functionality
+            $('#zoomIn').on('click', function() {
+                if (currentScale < 120) {
+                    currentScale += 10;
+                    applyZoom();
+                }
+            });
+
+            $('#zoomOut').on('click', function() {
+                if (currentScale > 80) {
+                    currentScale -= 10;
+                    applyZoom();
+                }
+            });
+
+            $('#zoomReset').on('click', function() {
+                currentScale = 100;
+                applyZoom();
+            });
+
+            function applyZoom() {
+                // Remove existing scale classes
+                table.removeClass('table-scale-80 table-scale-90 table-scale-100 table-scale-110 table-scale-120');
+
+                // Add current scale class
+                table.addClass(`table-scale-${currentScale}`);
+
+                // Update display
+                $('#tableScaleDisplay').text(`${currentScale}%`);
+
+                // Update button states
+                $('#zoomIn').prop('disabled', currentScale >= 120);
+                $('#zoomOut').prop('disabled', currentScale <= 80);
+            }
+
+            // Select all functionality
+            $('#selectAllStudents').on('change', function() {
+                $('.student-checkbox').prop('checked', this.checked);
+                updateSelectedCount();
+            });
+
+            // Update selected count
+            function updateSelectedCount() {
+                const selectedCount = $('.student-checkbox:checked').length;
+                $('#selectedCount').text(selectedCount);
+
+                // Update select all checkbox
+                const totalStudents = $('.student-checkbox').length;
+                $('#selectAllStudents').prop('checked', selectedCount === totalStudents && totalStudents > 0);
+            }
+
+            // Individual checkbox change
+            $('.student-checkbox').on('change', updateSelectedCount);
+
+            // Form submission confirmation
+            $('form').on('submit', function() {
+                const selectedCount = $('.student-checkbox:checked').length;
+                if (selectedCount === 0) {
+                    alert('Please select at least one student to enroll.');
+                    return false;
+                }
+                return confirm(`Are you sure you want to enroll ${selectedCount} student(s) in this course?`);
+            });
+
+            // Initialize tooltips for truncated text
+            $('[title]').tooltip({
+                placement: 'top',
+                trigger: 'hover'
+            });
+
+            // Auto-hide alerts
+            setTimeout(() => {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+
+            // Initialize selected count and zoom
+            updateSelectedCount();
+            applyZoom();
+
+            // Keyboard shortcuts for zoom
+            $(document).on('keydown', function(e) {
+                if (e.ctrlKey) {
+                    if (e.key === '=' || e.key === '+') {
+                        e.preventDefault();
+                        $('#zoomIn').click();
+                    } else if (e.key === '-') {
+                        e.preventDefault();
+                        $('#zoomOut').click();
+                    } else if (e.key === '0') {
+                        e.preventDefault();
+                        $('#zoomReset').click();
+                    }
+                }
+            });
+        });
+    </script>
+}

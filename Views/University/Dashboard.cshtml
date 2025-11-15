@@ -1,0 +1,201 @@
+﻿@model StudentManagementSystem.Models.ViewModels.UniversityDashboardViewModel
+@{
+    ViewData["Title"] = "University Dashboard";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-tachometer-alt me-2"></i>@Model.University?.Name Dashboard
+            </h1>
+            <p class="text-muted mb-0">Overview of @Model.University?.Name statistics and performance</p>
+        </div>
+        <a asp-action="Details" asp-route-id="@Model.University?.Id" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Details
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 col-6 mb-3">
+        <div class="card card-university bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">@Model.TotalColleges</h4>
+                        <p class="mb-0 small">Colleges</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-school fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-6 mb-3">
+        <div class="card card-university bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">@Model.TotalDepartments</h4>
+                        <p class="mb-0 small">Departments</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-building fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-6 mb-3">
+        <div class="card card-university bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">@Model.TotalStudents</h4>
+                        <p class="mb-0 small">Students</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-graduate fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-6 mb-3">
+        <div class="card card-university bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">@Model.TotalCourses</h4>
+                        <p class="mb-0 small">Courses</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-book fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card card-university">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-rocket me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="Colleges" asp-action="Create" asp-route-universityId="@Model.University?.Id"
+                           class="btn btn-outline-primary w-100 h-100 py-3">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                            Add College
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="StructureOverview" asp-route-id="@Model.University?.Id"
+                           class="btn btn-outline-info w-100 h-100 py-3">
+                            <i class="fas fa-sitemap fa-2x mb-2"></i><br>
+                            View Structure
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="Edit" asp-route-id="@Model.University?.Id"
+                           class="btn btn-outline-secondary w-100 h-100 py-3">
+                            <i class="fas fa-edit fa-2x mb-2"></i><br>
+                            Edit University
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="Details" asp-route-id="@Model.University?.Id"
+                           class="btn btn-outline-success w-100 h-100 py-3">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Colleges Overview -->
+<div class="card card-university">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 text-dark">
+            <i class="fas fa-school me-2"></i>Colleges Overview
+            <span class="badge bg-primary ms-2">@Model.TotalColleges</span>
+        </h5>
+        <a asp-controller="Colleges" asp-action="Create" asp-route-universityId="@Model.University?.Id"
+           class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-2"></i>Add College
+        </a>
+    </div>
+    <div class="card-body">
+        @if (Model.University?.Colleges?.Any() != true)
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-school fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No Colleges Found</h4>
+                <p class="text-muted">This university doesn't have any colleges yet.</p>
+                <a asp-controller="Colleges" asp-action="Create" asp-route-universityId="@Model.University?.Id"
+                   class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-2"></i>Create First College
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>College Name</th>
+                            <th class="text-center">Departments</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var college in Model.University.Colleges)
+                        {
+                            <tr>
+                                <td>
+                                    <h6 class="mb-1 fw-semibold">@college.Name</h6>
+                                    <small class="text-muted">@college.CollegeCode</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">@college.Departments.Count</span>
+                                </td>
+                                <td>
+                                    <span class="badge @(college.IsActive ? "bg-success" : "bg-secondary")">
+                                        @(college.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-controller="Colleges" asp-action="Details" asp-route-id="@college.Id"
+                                           class="btn btn-outline-primary" title="View Details">
+                                            @college.Name
+                                        </a>
+                                        <a asp-controller="Departments" asp-action="Create" asp-route-collegeId="@college.Id"
+                                           class="btn btn-outline-success" title="Add Department">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

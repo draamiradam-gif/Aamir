@@ -1,0 +1,262 @@
+﻿@model StudentManagementSystem.Models.Department
+@{
+    ViewData["Title"] = "Department Details";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-building me-2"></i>@Model.Name
+            </h1>
+            <p class="text-muted mb-0">Department details and associated branches</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                <i class="fas fa-edit me-2"></i>Edit
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Department Information -->
+        <div class="card-university card mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-info-circle me-2"></i>Department Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Department Code</label>
+                            <p class="fs-5">@Model.DepartmentCode</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">College</label>
+                            <p class="fs-5">@Model.College?.Name</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">University</label>
+                            <p class="fs-5">@Model.College?.University?.Name</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Status</label>
+                            <p>
+                                <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary") fs-6">
+                                    @(Model.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Start Year</label>
+                            <p class="fs-5">@Model.StartYear</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Major Department</label>
+                            <p>
+                                <span class="badge @(Model.IsMajorDepartment ? "bg-info" : "bg-secondary") fs-6">
+                                    @(Model.IsMajorDepartment ? "Yes" : "No")
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-muted">Description</label>
+                        <p>@Model.Description</p>
+                    </div>
+                }
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Total Benches</label>
+                            <p class="fs-5">@Model.TotalBenches</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Available Benches</label>
+                            <p class="fs-5">@Model.AvailableBenches</p>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.IsMajorDepartment && Model.MinimumGPAMajor.HasValue)
+                {
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-muted">Minimum GPA for Major</label>
+                        <p class="fs-5">@Model.MinimumGPAMajor.Value.ToString("F2")</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Branches Section -->
+        <div class="card-university card">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-code-branch me-2"></i>Branches
+                    <span class="badge bg-primary ms-2">@Model.Branches.Count</span>
+                </h5>
+                <a asp-controller="Branches" asp-action="Create" asp-route-departmentId="@Model.Id"
+                   class="btn btn-success">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Branch
+                </a>
+                <a asp-controller="Branches" asp-action="Create" asp-route-departmentId="@Model.Id"
+                   class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-2"></i>Add Branch
+                </a>
+            </div>
+            <div class="card-body">
+                @if (!Model.Branches.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-code-branch fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Branches Found</h4>
+                        <p class="text-muted">This department doesn't have any branches yet.</p>
+                        <a asp-controller="Branches" asp-action="Create" asp-route-departmentId="@Model.Id"
+                           class="btn btn-primary mt-2">
+                            <i class="fas fa-plus me-2"></i>Create First Branch
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Branch Name</th>
+                                    <th>Code</th>
+                                    <th class="text-center">Sub-Branches</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var branch in Model.Branches)
+                                {
+                                    <tr>
+                                        <td>
+                                            <h6 class="mb-1 fw-semibold">@branch.Name</h6>
+                                            @if (!string.IsNullOrEmpty(branch.Description))
+                                            {
+                                                <small class="text-muted">@branch.Description</small>
+                                            }
+                                        </td>
+                                        <td>@branch.BranchCode</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info">@branch.SubBranches.Count</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge @(branch.ParentBranchId == null ? "bg-primary" : "bg-secondary")">
+                                                @(branch.ParentBranchId == null ? "Main Branch" : "Sub-Branch")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge @(branch.IsActive ? "bg-success" : "bg-secondary")">
+                                                @(branch.IsActive ? "Active" : "Inactive")
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <a asp-controller="Branches" asp-action="Details" asp-route-id="@branch.Id"
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    @branch.Name
+                                                </a>
+                                                <a asp-controller="Branches" asp-action="Create" asp-route-parentBranchId="@branch.Id"
+                                                   class="btn btn-outline-success" title="Add Sub-Branch">
+                                                    <i class="fas fa-plus"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-cog me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-controller="Branches" asp-action="Create" asp-route-departmentId="@Model.Id"
+                       class="btn btn-success">
+                        <i class="fas fa-plus-circle me-2"></i>Add New Branch
+                    </a>
+                    <a asp-controller="Branches" asp-action="Create" asp-route-departmentId="@Model.Id"
+                       class="btn btn-success">
+                        <i class="fas fa-plus-circle me-2"></i>Add New Branch
+                    </a>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Department
+                    </a>
+                    <a asp-action="ManageBranches" asp-route-id="@Model.Id" class="btn btn-outline-info">
+                        <i class="fas fa-sitemap me-2"></i>Manage Branches
+                    </a>
+                    <a asp-action="Duplicate" asp-route-id="@Model.Id" class="btn btn-outline-warning">
+                        <i class="fas fa-copy me-2"></i>Duplicate Department
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Department
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="card-university card mt-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-chart-bar me-2"></i>Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="mb-4">
+                        <div class="display-6 fw-bold text-primary">@Model.Branches.Count</div>
+                        <div class="text-muted">Branches</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="display-6 fw-bold text-info">
+                            @Model.Branches.Sum(b => b.SubBranches.Count)
+                        </div>
+                        <div class="text-muted">Total Sub-Branches</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="display-6 fw-bold text-warning">@Model.Students.Count</div>
+                        <div class="text-muted">Total Students</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="display-6 fw-bold text-success">@Model.Courses.Count</div>
+                        <div class="text-muted">Total Courses</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

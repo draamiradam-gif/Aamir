@@ -1,0 +1,149 @@
+﻿@model StudentManagementSystem.Models.QRCodeSession
+
+@{
+    ViewData["Title"] = "Edit QR Session";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Edit QR Session</h3>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="form-group">
+                        <label asp-for="SessionTitle" class="control-label">Session Title</label>
+                        <input asp-for="SessionTitle" class="form-control" />
+                        <span asp-validation-for="SessionTitle" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Description" class="control-label">Description (Optional)</label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="CourseId" class="control-label">Course</label>
+                        <select asp-for="CourseId" class="form-control" asp-items="ViewBag.Courses">
+                            <option value="">-- Select Course --</option>
+                        </select>
+                        <span asp-validation-for="CourseId" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="DurationMinutes" class="control-label">Duration (Minutes)</label>
+                                <input asp-for="DurationMinutes" class="form-control" min="1" max="120" />
+                                <span asp-validation-for="DurationMinutes" class="text-danger"></span>
+                                <small class="form-text text-muted">How long the QR code will be valid (1-120 minutes)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="MaxScans" class="control-label">Maximum Scans (Optional)</label>
+                                <input asp-for="MaxScans" class="form-control" />
+                                <span asp-validation-for="MaxScans" class="text-danger"></span>
+                                <small class="form-text text-muted">Maximum number of students who can scan</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group form-check">
+                        <input class="form-check-input" asp-for="AllowMultipleScans" />
+                        <label class="form-check-label" asp-for="AllowMultipleScans">
+                            Allow students to scan multiple times
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Session
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-info">View Details</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Session Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> Editing Notes</h6>
+                    <ul class="mb-0">
+                        <li><strong>Created:</strong> @Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</li>
+                        <li><strong>By:</strong> @Model.CreatedBy</li>
+                        <li>
+                            <strong>Current Status:</strong>
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </li>
+                        <li><strong>Total Scans:</strong> @(Model.Attendances?.Count ?? 0)</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Important</h6>
+                    <p class="mb-0">
+                        Changing session settings will not affect existing attendance records.
+                        To manage attendance, use the Dashboard.
+                    </p>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a asp-action="Dashboard" asp-route-id="@Model.Id" class="btn btn-outline-info">
+                        <i class="fas fa-chart-line"></i> View Dashboard
+                    </a>
+                    <a asp-action="Display" asp-route-id="@Model.Id" target="_blank" class="btn btn-outline-success">
+                        <i class="fas fa-qrcode"></i> View QR Code
+                    </a>
+                    <a asp-action="ExportAttendance" asp-route-sessionId="@Model.Id" class="btn btn-outline-warning">
+                        <i class="fas fa-download"></i> Export Attendance
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add confirmation if trying to reduce duration on active session
+            const durationInput = document.getElementById('DurationMinutes');
+            const originalDuration = @Model.DurationMinutes;
+            const isActive = @Json.Serialize(Model.IsActive);
+
+            if (isActive) {
+                durationInput.addEventListener('change', function() {
+                    if (parseInt(this.value) < originalDuration) {
+                        if (!confirm('Reducing duration may affect students who haven\'t scanned yet. Continue?')) {
+                            this.value = originalDuration;
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

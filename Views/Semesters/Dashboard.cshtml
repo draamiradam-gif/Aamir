@@ -1,0 +1,155 @@
+﻿@model IEnumerable<Semester>
+
+@{
+    ViewData["Title"] = "Semesters Dashboard";
+    var currentSemester = Model.FirstOrDefault(s => s.IsCurrent);
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Semesters Dashboard</h1>
+        <a asp-action="Create" class="btn btn-primary">Add New Semester</a>
+    </div>
+
+    <!-- Current Semester Highlight -->
+    @if (currentSemester != null)
+    {
+        <div class="card bg-light mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="text-primary">📚 Current Semester: @currentSemester.Name</h4>
+                        <p class="mb-0">
+                            <strong>Type:</strong> @currentSemester.SemesterType |
+                            <strong>Year:</strong> @currentSemester.AcademicYear |
+                            <strong>Path:</strong> @currentSemester.FullPath
+                        </p>
+                        <small class="text-muted">
+                            Registration: @currentSemester.RegistrationStartDate.ToString("MMM dd") - @currentSemester.RegistrationEndDate.ToString("MMM dd")
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="badge bg-success fs-6">ACTIVE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count()</h3>
+                    <p>Total Semesters</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count(s => s.IsRegistrationOpen)</h3>
+                    <p>Registration Open</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count(s => s.IsActive)</h3>
+                    <p>Active Semesters</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count(s => s.IsRegistrationPeriod)</h3>
+                    <p>In Registration</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semesters by Type -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Fall Semesters</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var semester in Model.Where(s => s.SemesterType == "Fall").OrderByDescending(s => s.AcademicYear))
+                    {
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <strong>@semester.Name</strong><br>
+                                <small class="text-muted">@semester.FullPath</small>
+                            </div>
+                            <div class="text-end">
+                                @if (semester.IsCurrent)
+                                {
+                                    <span class="badge bg-success">Current</span>
+                                }
+                                <a asp-action="Details" asp-route-id="@semester.Id" class="btn btn-sm btn-info">View</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Spring Semesters</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var semester in Model.Where(s => s.SemesterType == "Spring").OrderByDescending(s => s.AcademicYear))
+                    {
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <strong>@semester.Name</strong><br>
+                                <small class="text-muted">@semester.FullPath</small>
+                            </div>
+                            <div class="text-end">
+                                @if (semester.IsCurrent)
+                                {
+                                    <span class="badge bg-success">Current</span>
+                                }
+                                <a asp-action="Details" asp-route-id="@semester.Id" class="btn btn-sm btn-info">View</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">Summer Semesters</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var semester in Model.Where(s => s.SemesterType == "Summer").OrderByDescending(s => s.AcademicYear))
+                    {
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <strong>@semester.Name</strong><br>
+                                <small class="text-muted">@semester.FullPath</small>
+                            </div>
+                            <div class="text-end">
+                                @if (semester.IsCurrent)
+                                {
+                                    <span class="badge bg-success">Current</span>
+                                }
+                                <a asp-action="Details" asp-route-id="@semester.Id" class="btn btn-sm btn-info">View</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

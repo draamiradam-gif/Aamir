@@ -1,0 +1,79 @@
+﻿@{
+    ViewData["Title"] = "Import Attendance";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-upload"></i> Import Attendance Data
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Display Messages -->
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle"></i> @TempData["Success"]</h6>
+                    </div>
+                }
+
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-circle"></i> @TempData["Error"]</h6>
+                    </div>
+                }
+
+                <form asp-action="ImportAttendance" method="post" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="file" class="form-label">Select Excel File</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls" required>
+                        <div class="form-text">Supported formats: .xlsx, .xls (Max 10MB)</div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Import Instructions</h6>
+                        <p>Your Excel file should have these columns:</p>
+                        <ul>
+                            <li><strong>Session ID</strong> - The ID of the QR session</li>
+                            <li><strong>Student ID</strong> - Student identifier (e.g., STU001)</li>
+                            <li><strong>Scan Time</strong> - Optional (format: MM/DD/YYYY HH:MM:SS)</li>
+                            <li><strong>Device Info</strong> - Optional device information</li>
+                            <li><strong>IP Address</strong> - Optional IP address</li>
+                        </ul>
+                        <p class="mb-0"><strong>Note:</strong> Download the template below for the correct format.</p>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <button type="submit" class="btn btn-primary me-md-2">
+                            <i class="fas fa-upload"></i> Import Attendance
+                        </button>
+                        <a asp-action="DownloadImportTemplate" class="btn btn-success me-md-2">
+                            <i class="fas fa-download"></i> Download Template
+                        </a>
+                        <a asp-action="BulkExport" class="btn btn-info me-md-2">
+                            <i class="fas fa-file-excel"></i> Export Sessions (Get IDs)
+                        </a>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.size > 10 * 1024 * 1024) {
+                alert('File size must be less than 10MB');
+                e.target.value = '';
+            }
+        });
+    </script>
+}

@@ -1,0 +1,178 @@
+﻿@model StudentManagementSystem.Models.Department
+@{
+    ViewData["Title"] = "Create Department";
+}
+
+@if (ViewBag.ParentCollege != null)
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Creating department for: <strong>@ViewBag.ParentCollege.Name</strong>
+    </div>
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-plus-circle me-2"></i>Create Department
+            </h1>
+            <p class="text-muted mb-0">Add a new academic department</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-info-circle me-2"></i>Department Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold">Department Name *</label>
+                            <input asp-for="Name" class="form-control" placeholder="Enter department name">
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="DepartmentCode" class="form-label fw-semibold">Department Code *</label>
+                            <input asp-for="DepartmentCode" class="form-control" placeholder="Enter department code">
+                            <span asp-validation-for="DepartmentCode" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter department description"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CollegeId" class="form-label fw-semibold">College *</label>
+                            @if (ViewBag.ParentCollege != null)
+                            {
+                                <select asp-for="CollegeId" class="form-select" asp-items="ViewBag.CollegeId">
+                                    <option value="">-- Select College --</option>
+                                </select>
+                            }
+                            else
+                            {
+                                <select asp-for="CollegeId" class="form-select" asp-items="ViewBag.CollegeId">
+                                    <option value="">-- Select College --</option>
+                                </select>
+                            }
+                            <span asp-validation-for="CollegeId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StartYear" class="form-label fw-semibold">Start Year</label>
+                            <input asp-for="StartYear" class="form-control" type="number" min="1" max="5" value="1">
+                            <span asp-validation-for="StartYear" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsMajorDepartment" class="form-check-input" role="switch">
+                                <label asp-for="IsMajorDepartment" class="form-check-label fw-semibold">Major Department</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" checked role="switch">
+                                <label asp-for="IsActive" class="form-check-label fw-semibold">Active Department</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Model?.IsMajorDepartment == true)
+                    {
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="MinimumGPAMajor" class="form-label fw-semibold">Minimum GPA for Major</label>
+                                <input asp-for="MinimumGPAMajor" class="form-control" type="number" step="0.01" min="0.0" max="4.0" placeholder="0.00">
+                                <span asp-validation-for="MinimumGPAMajor" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="TotalBenches" class="form-label fw-semibold">Total Benches</label>
+                            <input asp-for="TotalBenches" class="form-control" type="number" min="0" value="0">
+                            <span asp-validation-for="TotalBenches" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="AvailableBenches" class="form-label fw-semibold">Available Benches</label>
+                            <input asp-for="AvailableBenches" class="form-control" type="number" min="0" value="0">
+                            <span asp-validation-for="AvailableBenches" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>Create Department
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-lightbulb me-2"></i>Department Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0">
+                    <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>About Departments</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>Departments</strong> are academic divisions within colleges</li>
+                        <li><strong>Major Departments</strong> offer specialized degree programs</li>
+                        <li>Each department can have multiple <strong>Branches/Specializations</strong></li>
+                        <li><strong>Examples:</strong> Computer Science, Electrical Engineering, Business Administration</li>
+                        <li>Departments manage courses, faculty, and student programs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Show/hide Minimum GPA field based on Major Department checkbox
+            $('#IsMajorDepartment').change(function () {
+                if ($(this).is(':checked')) {
+                    $('#MinimumGPAMajor').closest('.row').show();
+                } else {
+                    $('#MinimumGPAMajor').closest('.row').hide();
+                }
+            });
+
+            // Trigger change event on page load
+            $('#IsMajorDepartment').trigger('change');
+        });
+    </script>
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

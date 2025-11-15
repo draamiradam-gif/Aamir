@@ -1,0 +1,88 @@
+﻿@model IEnumerable<College>
+
+@{
+    ViewData["Title"] = "Colleges Dashboard";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Colleges Dashboard</h1>
+        <a asp-action="Create" class="btn btn-primary">Add New College</a>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count()</h3>
+                    <p>Total Colleges</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Sum(c => c.DepartmentCount)</h3>
+                    <p>Total Departments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count(c => c.IsActive)</h3>
+                    <p>Active Colleges</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Colleges Grid -->
+    <div class="row">
+        @foreach (var college in Model)
+        {
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">@college.Name</h5>
+                        <small class="text-muted">@college.CollegeCode</small>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>University:</strong> @college.University?.Name<br>
+                            <strong>Departments:</strong> @college.DepartmentCount<br>
+                            <strong>Status:</strong>
+                            @if (college.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Inactive</span>
+                            }
+                        </p>
+                        <p class="card-text">@college.Description</p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100">
+                            <a asp-action="Details" asp-route-id="@college.Id" class="btn btn-sm btn-info">View</a>
+                            <a asp-action="Edit" asp-route-id="@college.Id" class="btn btn-sm btn-warning">Edit</a>
+                            <a asp-action="Duplicate" asp-route-id="@college.Id" class="btn btn-sm btn-primary">Copy</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-building fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No Colleges Found</h4>
+            <p class="text-muted">Get started by creating your first college.</p>
+            <a asp-action="Create" class="btn btn-primary">Create College</a>
+        </div>
+    }
+</div>

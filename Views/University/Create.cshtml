@@ -1,0 +1,139 @@
+﻿@model University
+@{
+    ViewData["Title"] = "Create University";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-plus-circle me-2"></i>Create University
+            </h1>
+            <p class="text-muted mb-0">Add a new university to the system</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-info-circle me-2"></i>University Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold">University Name *</label>
+                            <input asp-for="Name" class="form-control" placeholder="Enter university name">
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Code" class="form-label fw-semibold">University Code *</label>
+                            <input asp-for="Code" class="form-control" placeholder="Enter university code">
+                            <span asp-validation-for="Code" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter university description"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EstablishmentYear" class="form-label fw-semibold">Establishment Year</label>
+                            <input asp-for="EstablishmentYear" class="form-control" type="number" min="1800" max="@DateTime.Now.Year">
+                            <span asp-validation-for="EstablishmentYear" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Address" class="form-label fw-semibold">Address</label>
+                            <input asp-for="Address" class="form-control" placeholder="Enter university address">
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                            <input asp-for="Email" class="form-control" type="email" placeholder="Enter university email">
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Phone" class="form-label fw-semibold">Phone</label>
+                            <input asp-for="Phone" class="form-control" placeholder="Enter university phone">
+                            <span asp-validation-for="Phone" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Website" class="form-label fw-semibold">Website</label>
+                            <input asp-for="Website" class="form-control" placeholder="Enter university website">
+                            <span asp-validation-for="Website" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mb-3">
+                                <input asp-for="IsActive" class="form-check-input" checked role="switch">
+                                <label asp-for="IsActive" class="form-check-label fw-semibold">Active University</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input asp-for="AllowMultipleColleges" class="form-check-input" checked role="switch">
+                                <label asp-for="AllowMultipleColleges" class="form-check-label fw-semibold">Allow Multiple Colleges</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>Create University
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-lightbulb me-2"></i>Quick Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0">
+                    <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>University Creation</h6>
+                    <ul class="mb-0 small">
+                        <li>University codes must be unique across the system</li>
+                        <li>Use descriptive names that clearly identify the university</li>
+                        <li>Enable "Allow Multiple Colleges" if this university can have multiple colleges</li>
+                        <li>Provide contact information for administrative purposes</li>
+                        <li>Set establishment year for historical tracking</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

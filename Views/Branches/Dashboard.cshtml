@@ -1,0 +1,95 @@
+﻿@model IEnumerable<Branch>
+
+@{
+    ViewData["Title"] = "Branches Dashboard";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Branches Dashboard</h1>
+        <a asp-action="Create" class="btn btn-primary">Add New Branch</a>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count()</h3>
+                    <p>Total Branches</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count(b => b.ParentBranchId == null)</h3>
+                    <p>Main Branches</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Count(b => b.ParentBranchId != null)</h3>
+                    <p>Sub-Branches</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>@Model.Sum(b => b.SubBranches?.Count ?? 0)</h3>
+                    <p>Total Sub-Branches</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branches Overview -->
+    <div class="row">
+        @foreach (var branch in Model.Where(b => b.ParentBranchId == null))
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">@branch.Name</h5>
+                        <small class="text-muted">@branch.BranchCode - @branch.Department?.Name</small>
+                    </div>
+                    <div class="card-body">
+                        <p>@branch.Description</p>
+
+                        @if (branch.HasSubBranches)
+                        {
+                            <h6>Sub-Branches:</h6>
+                            <div class="ms-3">
+                                @foreach (var subBranch in branch.SubBranches)
+                                {
+                                    <div class="d-flex justify-content-between align-items-center border-bottom py-1">
+                                        <span>@subBranch.Name</span>
+                                        <div>
+                                            <a asp-action="Edit" asp-route-id="@subBranch.Id" class="btn btn-sm btn-outline-warning">Edit</a>
+                                            <a asp-action="Details" asp-route-id="@subBranch.Id" class="btn btn-sm btn-outline-info">View</a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No sub-branches</p>
+                        }
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group">
+                            <a asp-action="Details" asp-route-id="@branch.Id" class="btn btn-sm btn-info">Details</a>
+                            <a asp-action="Edit" asp-route-id="@branch.Id" class="btn btn-sm btn-warning">Edit</a>
+                            <a asp-action="ManageSubBranches" asp-route-id="@branch.Id" class="btn btn-sm btn-secondary">Manage Sub</a>
+                            <a asp-action="Duplicate" asp-route-id="@branch.Id" class="btn btn-sm btn-primary">Duplicate</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

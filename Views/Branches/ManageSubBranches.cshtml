@@ -1,0 +1,171 @@
+﻿@model StudentManagementSystem.ViewModels.BranchSubBranchesViewModel
+@{
+    ViewData["Title"] = "Manage Sub-Branches";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-sitemap me-2"></i>Manage Sub-Branches
+            </h1>
+            <p class="text-muted mb-0">Manage sub-branches for: <strong>@Model.ParentBranch.Name</strong></p>
+        </div>
+        <a asp-action="Details" asp-route-id="@Model.ParentBranch.Id" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Branch
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Add New Sub-Branch Form -->
+        <div class="card-university card mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Sub-Branch
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="AddSubBranch" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <input type="hidden" asp-for="NewSubBranch.DepartmentId" />
+                    <input type="hidden" asp-for="NewSubBranch.ParentBranchId" />
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="NewSubBranch.Name" class="form-label fw-semibold">Sub-Branch Name *</label>
+                            <input asp-for="NewSubBranch.Name" class="form-control" placeholder="Enter sub-branch name">
+                            <span asp-validation-for="NewSubBranch.Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="NewSubBranch.BranchCode" class="form-label fw-semibold">Sub-Branch Code *</label>
+                            <input asp-for="NewSubBranch.BranchCode" class="form-control" placeholder="Enter sub-branch code">
+                            <span asp-validation-for="NewSubBranch.BranchCode" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NewSubBranch.Description" class="form-label fw-semibold">Description</label>
+                        <textarea asp-for="NewSubBranch.Description" class="form-control" rows="2" placeholder="Enter sub-branch description"></textarea>
+                        <span asp-validation-for="NewSubBranch.Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="NewSubBranch.IsActive" class="form-check-input" checked role="switch">
+                            <label asp-for="NewSubBranch.IsActive" class="form-check-label fw-semibold">Active Sub-Branch</label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-2"></i>Add Sub-Branch
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Existing Sub-Branches -->
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-list me-2"></i>Existing Sub-Branches
+                    <span class="badge bg-primary ms-2">@Model.ParentBranch.SubBranches.Count</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (!Model.ParentBranch.SubBranches.Any())
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-sitemap fa-2x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Sub-Branches Found</h5>
+                        <p class="text-muted">No sub-branches have been created for this branch yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Sub-Branch Name</th>
+                                    <th>Code</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var subBranch in Model.ParentBranch.SubBranches)
+                                {
+                                    <tr>
+                                        <td>
+                                            <h6 class="mb-1 fw-semibold">@subBranch.Name</h6>
+                                            @if (!string.IsNullOrEmpty(subBranch.Description))
+                                            {
+                                                <small class="text-muted">@subBranch.Description</small>
+                                            }
+                                        </td>
+                                        <td>@subBranch.BranchCode</td>
+                                        <td>
+                                            <span class="badge @(subBranch.IsActive ? "bg-success" : "bg-secondary")">
+                                                @(subBranch.IsActive ? "Active" : "Inactive")
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <a asp-action="Details" asp-route-id="@subBranch.Id"
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a asp-action="Edit" asp-route-id="@subBranch.Id"
+                                                   class="btn btn-outline-secondary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Parent Branch Info -->
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-info-circle me-2"></i>Parent Branch Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h6 class="fw-semibold">@Model.ParentBranch.Name</h6>
+                    <p class="text-muted mb-2">@Model.ParentBranch.BranchCode</p>
+                    <p class="small text-muted">@Model.ParentBranch.Description</p>
+
+                    <div class="mt-3">
+                        <span class="badge @(Model.ParentBranch.IsActive ? "bg-success" : "bg-secondary")">
+                            @(Model.ParentBranch.IsActive ? "Active" : "Inactive")
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

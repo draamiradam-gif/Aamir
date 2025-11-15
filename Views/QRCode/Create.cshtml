@@ -1,0 +1,120 @@
+﻿@model StudentManagementSystem.Models.QRCodeSession
+
+@{
+    ViewData["Title"] = "Create QR Attendance Session";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Create QR Attendance Session</h3>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="form-group">
+                        <label asp-for="CourseId" class="control-label">Course</label>
+                        <select asp-for="CourseId" class="form-control" asp-items="ViewBag.Courses">
+                            <option value="">-- Select Course --</option>
+                        </select>
+                        <span asp-validation-for="CourseId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="SessionTitle" class="control-label">Session Title</label>
+                        <input asp-for="SessionTitle" class="form-control" placeholder="e.g., Lecture 1, Lab Session, etc." />
+                        <span asp-validation-for="SessionTitle" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Description" class="control-label">Description (Optional)</label>
+                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Additional session details..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="DurationMinutes" class="control-label">Duration (Minutes)</label>
+                                <input asp-for="DurationMinutes" class="form-control" value="15" min="1" max="120" />
+                                <span asp-validation-for="DurationMinutes" class="text-danger"></span>
+                                <small class="form-text text-muted">How long the QR code will be valid (1-120 minutes)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="MaxScans" class="control-label">Maximum Scans (Optional)</label>
+                                <input asp-for="MaxScans" class="form-control" placeholder="Leave empty for unlimited" />
+                                <span asp-validation-for="MaxScans" class="text-danger"></span>
+                                <small class="form-text text-muted">Maximum number of students who can scan</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group form-check">
+                        <input asp-for="EnableDynamicQR" class="form-check-input" id="EnableDynamicQR" />
+                        <label asp-for="EnableDynamicQR" class="form-check-label">
+                            Enable dynamic QR code (changes periodically for security)
+                        </label>
+                    </div>
+
+                    <div class="form-group" id="TokenIntervalGroup" style="display: none;">
+                        <label asp-for="TokenUpdateIntervalSeconds" class="control-label">QR Refresh Interval (seconds)</label>
+                        <input asp-for="TokenUpdateIntervalSeconds" class="form-control" value="10" min="5" max="60" />
+                        <span asp-validation-for="TokenUpdateIntervalSeconds" class="text-danger"></span>
+                        <small class="form-text text-muted">How often the QR code automatically refreshes (5-60 seconds)</small>
+                    </div>
+                    <div class="form-group form-check">
+                        <input class="form-check-input" asp-for="AllowMultipleScans" />
+                        <label class="form-check-label" asp-for="AllowMultipleScans">
+                            Allow students to scan multiple times
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-qrcode"></i> Generate QR Code
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Session Tips</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb"></i> Best Practices</h6>
+                    <ul class="mb-0">
+                        <li>Use descriptive session titles</li>
+                        <li>Set appropriate duration (15-30 minutes recommended)</li>
+                        <li>Display QR code clearly for students</li>
+                        <li>Monitor active sessions in real-time</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Show/hide interval input based on dynamic QR checkbox
+        document.getElementById('EnableDynamicQR').addEventListener('change', function() {
+            document.getElementById('TokenIntervalGroup').style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('TokenIntervalGroup').style.display =
+                document.getElementById('EnableDynamicQR').checked ? 'block' : 'none';
+        });
+    </script>
+}

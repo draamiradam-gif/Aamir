@@ -1,0 +1,89 @@
+﻿@model IEnumerable<Course>
+@{
+    ViewData["Title"] = "Select Existing Course";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-book me-2"></i>Select Existing Course
+            </h1>
+            <p class="text-muted mb-0">Choose a course to add to the semester</p>
+        </div>
+        <a href="@Url.Action("Details", "Semesters", new { id = ViewBag.SemesterId })" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Semester
+        </a>
+    </div>
+</div>
+
+<div class="card-university card">
+    <div class="card-header bg-white py-3">
+        <h5 class="card-title mb-0 text-dark">
+            <i class="fas fa-list me-2"></i>Available Courses
+        </h5>
+    </div>
+    <div class="card-body">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No Courses Available</h4>
+                <p class="text-muted">There are no active courses to add to this semester.</p>
+                <a asp-action="Create" asp-route-semesterId="@ViewBag.SemesterId" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-2"></i>Create New Course
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Credits</th>
+                            <th>Department</th>
+                            <th>Current Semester</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var course in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="fw-semibold">@course.CourseCode</span>
+                                </td>
+                                <td>@course.CourseName</td>
+                                <td>@course.Credits</td>
+                                <td>@course.Department</td>
+                                <td>
+                                    @if (course.CourseSemester != null)
+                                    {
+                                        <span class="badge bg-info">@course.CourseSemester.Name</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Not Assigned</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <form asp-action="AddToSemester" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="courseId" value="@course.Id" />
+                                        <input type="hidden" name="semesterId" value="@ViewBag.SemesterId" />
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add to Semester
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

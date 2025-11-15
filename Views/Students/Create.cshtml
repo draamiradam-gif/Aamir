@@ -1,0 +1,134 @@
+﻿@model StudentManagementSystem.Models.Student
+
+@{
+    ViewData["Title"] = "Create Student";
+}
+
+<div class="container">
+    <h1>Create New Student</h1>
+
+    <div class="row">
+        <div class="col-md-8">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="StudentId" class="control-label">Student ID</label>
+                            <input asp-for="StudentId" class="form-control" />
+                            <span asp-validation-for="StudentId" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="SeatNumber" class="control-label">Seat Number</label>
+                            <input asp-for="SeatNumber" class="form-control" />
+                            <span asp-validation-for="SeatNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Name" class="control-label">Full Name</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NationalId" class="control-label">National ID</label>
+                    <input asp-for="NationalId" class="form-control" />
+                    <span asp-validation-for="NationalId" class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Department" class="control-label">Department</label>
+                            <input asp-for="Department" class="form-control" />
+                            <span asp-validation-for="Department" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="StudyLevel" class="control-label">Study Level</label>
+                            <input asp-for="StudyLevel" class="form-control" />
+                            <span asp-validation-for="StudyLevel" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Semester" class="control-label">Semester</label>
+                            <input asp-for="Semester" class="form-control" />
+                            <span asp-validation-for="Semester" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Grade" class="control-label">Grade</label>
+                            <input asp-for="Grade" class="form-control" />
+                            <span asp-validation-for="Grade" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Added Phone and Email fields -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Phone" class="control-label">Phone</label>
+                            <input asp-for="Phone" class="form-control" />
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Email" class="control-label">Email</label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                @* <!-- GPA, Percentage, and Passed Hours fields -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="GPA" class="control-label">GPA</label>
+                            <input asp-for="GPA" class="form-control" step="0.01" />
+                            <span asp-validation-for="GPA" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="Percentage" class="control-label">Percentage</label>
+                            <input asp-for="Percentage" class="form-control" step="0.01" />
+                            <span asp-validation-for="Percentage" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="PassedHours" class="control-label">Passed Hours</label>
+                            <input asp-for="PassedHours" class="form-control" />
+                            <span asp-validation-for="PassedHours" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div> *@
+
+                <div class="form-group mt-3">
+                    <input type="submit" value="Create" class="btn btn-primary" />
+                    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

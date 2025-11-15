@@ -1,0 +1,280 @@
+﻿@model StudentManagementSystem.Models.ViewModels.UniversityHierarchyViewModel
+@{
+    ViewData["Title"] = "Academic Hierarchy";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-sitemap me-2"></i>Academic Hierarchy
+            </h1>
+            <p class="text-muted mb-0">Navigate through the complete academic structure</p>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-shield me-2"></i>Access Scope
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="?scope=all">All Institutions</a></li>
+                    <li><a class="dropdown-item" href="?scope=university">Single University</a></li>
+                    <li><a class="dropdown-item" href="?scope=college">Single College</a></li>
+                    <li><a class="dropdown-item" href="?scope=department">Single Department</a></li>
+                </ul>
+            </div>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-university bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-university fa-2x mb-2 opacity-50"></i>
+                <h4 class="mb-1">@Model.TotalUniversities</h4>
+                <p class="mb-0 small">Universities</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-university bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-school fa-2x mb-2 opacity-50"></i>
+                <h4 class="mb-1">@Model.TotalColleges</h4>
+                <p class="mb-0 small">Colleges</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-university bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-building fa-2x mb-2 opacity-50"></i>
+                <h4 class="mb-1">@Model.TotalDepartments</h4>
+                <p class="mb-0 small">Departments</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-university bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-code-branch fa-2x mb-2 opacity-50"></i>
+                <h4 class="mb-1">@Model.TotalBranches</h4>
+                <p class="mb-0 small">Branches</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-university bg-secondary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-alt fa-2x mb-2 opacity-50"></i>
+                <h4 class="mb-1">@Model.TotalSemesters</h4>
+                <p class="mb-0 small">Semesters</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- University Hierarchy -->
+<div class="card-university card">
+    <div class="card-header bg-white py-3">
+        <h5 class="card-title mb-0 text-dark">
+            <i class="fas fa-university me-2"></i>University Structure
+        </h5>
+    </div>
+    <div class="card-body">
+        @if (!Model.Universities.Any())
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-university fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No Universities Found</h4>
+                <p class="text-muted">Start by creating your first university.</p>
+                <a asp-controller="University" asp-action="Create" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-2"></i>Create University
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="accordion" id="universityAccordion">
+                @foreach (var university in Model.Universities)
+                {
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#university-@university.Id">
+                                <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-university text-primary me-3 fs-5"></i>
+                                        <div>
+                                            <h6 class="mb-1 fw-semibold">@university.Name</h6>
+                                            <small class="text-muted">@university.Code • @university.Colleges.Count colleges</small>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-1">
+                                        <a asp-controller="University" asp-action="Details" asp-route-id="@university.Id"
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-controller="College" asp-action="Create" asp-route-universityId="@university.Id"
+                                           class="btn btn-sm btn-outline-success" title="Add College">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="university-@university.Id" class="accordion-collapse collapse" data-bs-parent="#universityAccordion">
+                            <div class="accordion-body">
+                                @if (!university.Colleges.Any())
+                                {
+                                    <div class="text-center py-3">
+                                        <p class="text-muted mb-3">No colleges in this university</p>
+                                        <a asp-controller="College" asp-action="Create" asp-route-universityId="@university.Id"
+                                           class="btn btn-primary btn-sm">
+                                            <i class="fas fa-plus me-2"></i>Add College
+                                        </a>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="accordion" id="collegeAccordion-@university.Id">
+                                        @foreach (var college in university.Colleges)
+                                        {
+                                            <div class="accordion-item border-0">
+                                                <h3 class="accordion-header">
+                                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                                            data-bs-target="#college-@college.Id">
+                                                        <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                                            <div class="d-flex align-items-center">
+                                                                <i class="fas fa-school text-success me-3"></i>
+                                                                <div>
+                                                                    <h6 class="mb-1 fw-semibold">@college.Name</h6>
+                                                                    <small class="text-muted">@college.CollegeCode • @college.Departments.Count departments</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="d-flex gap-1">
+                                                                <a asp-controller="College" asp-action="Details" asp-route-id="@college.Id"
+                                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                                <a asp-controller="Department" asp-action="Create" asp-route-collegeId="@college.Id"
+                                                                   class="btn btn-sm btn-outline-success" title="Add Department">
+                                                                    <i class="fas fa-plus"></i>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                </h3>
+                                                <div id="college-@college.Id" class="accordion-collapse collapse" data-bs-parent="#collegeAccordion-@university.Id">
+                                                    <div class="accordion-body">
+                                                        @if (!college.Departments.Any())
+                                                        {
+                                                            <div class="text-center py-2">
+                                                                <p class="text-muted mb-2">No departments in this college</p>
+                                                                <a asp-controller="Department" asp-action="Create" asp-route-collegeId="@college.Id"
+                                                                   class="btn btn-primary btn-sm">
+                                                                    <i class="fas fa-plus me-2"></i>Add Department
+                                                                </a>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="accordion" id="departmentAccordion-@college.Id">
+                                                                @foreach (var department in college.Departments)
+                                                                {
+                                                                    <div class="accordion-item border-0 bg-light">
+                                                                        <h4 class="accordion-header">
+                                                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                                                                    data-bs-target="#department-@department.Id">
+                                                                                <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                                                                    <div class="d-flex align-items-center">
+                                                                                        <i class="fas fa-building text-info me-3"></i>
+                                                                                        <div>
+                                                                                            <h6 class="mb-1 fw-semibold">@department.Name</h6>
+                                                                                            <small class="text-muted">@department.DepartmentCode • @department.Branches.Count branches</small>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="d-flex gap-1">
+                                                                                        <a asp-controller="Department" asp-action="Details" asp-route-id="@department.Id"
+                                                                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                                                                            <i class="fas fa-eye"></i>
+                                                                                        </a>
+                                                                                        <a asp-controller="Branch" asp-action="Create" asp-route-departmentId="@department.Id"
+                                                                                           class="btn btn-sm btn-outline-success" title="Add Branch">
+                                                                                            <i class="fas fa-plus"></i>
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </button>
+                                                                        </h4>
+                                                                        <div id="department-@department.Id" class="accordion-collapse collapse" data-bs-parent="#departmentAccordion-@college.Id">
+                                                                            <div class="accordion-body">
+                                                                                <!-- Branches would go here -->
+                                                                                <div class="text-muted small">
+                                                                                    Branches and semesters would be displayed here in a real implementation.
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card card-university text-center">
+            <div class="card-body">
+                <i class="fas fa-university fa-3x text-primary mb-3"></i>
+                <h5>Create University</h5>
+                <p class="text-muted">Start a new academic institution</p>
+                <a asp-controller="University" asp-action="Create" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add University
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-university text-center">
+            <div class="card-body">
+                <i class="fas fa-school fa-3x text-success mb-3"></i>
+                <h5>Add College</h5>
+                <p class="text-muted">Create a college within a university</p>
+                <a asp-controller="College" asp-action="Create" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>Add College
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-university text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-3x text-info mb-3"></i>
+                <h5>Create Department</h5>
+                <p class="text-muted">Add academic departments to colleges</p>
+                <a asp-controller="Department" asp-action="Create" class="btn btn-info">
+                    <i class="fas fa-plus me-2"></i>Add Department
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

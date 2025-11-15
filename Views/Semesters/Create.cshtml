@@ -1,0 +1,215 @@
+﻿@model Semester
+@{
+    ViewData["Title"] = "Create Semester";
+    var hasParent = ViewBag.ParentEntity != null;
+    var entityType = ViewBag.EntityType as string;
+}
+
+@if (hasParent)
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Creating semester for @entityType: <strong>@ViewBag.ParentEntity.Name</strong>
+    </div>
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-2">
+                <i class="fas fa-plus-circle me-2"></i>Create Semester
+            </h1>
+            <p class="text-muted mb-0">Add a new academic semester</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card-university card">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-info-circle me-2"></i>Semester Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold">Semester Name *</label>
+                            <input asp-for="Name" class="form-control" placeholder="e.g., Fall 2024">
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="SemesterType" class="form-label fw-semibold">Semester Type *</label>
+                            <select asp-for="SemesterType" class="form-select">
+                                <option value="Fall">Fall</option>
+                                <option value="Spring">Spring</option>
+                                <option value="Summer">Summer</option>
+                            </select>
+                            <span asp-validation-for="SemesterType" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="AcademicYear" class="form-label fw-semibold">Academic Year *</label>
+                            <input asp-for="AcademicYear" class="form-control" type="number" min="2000" max="2100" value="@DateTime.Now.Year">
+                            <span asp-validation-for="AcademicYear" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Parent Selection - Only show if no parent provided -->
+                    @if (!hasParent)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Important:</strong> Select only ONE parent (Department, Branch, OR Sub-Branch)
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DepartmentId" class="form-label fw-semibold">Department</label>
+                                <select asp-for="DepartmentId" class="form-select" id="departmentSelect">
+                                    <option value="">-- Select Department --</option>
+                                    @foreach (var item in (ViewBag.DepartmentId as SelectList)!)
+                                    {
+                                        <option value="@item.Value">@item.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="DepartmentId" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="BranchId" class="form-label fw-semibold">Branch</label>
+                                <select asp-for="BranchId" class="form-select" id="branchSelect">
+                                    <option value="">-- Select Branch --</option>
+                                    @foreach (var item in (ViewBag.BranchId as SelectList)!)
+                                    {
+                                        <option value="@item.Value">@item.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="BranchId" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="SubBranchId" class="form-label fw-semibold">Sub-Branch</label>
+                                <select asp-for="SubBranchId" class="form-select" id="subBranchSelect">
+                                    <option value="">-- Select Sub-Branch --</option>
+                                    @foreach (var item in (ViewBag.SubBranchId as SelectList)!)
+                                    {
+                                        <option value="@item.Value">@item.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="SubBranchId" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Hidden fields to preserve the parent relationship -->
+                        @if (entityType == "Department")
+                        {
+                            <input type="hidden" asp-for="DepartmentId" />
+                        }
+                        else if (entityType == "Branch")
+                        {
+                            <input type="hidden" asp-for="BranchId" />
+                        }
+                        else if (entityType == "Sub-Branch")
+                        {
+                            <input type="hidden" asp-for="SubBranchId" />
+                        }
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StartDate" class="form-label fw-semibold">Start Date *</label>
+                            <input asp-for="StartDate" class="form-control" type="date">
+                            <span asp-validation-for="StartDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EndDate" class="form-label fw-semibold">End Date *</label>
+                            <input asp-for="EndDate" class="form-control" type="date">
+                            <span asp-validation-for="EndDate" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="RegistrationStartDate" class="form-label fw-semibold">Registration Start *</label>
+                            <input asp-for="RegistrationStartDate" class="form-control" type="date">
+                            <span asp-validation-for="RegistrationStartDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="RegistrationEndDate" class="form-label fw-semibold">Registration End *</label>
+                            <input asp-for="RegistrationEndDate" class="form-control" type="date">
+                            <span asp-validation-for="RegistrationEndDate" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" checked role="switch">
+                                <label asp-for="IsActive" class="form-check-label fw-semibold">Active Semester</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsCurrent" class="form-check-input" role="switch">
+                                <label asp-for="IsCurrent" class="form-check-label fw-semibold">Current Semester</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsRegistrationOpen" class="form-check-input" checked role="switch">
+                                <label asp-for="IsRegistrationOpen" class="form-check-label fw-semibold">Registration Open</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>Create Semester
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Only enable parent selection logic if no parent is pre-selected
+            var hasParent = @(hasParent.ToString().ToLower());
+
+            if (!hasParent) {
+                // Ensure only one parent can be selected
+                $('#departmentSelect, #branchSelect, #subBranchSelect').change(function () {
+                    var selectedValue = $(this).val();
+
+                    if (selectedValue) {
+                        // Clear other dropdowns
+                        $('#departmentSelect, #branchSelect, #subBranchSelect').not(this).val('');
+                    }
+                });
+            }
+        });
+    </script>
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

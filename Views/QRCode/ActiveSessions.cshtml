@@ -1,0 +1,183 @@
+﻿@model List<QRCodeSession>
+
+@{
+    ViewData["Title"] = "QR Sessions Management";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title">QR Sessions Management</h3>
+                <div>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Session
+                    </a>
+                    <a asp-action="BulkExport" class="btn btn-success">
+                        <i class="fas fa-download"></i> Bulk Export
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Session Title</th>
+                                    <th>Course</th>
+                                    <th>Created</th>
+                                    <th>Duration</th>
+                                    <th>Scans</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var session in Model)
+                                {
+                                    var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
+                                    var isExpired = expiresAt < DateTime.Now;
+                                    var isActive = session.IsActive && !isExpired;
+
+                                    <tr>
+                                        <td>
+                                            <strong>@session.SessionTitle</strong>
+                                            @if (session.EnableDynamicQR)
+                                            {
+                                                <br>
+                                    
+                                                <small class="text-info"><i class="fas fa-sync-alt"></i> Dynamic QR</small>
+                                            }
+                                        </td>
+                                        <td>@session.Course?.CourseCode</td>
+                                        <td>@session.CreatedAt.ToString("MMM dd, HH:mm")</td>
+                                        <td>@session.DurationMinutes minutes</td>
+                                        <td>
+                                            <span class="badge @(session.Attendances.Count > 0 ? "bg-success" : "bg-secondary")">
+                                                @session.Attendances.Count
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (isExpired)
+                                            {
+                                                <span class="badge bg-danger">Expired</span>
+                                            }
+                                            else if (isActive)
+                                            {
+                                                <span class="badge bg-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning">Ended</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <!-- View QR -->
+                                                <a asp-action="Display" asp-route-id="@session.Id"
+                                                   target="_blank" class="btn btn-outline-primary" title="View QR">
+                                                    <i class="fas fa-qrcode"></i>
+                                                </a>
+
+                                                <!-- Dashboard -->
+                                                <a asp-action="Dashboard" asp-route-id="@session.Id"
+                                                   class="btn btn-outline-info" title="Dashboard">
+                                                    <i class="fas fa-chart-line"></i>
+                                                </a>
+
+                                                <!-- Edit -->
+                                                <a asp-action="Edit" asp-route-id="@session.Id"
+                                                   class="btn btn-outline-warning" title="Edit Session">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+
+                                                <!-- Export -->
+                                                <a asp-action="ExportSessionExcel" asp-route-sessionId="@session.Id"
+                                                   class="btn btn-outline-success" title="Export Attendance">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+
+                                                <!-- End/Reopen -->
+                                                @if (isActive)
+                                                {
+                                                    <form asp-action="EndSession" method="post" class="d-inline">
+                                                        <input type="hidden" name="id" value="@session.Id" />
+                                                        <button type="submit" class="btn btn-outline-danger"
+                                                                title="End Session" onclick="return confirm('End this session?')">
+                                                            <i class="fas fa-stop"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else if (!isExpired)
+                                                {
+                                                    <form asp-action="ReopenSession" method="post" class="d-inline">
+                                                        <input type="hidden" name="id" value="@session.Id" />
+                                                        <button type="submit" class="btn btn-outline-success"
+                                                                title="Reopen Session" onclick="return confirm('Reopen this session?')">
+                                                            <i class="fas fa-play"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                <!-- Delete -->
+                                                <form asp-action="DeleteSession" method="post" class="d-inline">
+                                                    <input type="hidden" name="id" value="@session.Id" />
+                                                    <button type="submit" class="btn btn-outline-dark"
+                                                            title="Delete Session"
+                                                            onclick="return confirm('Permanently delete this session and all attendance records?')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-qrcode fa-4x text-muted mb-3"></i>
+                        <h4>No QR Sessions</h4>
+                        <a asp-action="Create" class="btn btn-primary btn-lg">Create Your First Session</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+@*
+@section Scripts {
+    <script>
+        // Auto-refresh the page every 30 seconds to update session status
+        setInterval(() => {
+            location.reload();
+        }, 30000);
+
+        // Add confirmation for destructive actions
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteForms = document.querySelectorAll('form[action*="DeleteSession"]');
+            deleteForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    if (!confirm('This will permanently delete the session and all attendance records. Continue?')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+
+            const endForms = document.querySelectorAll('form[action*="EndSession"]');
+            endForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    if (!confirm('End this session? Students will no longer be able to scan.')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        });
+    </script>
+}
+*@

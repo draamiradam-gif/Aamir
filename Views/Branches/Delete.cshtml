@@ -1,0 +1,122 @@
+﻿@model Branch
+@{
+    ViewData["Title"] = "Delete Branch";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-danger mb-2">
+                <i class="fas fa-trash me-2"></i>Delete Branch
+            </h1>
+            <p class="text-muted mb-0">Confirm deletion of this branch</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+<div class="alert alert-warning">
+    <h5 class="alert-heading">
+        <i class="fas fa-exclamation-triangle me-2"></i>Warning
+    </h5>
+    <p class="mb-0">You are about to delete this branch. This action cannot be undone.</p>
+</div>
+
+<div class="card-university card">
+    <div class="card-header bg-white py-3">
+        <h5 class="card-title mb-0 text-dark">
+            <i class="fas fa-info-circle me-2"></i>Branch Information
+        </h5>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Branch Name</dt>
+            <dd class="col-sm-9">@Model.Name</dd>
+
+            <dt class="col-sm-3">Branch Code</dt>
+            <dd class="col-sm-9">@Model.BranchCode</dd>
+
+            <dt class="col-sm-3">Department</dt>
+            <dd class="col-sm-9">@Model.Department?.Name</dd>
+
+            <dt class="col-sm-3">College</dt>
+            <dd class="col-sm-9">@Model.Department?.College?.Name</dd>
+
+            <dt class="col-sm-3">University</dt>
+            <dd class="col-sm-9">@Model.Department?.College?.University?.Name</dd>
+
+            @if (Model.ParentBranch != null)
+            {
+                <dt class="col-sm-3">Parent Branch</dt>
+                <dd class="col-sm-9">@Model.ParentBranch.Name</dd>
+            }
+
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+                <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
+                    @(Model.IsActive ? "Active" : "Inactive")
+                </span>
+            </dd>
+
+            <dt class="col-sm-3">Sub-Branches</dt>
+            <dd class="col-sm-9">
+                <span class="badge bg-info">@Model.SubBranches.Count</span>
+            </dd>
+
+            <dt class="col-sm-3">Semesters</dt>
+            <dd class="col-sm-9">
+                <span class="badge bg-warning">@Model.BranchSemesters.Count</span>
+            </dd>
+        </dl>
+
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">@Model.Description</dd>
+        }
+    </div>
+</div>
+
+<div class="mt-4">
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="alert alert-danger">
+            <h6 class="alert-heading">
+                <i class="fas fa-exclamation-circle me-2"></i>Confirm Deletion
+            </h6>
+            <p class="mb-2">Please type <strong>DELETE</strong> to confirm:</p>
+            <input type="text" class="form-control confirmation-input" placeholder="Type DELETE here"
+                   style="max-width: 200px;" required pattern="DELETE">
+            <small class="form-text text-muted">This extra step prevents accidental deletion.</small>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                <i class="fas fa-trash me-2"></i>Delete Branch
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-2"></i>Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.confirmation-input').on('input', function () {
+                var input = $(this).val();
+                var deleteButton = $('#deleteButton');
+
+                if (input === 'DELETE') {
+                    deleteButton.prop('disabled', false);
+                } else {
+                    deleteButton.prop('disabled', true);
+                }
+            });
+        });
+    </script>
+}

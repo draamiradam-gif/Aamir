@@ -1,0 +1,292 @@
+﻿@model ImportResult
+@{
+    ViewData["Title"] = "Import Courses";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-file-import me-2"></i>Import Courses
+        </h1>
+        <div>
+            <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Courses
+            </a>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-12">
+            <!-- Upload Card -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cloud-upload-alt me-2"></i>Upload Excel File
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <form method="post" asp-action="Import" enctype="multipart/form-data" id="importForm" class="dropzone" id="fileDropzone">
+                                @Html.AntiForgeryToken()
+
+                                <div class="mb-4">
+                                    <label for="file" class="form-label fw-bold">Select Excel File</label>
+                                    <div class="file-upload-area border rounded p-5 text-center">
+                                        <i class="fas fa-file-excel text-primary fa-3x mb-3"></i>
+                                        <h5>Drag & Drop your Excel file here</h5>
+                                        <p class="text-muted">or click to browse</p>
+                                        <input type="file" class="form-control d-none" name="file" id="file" accept=".xlsx,.xls" required>
+                                        <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('file').click()">
+                                            <i class="fas fa-folder-open me-2"></i>Browse Files
+                                        </button>
+                                        <div class="mt-2">
+                                            <small class="text-muted" id="fileInfo">No file selected</small>
+                                        </div>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>Supported formats: .xlsx, .xls (Max: 100MB)
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                                    <button type="submit" class="btn btn-success btn-lg px-4" id="uploadBtn">
+                                        <i class="fas fa-upload me-2"></i>Upload and Analyze
+                                    </button>
+                                    <a href="@Url.Action("DownloadTemplate")" class="btn btn-outline-info">
+                                        <i class="fas fa-download me-2"></i>Download Template
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-question-circle me-2"></i>Quick Guide
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <h6>Required Columns:</h6>
+                                    <ul class="small list-unstyled">
+                                        <li><span class="badge bg-danger me-1">Required</span> CourseCode</li>
+                                        <li><span class="badge bg-danger me-1">Required</span> CourseName</li>
+                                        <li><span class="badge bg-secondary me-1">Optional</span> Description</li>
+                                        <li><span class="badge bg-secondary me-1">Optional</span> Credits</li>
+                                        <li><span class="badge bg-secondary me-1">Optional</span> Department</li>
+                                        <li><span class="badge bg-secondary me-1">Optional</span> Semester</li>
+                                        <li><span class="badge bg-secondary me-1">Optional</span> MaxStudents</li>
+                                        <li><span class="badge bg-secondary me-1">Optional</span> MinGPA</li>
+                                        <li><span class="badge bg-secondary me-1">Optional</span> MinPassedHours</li>
+                                        <li><span class="badge bg-secondary me-1">Optional</span> IsActive</li>
+                                    </ul>
+
+                                    <div class="alert alert-warning mt-3 small">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        <strong>Note:</strong> Column names are case-insensitive and support both English and Arabic.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar (Hidden by default) -->
+            <div class="card mt-4 d-none" id="progressCard">
+                <div class="card-body">
+                    <h6 class="card-title">Processing File...</h6>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small class="text-muted" id="progressText">Analyzing file structure...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .file-upload-area {
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+
+            .file-upload-area:hover {
+                border-color: #0d6efd;
+                background: #e7f1ff;
+            }
+
+            .file-upload-area.dragover {
+                border-color: #0d6efd;
+                background: #d1e7ff;
+            }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('file');
+            const fileInfo = document.getElementById('fileInfo');
+            const uploadArea = document.querySelector('.file-upload-area');
+            const progressCard = document.getElementById('progressCard');
+            const progressBar = document.querySelector('.progress-bar');
+            const progressText = document.getElementById('progressText');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const form = document.getElementById('importForm');
+
+            // File selection handling
+            fileInput.addEventListener('change', function () {
+                if (this.files.length > 0) {
+                    const file = this.files[0];
+                    fileInfo.textContent = `${file.name} (${formatFileSize(file.size)})`;
+                    fileInfo.className = 'text-success fw-bold';
+                } else {
+                    fileInfo.textContent = 'No file selected';
+                    fileInfo.className = 'text-muted';
+                }
+            });
+
+            // Drag and drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight() {
+                uploadArea.classList.add('dragover');
+            }
+
+            function unhighlight() {
+                uploadArea.classList.remove('dragover');
+            }
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                fileInput.files = files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+
+            // Click to select file
+            uploadArea.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            // Form submission with progress
+            form.addEventListener('submit', function (e) {
+                if (fileInput.files.length === 0) {
+                    e.preventDefault();
+                    showAlert('Please select a file to upload.', 'danger');
+                    return;
+                }
+
+                const file = fileInput.files[0];
+                if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                    e.preventDefault();
+                    showAlert('Please select a valid Excel file (.xlsx or .xls).', 'danger');
+                    return;
+                }
+
+                if (file.size > 100 * 1024 * 1024) {
+                    e.preventDefault();
+                    showAlert('File size must be less than 100MB.', 'danger');
+                    return;
+                }
+
+                // Show progress
+                progressCard.classList.remove('d-none');
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+                // Simulate progress updates
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 10;
+                    if (progress > 90) progress = 90;
+                    updateProgress(progress, 'Analyzing data...');
+                }, 200);
+
+                // Clear interval when form submits (this is just for show)
+                setTimeout(() => {
+                    clearInterval(interval);
+                }, 3000);
+            });
+
+            function updateProgress(percent, text) {
+                progressBar.style.width = percent + '%';
+                progressBar.setAttribute('aria-valuenow', percent);
+                progressText.textContent = text;
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function showAlert(message, type) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                form.parentNode.insertBefore(alertDiv, form);
+
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 5000);
+            }
+        });
+    </script>
+}

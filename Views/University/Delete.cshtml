@@ -1,0 +1,110 @@
+﻿@model University
+@{
+    ViewData["Title"] = "Delete University";
+}
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 fw-bold text-danger mb-2">
+                <i class="fas fa-trash me-2"></i>Delete University
+            </h1>
+            <p class="text-muted mb-0">Remove university from the system</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-university card border-danger">
+            <div class="card-header bg-danger text-white py-3">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-circle me-2"></i>Warning!</h6>
+                    <p class="mb-0">You are about to delete this university. This action cannot be undone.</p>
+                </div>
+
+                <div class="university-info p-4 border rounded bg-light">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-university fa-3x text-danger mb-3"></i>
+                        <h4 class="text-danger">@Model.Name</h4>
+                        <p class="text-muted">@Model.Code</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-muted">Establishment Year</label>
+                                <p>@Model.EstablishmentYear</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-muted">Status</label>
+                                <p>
+                                    <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
+                                        @(Model.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-muted">Colleges</label>
+                        <p>
+                            @if (Model.Colleges.Any())
+                            {
+                                <span class="badge bg-warning fs-6">@Model.Colleges.Count colleges will be deleted!</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">No colleges associated</span>
+                            }
+                        </p>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Description</label>
+                            <p>@Model.Description</p>
+                        </div>
+                    }
+                </div>
+
+                @if (Model.Colleges.Any())
+                {
+                    <div class="alert alert-warning mt-3">
+                        <h6 class="alert-heading"><i class="fas fa-warning me-2"></i>Important Notice</h6>
+                        <p class="mb-2">This university has <strong>@Model.Colleges.Count colleges</strong>. Deleting this university will also delete:</p>
+                        <ul class="mb-0">
+                            <li>All associated colleges</li>
+                            <li>All departments under those colleges</li>
+                            <li>All branches and sub-branches</li>
+                            <li>All courses and academic programs</li>
+                            <li>All student records associated with this university</li>
+                        </ul>
+                    </div>
+                }
+                <form asp-action="Delete" method="post" class="mt-4">
+                    <input type="hidden" asp-for="Id" />
+                    @Html.AntiForgeryToken()
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Delete University
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
