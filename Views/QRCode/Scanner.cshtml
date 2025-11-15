@@ -1,0 +1,56 @@
+﻿@model List<StudentManagementSystem.Models.QRCodeSession>
+@{
+    ViewData["Title"] = "Choose Session to Scan";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-warning text-white">
+            <h3 class="card-title mb-0">
+                <i class="fas fa-camera"></i> Choose Session to Scan
+            </h3>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="row">
+                    @foreach (var session in Model)
+                    {
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">@session.SessionTitle</h5>
+                                    <p class="card-text">
+                                        <strong>Course:</strong> @session.Course?.CourseCode<br>
+                                        <strong>Expires:</strong> @session.ExpiresAt.ToString("MMM dd, HH:mm")<br>
+                                        <strong>Scans:</strong> @session.Attendances.Count
+                                    </p>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="/QRCode/Scan?token=@session.Token"
+                                       class="btn btn-success btn-sm">
+                                        <i class="fas fa-camera"></i> Scan This Session
+                                    </a>
+                                    <a href="/QRCode/Display/@session.Id"
+                                       class="btn btn-info btn-sm"
+                                       target="_blank">
+                                        <i class="fas fa-qrcode"></i> View QR
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle fa-3x text-muted mb-3"></i>
+                    <h4>No Active Sessions</h4>
+                    <p class="text-muted">There are no active QR sessions to scan.</p>
+                    <a asp-action="Create" class="btn btn-primary">Create Session</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

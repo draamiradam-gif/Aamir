@@ -1,13 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using StudentManagementSystem.Data;
-using StudentManagementSystem.Models;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using StudentManagementSystem.Data;
+using StudentManagementSystem.Models;
 using System.Drawing;
-
+using System.Security.Cryptography;
 
 namespace StudentManagementSystem.Services
 {
@@ -36,46 +36,66 @@ namespace StudentManagementSystem.Services
 
         public async Task<QRAttendance> ScanQRCodeAsync(string token, int studentId, string? deviceInfo = null, string? ipAddress = null)
         {
+            Console.WriteLine($"=== SCAN DEBUG - USING VALIDATE APPROACH ===");
+            Console.WriteLine($"Input Token: '{token}'");
+            Console.WriteLine($"StudentId: {studentId}");
+
+            // ✅ USE THE SAME APPROACH AS VALIDATESESSIONASYNC
             var session = await _context.QRCodeSessions
-                .Include(s => s.Attendances)
                 .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
+
+            Console.WriteLine($"EF Query - Session found: {session != null}");
+            Console.WriteLine($"Session ID: {session?.Id}");
+            Console.WriteLine($"Session Token: '{session?.Token}'");
+            Console.WriteLine($"Session IsActive: {session?.IsActive}");
 
             if (session == null)
             {
-                session = await _context.QRCodeSessions
-                    .Include(s => s.Attendances)
-                    .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
+                // ✅ DEBUG: Check what happens without IsActive filter
+                var anySession = await _context.QRCodeSessions
+                    .FirstOrDefaultAsync(s => s.Token == token);
+                Console.WriteLine($"Without IsActive filter - Session found: {anySession != null}");
+
+                throw new Exception($"No session found with token: {token}");
             }
 
-            if (session == null)
-                throw new Exception("Invalid or expired QR session");
+            // ✅ FIX: Renamed variable to avoid conflict
+            var sessionExpiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
+            Console.WriteLine($"Calculated ExpiresAt: {sessionExpiresAt}");
+            Console.WriteLine($"Is Expired: {sessionExpiresAt < DateTime.Now}");
 
-
-            var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
-            if (expiresAt < DateTime.Now)
+            if (sessionExpiresAt < DateTime.Now)
             {
                 session.IsActive = false;
                 await _context.SaveChangesAsync();
+                Console.WriteLine("ERROR: Session expired");
                 throw new Exception("QR session has expired");
             }
 
-            if (!session.AllowMultipleScans)
+            // ✅ Check if student exists
+            var studentIdString = studentId.ToString();
+            var student = await _context.Students
+                .FirstOrDefaultAsync(s => s.StudentId == studentIdString);
+
+            Console.WriteLine($"Student found: {student != null}");
+            Console.WriteLine($"Student ID: {student?.StudentId}");
+            Console.WriteLine($"Student Name: {student?.Name}");
+
+            if (student == null)
             {
-                var existingScan = session.Attendances.FirstOrDefault(a => a.StudentId == studentId);
-                if (existingScan != null)
-                    throw new Exception("Student has already scanned this QR code");
+                throw new Exception($"Student with ID {studentId} not found");
             }
 
-            if (session.EnableDynamicQR)
+            // Check existing scans
+            var existingScan = await _context.QRAttendances
+                .FirstOrDefaultAsync(a => a.QRCodeSessionId == session.Id && a.StudentId == studentId);
+
+            if (existingScan != null && !session.AllowMultipleScans)
             {
-                // The 'token' parameter here should be the dynamic token, not the session token
-                if (!await ValidateDynamicTokenAsync(session.Id, token))
-                    throw new Exception("Invalid or expired QR code. Please refresh and scan again.");
+                throw new Exception("Student has already scanned this QR code");
             }
 
-            if (session.MaxScans.HasValue && session.Attendances.Count >= session.MaxScans.Value)
-                throw new Exception("Maximum scan limit reached for this session");
-
+            // Create attendance
             var attendance = new QRAttendance
             {
                 QRCodeSessionId = session.Id,
@@ -88,8 +108,31 @@ namespace StudentManagementSystem.Services
             _context.QRAttendances.Add(attendance);
             await _context.SaveChangesAsync();
 
+            Console.WriteLine("=== ATTENDANCE CREATED SUCCESSFULLY ===");
             return attendance;
         }
+
+
+        //public async Task<QRAttendance> ScanQRCodeAsync(string token, int studentId, string? deviceInfo = null, string? ipAddress = null)
+        //{
+        //    // Use same approach as ValidateSession
+        //    var session = await _context.QRCodeSessions
+        //        .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
+
+        //    if (session == null) throw new Exception("Invalid session");
+
+        //    // Create attendance directly
+        //    var attendance = new QRAttendance
+        //    {
+        //        QRCodeSessionId = session.Id,
+        //        StudentId = studentId,
+        //        ScannedAt = DateTime.Now
+        //    };
+
+        //    _context.QRAttendances.Add(attendance);
+        //    await _context.SaveChangesAsync();
+        //    return attendance;
+        //}
 
         public async Task<List<QRCodeSession>> GetActiveSessionsAsync()
         {
@@ -113,10 +156,12 @@ namespace StudentManagementSystem.Services
 
         public async Task<QRCodeSession?> GetSessionByTokenAsync(string token)
         {
+            // ✅ USE RAW SQL FOR CONSISTENCY
             return await _context.QRCodeSessions
+                .FromSqlRaw("SELECT * FROM QRCodeSessions WHERE Token = {0}", token)
                 .Include(s => s.Course)
                 .Include(s => s.Attendances)
-                .FirstOrDefaultAsync(s => s.Token == token);
+                .FirstOrDefaultAsync();
         }
 
         public async Task<bool> ValidateSessionAsync(string token)
@@ -126,14 +171,16 @@ namespace StudentManagementSystem.Services
                 if (string.IsNullOrEmpty(token))
                     return false;
 
+                // ✅ USE RAW SQL FOR CONSISTENCY
                 var session = await _context.QRCodeSessions
-                    .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
+                    .FromSqlRaw("SELECT * FROM QRCodeSessions WHERE Token = {0}", token)
+                    .FirstOrDefaultAsync();
 
                 if (session == null)
                     return false;
 
                 var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
-                return expiresAt > DateTime.Now;
+                return expiresAt > DateTime.Now && session.IsActive;
             }
             catch (Exception ex)
             {
@@ -150,6 +197,9 @@ namespace StudentManagementSystem.Services
                 .OrderByDescending(a => a.ScannedAt)
                 .ToListAsync();
         }
+
+        // ========== EXPORT/IMPORT METHODS ==========
+        // ... (keep your existing Export/Import methods the same) ...
 
         // ========== EXPORT/IMPORT METHODS ==========
 
@@ -419,131 +469,23 @@ namespace StudentManagementSystem.Services
             worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
             return package.GetAsByteArray();
         }
-        public async Task<string> GetCurrentSessionTokenAsync(int sessionId)
-        {
-            var session = await _context.QRCodeSessions.FindAsync(sessionId);
-            if (session == null)
-                throw new Exception("Session not found");
 
-            // Check if token needs refresh
-            if (session.EnableDynamicQR &&
-                DateTime.Now.Subtract(session.LastTokenUpdate).TotalSeconds >= session.TokenUpdateIntervalSeconds)
-            {
-                // Update token
-                session.CurrentToken = Guid.NewGuid().ToString();
-                session.LastTokenUpdate = DateTime.Now;
-                await _context.SaveChangesAsync();
+        // ========== DYNAMIC QR SUPPORT ==========
 
-                _logger.LogInformation("Refreshed token for session {SessionId}", sessionId);
-            }
-
-            return session.CurrentToken;
-        }
-
-        public async Task<bool> ValidateDynamicTokenAsync(int sessionId, string token)
+        private async Task<bool> ValidateDynamicTokenAsync(int sessionId, string token)
         {
             var session = await _context.QRCodeSessions.FindAsync(sessionId);
             if (session == null || !session.IsActive)
                 return false;
 
-            // For dynamic QR, check current token
             if (session.EnableDynamicQR)
             {
                 return session.CurrentToken == token &&
-                       DateTime.Now.Subtract(session.LastTokenUpdate).TotalSeconds <= session.TokenUpdateIntervalSeconds * 2; // Allow some buffer
+                       DateTime.Now.Subtract(session.LastTokenUpdate).TotalSeconds <= session.TokenUpdateIntervalSeconds * 2;
             }
 
-            // For static QR, use original token
             return session.Token == token;
         }
-
-        public async Task<bool> ReopenSessionAsync(int sessionId, int additionalMinutes = 15)
-        {
-            var session = await _context.QRCodeSessions.FindAsync(sessionId);
-            if (session == null)
-                return false;
-
-            // Calculate new expiration
-            var newExpiration = DateTime.Now.AddMinutes(additionalMinutes);
-            var originalExpiration = session.CreatedAt.AddMinutes(session.DurationMinutes);
-
-            // Only extend if the new expiration is later than original
-            if (newExpiration > originalExpiration)
-            {
-                // Calculate new duration
-                var newDuration = (int)(newExpiration - session.CreatedAt).TotalMinutes;
-                session.DurationMinutes = newDuration;
-                session.IsActive = true;
-
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("Reopened session {SessionId} for {AdditionalMinutes} minutes",
-                    sessionId, additionalMinutes);
-                return true;
-            }
-
-            return false;
-        }
-        public async Task<bool> DeleteSessionWithAttendanceAsync(int sessionId)
-        {
-            var session = await _context.QRCodeSessions
-                .Include(s => s.Attendances)
-                .FirstOrDefaultAsync(s => s.Id == sessionId);
-
-            if (session == null)
-                return false;
-
-            try
-            {
-                // Remove all attendance records first (due to foreign key constraints)
-                _context.QRAttendances.RemoveRange(session.Attendances);
-
-                // Remove the session
-                _context.QRCodeSessions.Remove(session);
-
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Deleted session {SessionId} with {AttendanceCount} attendance records",
-                    sessionId, session.Attendances.Count);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting session {SessionId}", sessionId);
-                throw;
-            }
-        }
-
-        public async Task<bool> ReopenSessionAsync(int sessionId)
-        {
-            try
-            {
-                var session = await _context.QRCodeSessions.FindAsync(sessionId);
-                if (session == null)
-                    return false;
-
-                // Check if session can be reopened (not too far in the past)
-                var canReopen = session.CreatedAt.AddMinutes(session.DurationMinutes + 60) > DateTime.Now;
-
-                if (canReopen)
-                {
-                    session.IsActive = true;
-                    await _context.SaveChangesAsync();
-                    return true;
-                }
-
-                return false;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error reopening session {SessionId}", sessionId);
-                return false;
-            }
-        }
-        public bool EnableDynamicQR { get; set; } = false;
-        public int TokenUpdateIntervalSeconds { get; set; } = 10;
-        public DateTime? LastTokenUpdate { get; set; }
-        public string? CurrentToken { get; set; }
 
         public async Task<string> GetCurrentTokenAsync(int sessionId)
         {
@@ -554,7 +496,6 @@ namespace StudentManagementSystem.Services
             if (!session.EnableDynamicQR)
                 return session.Token;
 
-            // Check if it's the default value (never updated)
             bool neverUpdated = session.LastTokenUpdate == default(DateTime);
             bool needsUpdate = neverUpdated ||
                               DateTime.Now.Subtract(session.LastTokenUpdate).TotalSeconds >= session.TokenUpdateIntervalSeconds;
@@ -574,7 +515,6 @@ namespace StudentManagementSystem.Services
             var existingSession = await _context.QRCodeSessions.FindAsync(session.Id);
             if (existingSession != null)
             {
-                // Update only editable properties
                 existingSession.SessionTitle = session.SessionTitle;
                 existingSession.Description = session.Description;
                 existingSession.CourseId = session.CourseId;
@@ -585,6 +525,57 @@ namespace StudentManagementSystem.Services
 
                 _context.QRCodeSessions.Update(existingSession);
                 await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<bool> ReopenSessionAsync(int sessionId, int additionalMinutes = 15)
+        {
+            var session = await _context.QRCodeSessions.FindAsync(sessionId);
+            if (session == null)
+                return false;
+
+            var newExpiration = DateTime.Now.AddMinutes(additionalMinutes);
+            var originalExpiration = session.CreatedAt.AddMinutes(session.DurationMinutes);
+
+            if (newExpiration > originalExpiration)
+            {
+                var newDuration = (int)(newExpiration - session.CreatedAt).TotalMinutes;
+                session.DurationMinutes = newDuration;
+                session.IsActive = true;
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Reopened session {SessionId} for {AdditionalMinutes} minutes",
+                    sessionId, additionalMinutes);
+                return true;
+            }
+
+            return false;
+        }
+
+        public async Task<bool> DeleteSessionWithAttendanceAsync(int sessionId)
+        {
+            var session = await _context.QRCodeSessions
+                .Include(s => s.Attendances)
+                .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+            if (session == null)
+                return false;
+
+            try
+            {
+                _context.QRAttendances.RemoveRange(session.Attendances);
+                _context.QRCodeSessions.Remove(session);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Deleted session {SessionId} with {AttendanceCount} attendance records",
+                    sessionId, session.Attendances.Count);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting session {SessionId}", sessionId);
+                throw;
             }
         }
     }

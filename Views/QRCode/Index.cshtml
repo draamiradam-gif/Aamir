@@ -41,7 +41,16 @@
                                 <i class="fas fa-camera fa-3x mb-3"></i>
                                 <h5>Scan QR</h5>
                                 <p class="mb-0">Student scanning interface</p>
-                                <a asp-action="Scan" class="btn btn-light btn-sm mt-2">Start Scanning</a>
+                                @if (Model.Any())
+                                {
+                                    <!-- If there are active sessions, link to the Scanner page -->
+                                    <a asp-action="Scanner" class="btn btn-light btn-sm mt-2">Start Scanning</a>
+                                }
+                                else
+                                {
+                                    <!-- If no sessions, show disabled button -->
+                                    <button class="btn btn-light btn-sm mt-2" disabled>Create Session First</button>
+                                }
                             </div>
                         </div>
                     </div>

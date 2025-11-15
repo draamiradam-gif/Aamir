@@ -33,6 +33,7 @@ namespace StudentManagementSystem.Data
         public DbSet<GradeScale> GradeScales { get; set; }
         public DbSet<QRCodeSession> QRCodeSessions { get; set; }
         public DbSet<QRAttendance> QRAttendances { get; set; }
+       
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -246,7 +247,7 @@ namespace StudentManagementSystem.Data
                 entity.HasOne(e => e.Course)
                       .WithMany()
                       .HasForeignKey(e => e.CourseId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .OnDelete(DeleteBehavior.NoAction);
             });
 
             // Configure QRAttendance
@@ -260,7 +261,7 @@ namespace StudentManagementSystem.Data
                 entity.HasOne(e => e.Student)
                       .WithMany()
                       .HasForeignKey(e => e.StudentId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .OnDelete(DeleteBehavior.NoAction);
             });
         }
     }

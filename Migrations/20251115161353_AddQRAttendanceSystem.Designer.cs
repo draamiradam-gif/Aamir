@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudentManagementSystem.Data;
 
@@ -11,9 +12,11 @@ using StudentManagementSystem.Data;
 namespace StudentManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251115161353_AddQRAttendanceSystem")]
+    partial class AddQRAttendanceSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -671,8 +674,14 @@ namespace StudentManagementSystem.Migrations
                     b.Property<int>("QRCodeSessionId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("ScanTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("ScannedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
 
                     b.Property<int>("StudentId")
                         .HasColumnType("int");
@@ -680,6 +689,8 @@ namespace StudentManagementSystem.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("QRCodeSessionId");
+
+                    b.HasIndex("SessionId");
 
                     b.HasIndex("StudentId");
 
@@ -1256,6 +1267,12 @@ namespace StudentManagementSystem.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("StudentManagementSystem.Models.QRCodeSession", "Session")
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("StudentManagementSystem.Models.Student", "Student")
                         .WithMany()
                         .HasForeignKey("StudentId")
@@ -1263,6 +1280,8 @@ namespace StudentManagementSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("QRCodeSession");
+
+                    b.Navigation("Session");
 
                     b.Navigation("Student");
                 });

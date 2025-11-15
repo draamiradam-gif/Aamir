@@ -1,69 +1,234 @@
-﻿@model QRCodeSession
-
+﻿@model StudentManagementSystem.Models.QRCodeSession
 @{
-    ViewData["Title"] = "QR Session Created";
-    var scanUrl = Url.Action("Scan", "QRCode", new { token = Model.Token }, Context.Request.Scheme) ?? "";
+    ViewData["Title"] = "Session Created - " + Model.SessionTitle;
+    Layout = null;
+    var currentToken = ViewBag.CurrentToken ?? Model.Token;
+    var scanUrl = Url.Action("Scan", "QRCode", new { token = currentToken }, Context.Request.Scheme) ?? "";
     var encodedUrl = Uri.EscapeDataString(scanUrl);
     var expiresAt = Model.CreatedAt.AddMinutes(Model.DurationMinutes);
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h3 class="card-title mb-0">
-                    <i class="fas fa-check-circle"></i> QR Session Created Successfully
-                </h3>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@ViewData["Title"]</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .success-container {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .success-header {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px 10px 0 0;
+            margin: -2rem -2rem 2rem -2rem;
+        }
+
+        .qr-preview {
+            border: 15px solid white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin: 20px auto;
+            max-width: 250px;
+            transition: transform 0.3s ease;
+        }
+
+            .qr-preview:hover {
+                transform: scale(1.05);
+            }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .btn-group-custom {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        .btn-custom {
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+            .btn-custom:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            }
+
+        .dynamic-badge {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .success-container {
+                padding: 1rem;
+            }
+
+            .btn-group-custom {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-header">
+            <i class="fas fa-check-circle fa-3x mb-3"></i>
+            <h3 class="mb-2">Session Created Successfully!</h3>
+            <h4 class="mb-0">@Model.SessionTitle</h4>
+        </div>
+
+        @if (Model.EnableDynamicQR)
+        {
+            <div class="dynamic-badge">
+                <i class="fas fa-sync-alt"></i> DYNAMIC QR CODE ENABLED
             </div>
-            <div class="card-body text-center">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h4>Session Information</h4>
-                        <!-- Add this in the session information section: -->
-                        <div class="text-start">
-                            <p><strong>Title:</strong> @Model.SessionTitle</p>
-                            <p><strong>Course:</strong> @Model.Course?.CourseCode</p>
-                            <p><strong>Duration:</strong> @Model.DurationMinutes minutes</p>
-                            <p>
-                                <strong>QR Type:</strong>
-                                @if (Model.EnableDynamicQR)
-                                {
-                                    <span class="text-success">Dynamic (refreshes every @Model.TokenUpdateIntervalSeconds seconds)</span>
-                                }
-                                else
-                                {
-                                    <span>Static</span>
-                                }
-                            </p>
-                            <p><strong>Valid Until:</strong> @expiresAt.ToString("HH:mm")</p>
-                        </div>
-                    </div>
+        }
 
-                    <div class="col-md-6">
-                        <h4>QR Code</h4>
-                        <!-- FIXED: No null reference warning -->
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@encodedUrl"
-                             alt="QR Code"
-                             class="img-fluid border rounded"
-                             style="max-width: 200px;">
-                        <p class="text-muted mt-2">Scan this QR code to mark attendance</p>
-                    </div>
+        <div class="info-grid">
+            <div class="info-card">
+                <h6><i class="fas fa-info-circle"></i> Session Details</h6>
+                <p class="mb-1"><strong>Course:</strong> @Model.Course?.CourseCode</p>
+                <p class="mb-1"><strong>Duration:</strong> @Model.DurationMinutes min</p>
+                <p class="mb-1"><strong>Created:</strong> @Model.CreatedBy</p>
+                <p class="mb-0"><strong>Expires:</strong> @expiresAt.ToString("MMM dd, HH:mm")</p>
+            </div>
+
+            <div class="info-card">
+                <h6><i class="fas fa-qrcode"></i> QR Code Preview</h6>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@encodedUrl&margin=10&format=png"
+                     alt="QR Code Preview"
+                     class="qr-preview img-fluid">
+                <small class="text-muted">Scan to mark attendance</small>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="btn-group-custom">
+            <a href="@Url.Action("Display", new { id = Model.Id })" class="btn btn-primary btn-custom">
+                <i class="fas fa-expand"></i> Full Screen QR
+            </a>
+            <a href="@Url.Action("Dashboard", new { id = Model.Id })" class="btn btn-info btn-custom">
+                <i class="fas fa-chart-bar"></i> View Dashboard
+            </a>
+            <a href="@Url.Action("Create")" class="btn btn-success btn-custom">
+                <i class="fas fa-plus"></i> New Session
+            </a>
+            <a href="@Url.Action("ActiveSessions")" class="btn btn-secondary btn-custom">
+                <i class="fas fa-list"></i> All Sessions
+            </a>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="mt-4 p-3 bg-light rounded">
+            <div class="row text-center">
+                <div class="col">
+                    <h5 class="mb-1" id="scans-count">0</h5>
+                    <small class="text-muted">Total Scans</small>
                 </div>
-
-                <div class="mt-4">
-                    <a href="@Url.Action("Display", new { id = Model.Id })"
-                       class="btn btn-primary btn-lg" target="_blank">
-                        <i class="fas fa-external-link-alt"></i> Open Full Screen
-                    </a>
-                    <a asp-action="Dashboard" asp-route-id="@Model.Id"
-                       class="btn btn-info btn-lg">
-                        <i class="fas fa-chart-line"></i> Live Dashboard
-                    </a>
-                    <a asp-action="Create" class="btn btn-outline-success">
-                        <i class="fas fa-plus"></i> New Session
-                    </a>
+                <div class="col">
+                    <h5 class="mb-1" id="unique-students">0</h5>
+                    <small class="text-muted">Unique Students</small>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
+    <script>
+        // Load initial stats
+        function loadStats() {
+            fetch('@Url.Action("DashboardData", new { id = Model.Id })')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('scans-count').textContent = data.totalStudents || 0;
+                    document.getElementById('unique-students').textContent = data.uniqueScans || 0;
+                })
+                .catch(err => console.error('Failed to load stats:', err));
+        }
+
+        // Copy URL function
+        function copySessionUrl() {
+            navigator.clipboard.writeText('@scanUrl').then(function() {
+                alert('Session URL copied to clipboard!');
+            });
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                window.location.href = '@Url.Action("ActiveSessions")';
+            } else if (event.key === 'f') {
+                window.location.href = '@Url.Action("Display", new { id = Model.Id })';
+            }
+        });
+
+        // Load stats on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            // Refresh stats every 10 seconds
+            setInterval(loadStats, 10000);
+        });
+    </script>
+</body>
+</html>

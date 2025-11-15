@@ -26,5 +26,7 @@ namespace StudentManagementSystem.Models
         public string? IPAddress { get; set; }
 
         public bool IsValid { get; set; } = true;
+
+        // ✅ REMOVED: SessionId, ScanTime, Session (duplicates causing conflicts)
     }
 }

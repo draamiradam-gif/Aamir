@@ -1,0 +1,126 @@
+﻿@{
+    ViewData["Title"] = "Test QR Code";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">QR Code Test</h4>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Test 1: Simple QR Code -->
+                    <h5>Test 1: Simple QR Code</h5>
+                    <div id="qrcode1" class="mb-4" style="min-height: 256px; border: 1px solid #ccc;"></div>
+                    <button onclick="testQR1()" class="btn btn-primary mb-4">Generate Test QR 1</button>
+
+                    <!-- Test 2: With Token -->
+                    <h5>Test 2: With Token</h5>
+                    <div id="qrcode2" class="mb-4" style="min-height: 256px; border: 1px solid #ccc;"></div>
+                    <button onclick="testQR2()" class="btn btn-primary mb-4">Generate Test QR 2</button>
+
+                    <!-- Test 3: Using different library method -->
+                    <h5>Test 3: Different Method</h5>
+                    <div id="qrcode3" class="mb-4" style="min-height: 256px; border: 1px solid #ccc;"></div>
+                    <button onclick="testQR3()" class="btn btn-primary">Generate Test QR 3</button>
+
+                    <!-- Debug Info -->
+                    <div id="debugInfo" class="mt-4 alert alert-info"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <script>
+        function logDebug(message) {
+            console.log(message);
+            document.getElementById('debugInfo').innerHTML += '<p>' + message + '</p>';
+        }
+
+        // Test 1: Simple QR code
+        function testQR1() {
+            logDebug('Test 1: Generating simple QR code...');
+            const container = document.getElementById('qrcode1');
+            container.innerHTML = '';
+
+            try {
+                QRCode.toCanvas(container, 'https://google.com', {
+                    width: 200,
+                    margin: 1
+                }, function (error) {
+                    if (error) {
+                        logDebug('Test 1 ERROR: ' + error.message);
+                        container.innerHTML = '<div class="alert alert-danger">Test 1 Failed: ' + error.message + '</div>';
+                    } else {
+                        logDebug('Test 1 SUCCESS: Simple QR generated');
+                    }
+                });
+            } catch (e) {
+                logDebug('Test 1 EXCEPTION: ' + e.message);
+            }
+        }
+
+        // Test 2: With token
+        function testQR2() {
+            logDebug('Test 2: Generating QR with token...');
+            const container = document.getElementById('qrcode2');
+            container.innerHTML = '';
+
+            const token = 'test-token-12345';
+            const url = 'https://localhost:7000/QRCode/Scan?token=' + token;
+
+            try {
+                QRCode.toCanvas(container, url, {
+                    width: 200,
+                    margin: 1
+                }, function (error) {
+                    if (error) {
+                        logDebug('Test 2 ERROR: ' + error.message);
+                        container.innerHTML = '<div class="alert alert-danger">Test 2 Failed: ' + error.message + '</div>';
+                    } else {
+                        logDebug('Test 2 SUCCESS: Token QR generated');
+                    logDebug('URL: ' + url);
+                    logDebug('Token: ' + token);
+                    }
+                });
+            } catch (e) {
+                logDebug('Test 2 EXCEPTION: ' + e.message);
+            }
+        }
+
+        // Test 3: Using different method
+        function testQR3() {
+            logDebug('Test 3: Using toDataURL method...');
+            const container = document.getElementById('qrcode3');
+            container.innerHTML = '';
+
+            try {
+                QRCode.toDataURL('https://localhost:7000', {
+                    width: 200,
+                    margin: 1
+                }, function (error, url) {
+                    if (error) {
+                        logDebug('Test 3 ERROR: ' + error.message);
+                        container.innerHTML = '<div class="alert alert-danger">Test 3 Failed: ' + error.message + '</div>';
+                    } else {
+                        logDebug('Test 3 SUCCESS: Data URL generated');
+                        container.innerHTML = '<img src="' + url + '" alt="QR Code" />';
+                    }
+                });
+            } catch (e) {
+                logDebug('Test 3 EXCEPTION: ' + e.message);
+            }
+        }
+
+        // Auto-run test 1 on load
+        document.addEventListener('DOMContentLoaded', function() {
+            logDebug('Page loaded, running Test 1 automatically...');
+            setTimeout(testQR1, 1000);
+        });
+    </script>
+}

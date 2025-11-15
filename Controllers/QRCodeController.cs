@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -92,10 +93,43 @@ namespace StudentManagementSystem.Controllers
         }
 
         [AllowAnonymous]
+        [HttpGet] // ✅ EXPLICITLY MARK AS GET
         public IActionResult Scan(string token)
         {
+            Console.WriteLine($"DEBUG: Scan action called with token: '{token}'");
+            Console.WriteLine($"DEBUG: Full URL: {Request.GetDisplayUrl()}");
+
+            // ✅ SET THE TOKEN IN VIEWBAG
             ViewBag.Token = token;
+
+            // ✅ DEBUG: Check what's actually being received
+            if (string.IsNullOrEmpty(token))
+            {
+                Console.WriteLine("DEBUG: Token is NULL or EMPTY!");
+                Console.WriteLine($"DEBUG: Query string: {Request.QueryString}");
+            }
+
             return View();
+        }
+        public async Task<IActionResult> Scanner()
+        {
+            var activeSessions = await _qrCodeService.GetActiveSessionsAsync();
+
+            if (activeSessions.Count == 1)
+            {
+                // Auto-redirect if only one active session
+                return RedirectToAction("Scan", new { token = activeSessions[0].Token });
+            }
+            else if (activeSessions.Count > 1)
+            {
+                // Show session selection
+                return View(activeSessions);
+            }
+            else
+            {
+                TempData["Error"] = "No active QR sessions found. Please create a session first.";
+                return RedirectToAction("Create");
+            }
         }
 
         [HttpPost]
@@ -123,7 +157,7 @@ namespace StudentManagementSystem.Controllers
                 return NotFound();
             }
 
-            // Get current token (dynamic if enabled)
+            // ✅ FIX: Get current token and set it in ViewBag
             ViewBag.CurrentToken = await _qrCodeService.GetCurrentTokenAsync(id);
 
             return View(session);
@@ -137,10 +171,15 @@ namespace StudentManagementSystem.Controllers
                 return NotFound();
             }
 
-            // CORRECT: Use GetCurrentTokenAsync here too
+            // ✅ FIX: Get current token and set it in ViewBag
             ViewBag.CurrentToken = await _qrCodeService.GetCurrentTokenAsync(id);
 
             return View(session);
+        }
+
+        public IActionResult TestQR()
+        {
+            return View();
         }
 
         public async Task<IActionResult> Dashboard(int id)
@@ -571,7 +610,217 @@ namespace StudentManagementSystem.Controllers
             return View(session);
         }
 
+        // ADD THIS DEBUG METHOD TO YOUR CONTROLLER
+        [HttpGet]
+        public async Task<JsonResult> DebugSession(int id)
+        {
+            try
+            {
+                var session = await _qrCodeService.GetSessionByIdAsync(id);
+                var currentToken = await _qrCodeService.GetCurrentTokenAsync(id);
+
+                return Json(new
+                {
+                    success = true,
+                    sessionExists = session != null,
+                    sessionTitle = session?.SessionTitle,
+                    sessionToken = session?.Token,
+                    currentToken = currentToken,
+                    enableDynamicQR = session?.EnableDynamicQR,
+                    viewBagToken = ViewBag.CurrentToken
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        // ADD THIS METHOD TO YOUR QRCodeController
+        [HttpGet]
+        public async Task<IActionResult> ExportAttendance(int sessionId)
+        {
+            try
+            {
+                var fileBytes = await _qrCodeService.ExportAttendanceToExcelAsync(sessionId);
+                var session = await _qrCodeService.GetSessionByIdAsync(sessionId);
+
+                var fileName = $"Attendance_{session?.SessionTitle?.Replace(" ", "_") ?? "Session"}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+                return File(fileBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting attendance for session {SessionId}", sessionId);
+                TempData["Error"] = $"Export failed: {ex.Message}";
+                return RedirectToAction("Dashboard", new { id = sessionId });
+            }
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> DebugToken(string token)
+        {
+            try
+            {
+                var session = await _context.QRCodeSessions
+                    .FirstOrDefaultAsync(s => s.Token == token);
+
+                return Json(new
+                {
+                    tokenProvided = token,
+                    sessionExists = session != null,
+                    sessionId = session?.Id,
+                    sessionTitle = session?.SessionTitle,
+                    isActive = session?.IsActive,
+                    expiresAt = session?.ExpiresAt,
+                    currentTime = DateTime.Now,
+                    isExpired = session?.ExpiresAt < DateTime.Now
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> DebugSessionByToken(string token)
+        {
+            var session = await _context.QRCodeSessions
+                .Include(s => s.Course)
+                .FirstOrDefaultAsync(s => s.Token == token);
+
+            if (session == null)
+            {
+                return Json(new
+                {
+                    found = false,
+                    message = "No session found with this token",
+                    token = token
+                });
+            }
+
+            return Json(new
+            {
+                found = true,
+                sessionId = session.Id,
+                sessionTitle = session.SessionTitle,
+                course = session.Course?.CourseCode + " - " + session.Course?.CourseName,
+                isActive = session.IsActive,
+                expiresAt = session.ExpiresAt,
+                currentTime = DateTime.Now,
+                isExpired = session.ExpiresAt < DateTime.Now,
+                durationMinutes = session.DurationMinutes,
+                enableDynamicQR = session.EnableDynamicQR
+            });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> ListAllSessions()
+        {
+            var sessions = await _context.QRCodeSessions
+                .Include(s => s.Course)
+                .OrderByDescending(s => s.CreatedAt)
+                .Take(10)
+                .Select(s => new {
+                    id = s.Id,
+                    title = s.SessionTitle,
+                    token = s.Token,
+                    course = s.Course != null ? s.Course.CourseCode + " - " + s.Course.CourseName : "No Course",
+                    isActive = s.IsActive,
+                    createdAt = s.CreatedAt,
+                    expiresAt = s.ExpiresAt
+                })
+                .ToListAsync();
+
+            return Json(sessions);
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<JsonResult> Scan([FromBody] ScanRequest request)
+        {
+            try
+            {
+                Console.WriteLine($"=== CONTROLLER SCAN DEBUG ===");
+                Console.WriteLine($"Token: {request.Token}");
+                Console.WriteLine($"StudentId: {request.StudentId}");
+
+                // ✅ FIRST: Validate the session using the working method
+                var isValid = await _qrCodeService.ValidateSessionAsync(request.Token);
+                Console.WriteLine($"Session Valid: {isValid}");
+
+                if (!isValid)
+                {
+                    return Json(new { success = false, message = "Invalid or expired session" });
+                }
+
+                // ✅ If validation passes, try to get the session directly
+                var session = await _qrCodeService.GetSessionByTokenAsync(request.Token);
+                Console.WriteLine($"GetSessionByToken - Found: {session != null}");
+
+                if (session == null)
+                {
+                    return Json(new { success = false, message = "Session validation passed but session not found" });
+                }
+
+                // ✅ Create attendance manually
+                var attendance = new QRAttendance
+                {
+                    QRCodeSessionId = session.Id,
+                    StudentId = request.StudentId,
+                    DeviceInfo = request.DeviceInfo,
+                    IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ScannedAt = DateTime.Now
+                };
+
+                _context.QRAttendances.Add(attendance);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine("=== ATTENDANCE SAVED SUCCESSFULLY ===");
+                return Json(new { success = true, message = "Attendance marked successfully!" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"=== SCAN ERROR: {ex.Message} ===");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        //[HttpPost]
+        //[AllowAnonymous]
+        //public async Task<JsonResult> Scan([FromBody] ScanRequest request)
+        //{
+        //    // Find session directly
+        //    var session = await _context.QRCodeSessions
+        //        .FirstOrDefaultAsync(s => s.Token == request.Token && s.IsActive);
+
+        //    if (session == null)
+        //        return Json(new { success = false, message = "Invalid session" });
+
+        //    // Create attendance
+        //    var attendance = new QRAttendance
+        //    {
+        //        QRCodeSessionId = session.Id,
+        //        StudentId = request.StudentId,
+        //        ScannedAt = DateTime.Now
+        //    };
+
+        //    _context.QRAttendances.Add(attendance);
+        //    await _context.SaveChangesAsync();
+
+        //    return Json(new { success = true, message = "Attendance recorded!" });
+        //}
 
 
+        public class ScanRequest
+        {
+            public string Token { get; set; } = string.Empty;
+            public int StudentId { get; set; }
+            public string? DeviceInfo { get; set; }
+            public string? IPAddress { get; set; }
+        }
     }
 }

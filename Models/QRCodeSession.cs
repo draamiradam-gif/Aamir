@@ -3,8 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace StudentManagementSystem.Models
 {
-    [Table("QRCodeSessions")] // Add this attribute
-
+    [Table("QRCodeSessions")]
     public class QRCodeSession
     {
         public int Id { get; set; }
@@ -39,13 +38,15 @@ namespace StudentManagementSystem.Models
 
         public DateTime ExpiresAt => CreatedAt.AddMinutes(DurationMinutes);
 
+        // Dynamic QR Properties
+        public string CurrentToken { get; set; } = Guid.NewGuid().ToString();
+        public DateTime LastTokenUpdate { get; set; } = DateTime.Now;
+        public int TokenUpdateIntervalSeconds { get; set; } = 10;
+        public bool EnableDynamicQR { get; set; } = true;
+
         // Navigation property
         public ICollection<QRAttendance> Attendances { get; set; } = new List<QRAttendance>();
 
-        public string CurrentToken { get; set; } = Guid.NewGuid().ToString();
-        public DateTime LastTokenUpdate { get; set; } = DateTime.Now;
-        public int TokenUpdateIntervalSeconds { get; set; } = 10; // Change every 10 seconds
-        public bool EnableDynamicQR { get; set; } = true; // Enable/disable dynamic QR
-
+        // ✅ REMOVED: SessionToken, StartTime, EndTime (duplicates causing conflicts)
     }
 }

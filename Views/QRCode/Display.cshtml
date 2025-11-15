@@ -1,16 +1,16 @@
-﻿@model QRCodeSession
-
+﻿@model StudentManagementSystem.Models.QRCodeSession
 @{
     ViewData["Title"] = "QR Code - " + Model.SessionTitle;
-    Layout = null; // No layout for full screen
-
-    // Calculate values
-    var scanUrl = Url.Action("Scan", "QRCode", new { token = Model.Token }, Context.Request.Scheme) ?? "";
+    Layout = null;
+    var currentToken = ViewBag.CurrentToken ?? Model.Token;
+    var scanUrl = Url.Action("Scan", "QRCode", new { token = currentToken }, Context.Request.Scheme) ?? "";
     var encodedUrl = Uri.EscapeDataString(scanUrl);
     var expiresAt = Model.CreatedAt.AddMinutes(Model.DurationMinutes);
     var timeLeft = expiresAt - DateTime.Now;
     var minutesLeft = timeLeft.TotalMinutes > 0 ? (int)timeLeft.TotalMinutes : 0;
     var secondsLeft = timeLeft.TotalSeconds > 0 ? (int)timeLeft.TotalSeconds % 60 : 0;
+    var isActive = DateTime.Now < expiresAt && Model.IsActive;
+    var tokenUpdateIntervalMs = Model.TokenUpdateIntervalSeconds * 1000;
 }
 
 <!DOCTYPE html>
@@ -22,84 +22,228 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* RESET AND BASE STYLES */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
         }
 
         .qr-container {
-            text-align: center;
-            padding: 2rem;
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            padding: 30px;
             max-width: 500px;
             width: 100%;
-            animation: fadeIn 0.5s ease-in;
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
         }
 
-        .qr-image {
-            border: 15px solid white;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin: 20px auto;
-            transition: transform 0.3s ease;
+        /* HEADER SECTION */
+        .header-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f8f9fa;
         }
 
-            .qr-image:hover {
-                transform: scale(1.02);
-            }
+        .session-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
 
-        .session-info {
+        .dynamic-badge {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        /* INFO SECTION */
+        .info-section {
             background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 20px 0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: left;
         }
 
-        .timer {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #dc3545;
-            background: #fff;
+        .info-item {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            flex: 1;
+        }
+
+        .info-value {
+            color: #6c757d;
+            flex: 2;
+            text-align: right;
+        }
+
+        /* STATUS SECTION */
+        .status-section {
+            margin-bottom: 25px;
+        }
+
+        .status-badge {
+            font-size: 1.1rem;
             padding: 10px 20px;
             border-radius: 25px;
             display: inline-block;
-            margin: 10px 0;
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
+            margin-bottom: 15px;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status-expired {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .timer {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #dc3545;
+            background: #fff;
+            padding: 12px 25px;
+            border-radius: 30px;
+            display: inline-block;
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.2);
+            border: 2px solid #f8d7da;
+        }
+
+        /* QR CODE SECTION */
+        .qr-section {
+            margin: 25px 0;
+            padding: 20px 0;
+        }
+
+        .qr-image-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .qr-image {
+            width: 280px;
+            height: 280px;
+            border: 8px solid white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .qr-instruction {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-top: 10px;
+        }
+
+        /* BUTTONS SECTION */
+        .buttons-section {
+            margin: 25px 0 15px 0;
         }
 
         .btn-group-custom {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .btn-custom {
-            padding: 10px 20px;
-            border-radius: 25px;
+            padding: 12px 20px;
+            border-radius: 12px;
             font-weight: 600;
+            border: none;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
         }
 
             .btn-custom:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(0,0,0,0.15);
             }
 
-        /* Simple fade-in animation */
-        @@keyframes fadeIn {
+        .btn-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #28a745, #1e7e34);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #545b62);
+            color: white;
+        }
+
+        /* URL SECTION */
+        .url-section {
+            background: #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .url-label {
+            font-size: 0.85rem;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .url-value {
+            font-size: 0.8rem;
+            color: #6c757d;
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        /* ANIMATIONS */
+        @@keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: translateY(30px);
             }
 
             to {
@@ -108,92 +252,151 @@
             }
         }
 
-        /* Status indicators */
-        .status-active {
-            color: #28a745;
-            font-weight: bold;
-        }
-
-        .status-expired {
-            color: #dc3545;
-            font-weight: bold;
-        }
-
+        /* RESPONSIVE DESIGN */
         @@media (max-width: 576px) {
+            body {
+                padding: 10px;
+            }
+
             .qr-container {
-                padding: 1rem;
+                padding: 20px;
                 margin: 10px;
             }
 
+            .session-title {
+                font-size: 1.5rem;
+            }
+
             .qr-image {
-                max-width: 250px;
+                width: 220px;
+                height: 220px;
             }
 
             .btn-group-custom {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-custom {
+                padding: 15px 20px;
+            }
+
+            .info-item {
                 flex-direction: column;
+                align-items: flex-start;
+                text-align: left;
+            }
+
+            .info-value {
+                text-align: left;
+                margin-top: 2px;
+            }
+        }
+
+        @@media (max-width: 400px) {
+            .qr-image {
+                width: 200px;
+                height: 200px;
+            }
+
+            .timer {
+                font-size: 1.1rem;
+                padding: 10px 20px;
             }
         }
     </style>
 </head>
 <body>
     <div class="qr-container">
-        <h2 class="mb-3">@Model.SessionTitle</h2>
+        <!-- HEADER SECTION -->
+        <div class="header-section">
+            <h1 class="session-title">@Model.SessionTitle</h1>
 
-        <div class="session-info">
-            <p class="mb-1"><strong>Course:</strong> @Model.Course?.CourseCode - @Model.Course?.CourseName</p>
-            <p class="mb-1"><strong>Duration:</strong> @Model.DurationMinutes minutes</p>
-            <p class="mb-0"><strong>Created:</strong> @Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</p>
+            @if (Model.EnableDynamicQR)
+            {
+                <div class="dynamic-badge">
+                    <i class="fas fa-sync-alt"></i> DYNAMIC QR CODE
+                </div>
+            }
         </div>
 
-        <!-- Status and Timer -->
-        <div class="mb-3">
-            @if (DateTime.Now < expiresAt)
+        <!-- INFO SECTION -->
+        <div class="info-section">
+            <div class="info-item">
+                <span class="info-label">Course:</span>
+                <span class="info-value">@Model.Course?.CourseCode - @Model.Course?.CourseName</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Duration:</span>
+                <span class="info-value">@Model.DurationMinutes minutes</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Created:</span>
+                <span class="info-value">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Expires:</span>
+                <span class="info-value">@expiresAt.ToString("MMM dd, yyyy HH:mm")</span>
+            </div>
+        </div>
+
+        <!-- STATUS SECTION -->
+        <div class="status-section">
+            @if (isActive)
             {
-                <span class="status-active">
-                    <i class="fas fa-check-circle"></i> ACTIVE
-                </span>
+                <div class="status-badge status-active">
+                    <i class="fas fa-check-circle"></i> ACTIVE SESSION
+                </div>
                 <div class="timer" id="countdown-timer">
                     <i class="fas fa-clock"></i>
-                    Expires in: <span id="time-left">@minutesLeft:@secondsLeft.ToString("00")</span>
+                    <span id="time-left">@minutesLeft:@secondsLeft.ToString("00")</span>
                 </div>
             }
             else
             {
-                <span class="status-expired">
-                    <i class="fas fa-exclamation-triangle"></i> EXPIRED
-                </span>
+                <div class="status-badge status-expired">
+                    <i class="fas fa-exclamation-triangle"></i> SESSION EXPIRED
+                </div>
                 <div class="timer">
-                    Session ended
+                    Session has ended
                 </div>
             }
         </div>
 
-        <!-- QR Code Image -->
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=@encodedUrl&margin=10&format=png"
-             alt="QR Code for @Model.SessionTitle"
-             class="qr-image img-fluid"
-             style="max-width: 300px;">
-
-        <p class="text-muted mt-3">
-            <i class="fas fa-camera"></i> Scan this QR code to mark attendance
-        </p>
-
-        <!-- Action Buttons -->
-        <div class="btn-group-custom">
-            <button onclick="window.print()" class="btn btn-primary btn-custom">
-                <i class="fas fa-print"></i> Print
-            </button>
-            <button onclick="copyToClipboard('@scanUrl')" class="btn btn-info btn-custom">
-                <i class="fas fa-copy"></i> Copy Link
-            </button>
-            <button onclick="window.close()" class="btn btn-secondary btn-custom">
-                <i class="fas fa-times"></i> Close
-            </button>
+        <!-- QR CODE SECTION -->
+        <div class="qr-section">
+            <div class="qr-image-container">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=@encodedUrl&margin=10&format=png"
+                     alt="QR Code for @Model.SessionTitle"
+                     class="qr-image"
+                     id="qrcode-image">
+            </div>
+            <p class="qr-instruction">
+                <i class="fas fa-camera"></i> Scan this QR code to mark attendance
+            </p>
         </div>
 
-        <!-- Scan URL (hidden but accessible) -->
-        <div class="mt-3 small text-muted">
-            <small>Scan URL: <span id="scan-url">@scanUrl</span></small>
+        <!-- BUTTONS SECTION -->
+        <div class="buttons-section">
+            <div class="btn-group-custom">
+                <button onclick="window.print()" class="btn-custom btn-primary">
+                    <i class="fas fa-print"></i> Print
+                </button>
+                <button onclick="copyToClipboard('@scanUrl')" class="btn-custom btn-info">
+                    <i class="fas fa-copy"></i> Copy Link
+                </button>
+                <a href="@Url.Action("Dashboard", new { id = Model.Id })" class="btn-custom btn-success">
+                    <i class="fas fa-chart-bar"></i> Dashboard
+                </a>
+                <a href="@Url.Action("ActiveSessions")" class="btn-custom btn-secondary">
+                    <i class="fas fa-list"></i> All Sessions
+                </a>
+            </div>
+        </div>
+
+        <!-- URL SECTION -->
+        <div class="url-section">
+            <div class="url-label">Scan URL:</div>
+            <div class="url-value" id="scan-url">@scanUrl</div>
         </div>
     </div>
 
@@ -222,33 +425,60 @@
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(function() {
                 // Show success feedback
-                const originalText = button.target.innerHTML;
-                button.target.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                button.target.classList.remove('btn-info');
-                button.target.classList.add('btn-success');
+                const buttons = document.querySelectorAll('.btn-custom');
+                const copyBtn = Array.from(buttons).find(btn => btn.textContent.includes('Copy Link'));
 
-                setTimeout(() => {
-                    button.target.innerHTML = originalText;
-                    button.target.classList.remove('btn-success');
-                    button.target.classList.add('btn-info');
-                }, 2000);
+                if (copyBtn) {
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    copyBtn.classList.remove('btn-info');
+                    copyBtn.classList.add('btn-success');
+
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                        copyBtn.classList.remove('btn-success');
+                        copyBtn.classList.add('btn-info');
+                    }, 2000);
+                }
             }).catch(function(err) {
                 console.error('Failed to copy: ', err);
                 alert('Failed to copy link to clipboard');
             });
         }
 
+        // Dynamic QR update
+        function updateDynamicQR() {
+            fetch('@Url.Action("GetCurrentToken", new { id = Model.Id })')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.token && data.token !== '@currentToken') {
+                        const newScanUrl = '@Url.Action("Scan", "QRCode", null, Context.Request.Scheme)?token=' + data.token;
+                        const newEncodedUrl = encodeURIComponent(newScanUrl);
+                        const qrImage = document.getElementById('qrcode-image');
+                        qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${newEncodedUrl}&margin=10&format=png`;
+                        console.log('QR code updated with new token');
+                    }
+                })
+                .catch(err => console.error('Failed to update QR code:', err));
+        }
+
         // Auto-refresh timer every second
         let timerInterval;
-        if ('@DateTime.Now < expiresAt' === 'True') {
+        if ('@isActive' === 'True') {
             timerInterval = setInterval(updateTimer, 1000);
             updateTimer(); // Initial call
+        }
+
+        // Auto-refresh QR code if dynamic
+        let qrInterval;
+        if ('@Model.EnableDynamicQR' === 'True' && '@isActive' === 'True') {
+            qrInterval = setInterval(updateDynamicQR, @tokenUpdateIntervalMs);
         }
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
-                window.close();
+                window.history.back();
             } else if (event.key === 'p' && (event.ctrlKey || event.metaKey)) {
                 event.preventDefault();
                 window.print();
@@ -256,11 +486,6 @@
                 event.preventDefault();
                 copyToClipboard('@scanUrl');
             }
-        });
-
-        // Auto-focus for better UX
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelector('.qr-container').focus();
         });
     </script>
 </body>
