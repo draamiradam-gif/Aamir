@@ -425,6 +425,227 @@ namespace StudentManagementSystem.Services
             return result;
         }
 
+        /*
+         
+        public async Task<ImportResult> ImportCoursesFromExcelAsync(Stream stream)
+{
+    var result = new ImportResult();
+
+    try
+    {
+        ExcelPackage.License.SetNonCommercialOrganization("Student Management System");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets[0];
+
+        if (worksheet == null || worksheet.Dimension == null)
+        {
+            result.Message = "No worksheet found in the Excel file.";
+            return result;
+        }
+
+        var rowCount = worksheet.Dimension.Rows;
+        var colCount = worksheet.Dimension.Columns;
+
+        // ✅ GET HEADERS FROM EXCEL (SAME AS ANALYSIS METHOD)
+        var headers = new List<string>();
+        for (int col = 1; col <= colCount; col++)
+        {
+            var headerValue = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrEmpty(headerValue))
+            {
+                headers.Add(headerValue);
+            }
+        }
+
+        var validCourses = new List<Course>();
+        var errors = new List<string>();
+
+        // ✅ USE HEADER MAPPING (SAME AS ANALYSIS METHOD)
+        for (int row = 2; row <= rowCount; row++)
+        {
+            try
+            {
+                var course = new Course();
+                string? prerequisitesValue = null;
+                string? courseSpecValue = null;
+                string? iconValue = null;
+
+                // Map columns by header name
+                for (int col = 1; col <= headers.Count; col++)
+                {
+                    var header = headers[col - 1].ToLower();
+                    var value = worksheet.Cells[row, col].Text.Trim();
+
+                    switch (header)
+                    {
+                        case "coursecode (required)":
+                        case "coursecode":
+                        case "كود المادة":
+                            course.CourseCode = value;
+                            break;
+                        case "coursename (required)":
+                        case "coursename":
+                        case "اسم المادة":
+                            course.CourseName = value;
+                            break;
+                        case "description":
+                        case "الوصف":
+                            course.Description = value;
+                            break;
+                        case "credits":
+                        case "الساعات المعتمدة":
+                            if (int.TryParse(value, out int credits))
+                                course.Credits = credits;
+                            else if (string.IsNullOrEmpty(value))
+                                course.Credits = 3;
+                            break;
+                        case "department":
+                        case "القسم":
+                            course.Department = value;
+                            break;
+                        case "semester":
+                        case "الفصل الدراسي":
+                            if (int.TryParse(value, out int semester))
+                                course.Semester = semester;
+                            else if (string.IsNullOrEmpty(value))
+                                course.Semester = 1;
+                            break;
+                        case "maxstudents":
+                        case "الحد الأقصى للطلاب":
+                            if (int.TryParse(value, out int maxStudents))
+                                course.MaxStudents = maxStudents;
+                            else if (string.IsNullOrEmpty(value))
+                                course.MaxStudents = 1000;
+                            break;
+                        case "mingpa":
+                        case "الحد الأدنى للمعدل التراكمي":
+                            if (decimal.TryParse(value, out decimal minGPA))
+                                course.MinGPA = minGPA;
+                            else if (string.IsNullOrEmpty(value))
+                                course.MinGPA = 2.0m;
+                            break;
+                        case "minpassedhours":
+                        case "الحد الأدنى للساعات المنجزة":
+                            if (int.TryParse(value, out int minPassedHours))
+                                course.MinPassedHours = minPassedHours;
+                            else if (string.IsNullOrEmpty(value))
+                                course.MinPassedHours = 0;
+                            break;
+                        case "prerequisites":
+                        case "المتطلبات السابقة":
+                            prerequisitesValue = value;
+                            break;
+                        case "coursespecification":
+                            courseSpecValue = value;
+                            break;
+                        case "icon":
+                            iconValue = value;
+                            break;
+                        case "isactive":
+                        case "نشط":
+                            course.IsActive = value.ToLower() switch
+                            {
+                                "yes" => true,
+                                "نعم" => true,
+                                "true" => true,
+                                "1" => true,
+                                "y" => true,
+                                _ => false
+                            };
+                            break;
+                    }
+                }
+
+                // ✅ STORE PREREQUISITES (SAME AS ANALYSIS METHOD)
+                if (!string.IsNullOrEmpty(prerequisitesValue))
+                {
+                    course.PrerequisitesString = prerequisitesValue;
+                }
+                if (!string.IsNullOrEmpty(courseSpecValue))
+                {
+                    course.CourseSpecification = courseSpecValue;
+                }
+                if (!string.IsNullOrEmpty(iconValue))
+                {
+                    course.Icon = iconValue;
+                }
+
+                // Validation
+                if (string.IsNullOrEmpty(course.CourseCode))
+                {
+                    errors.Add($"Row {row}: CourseCode is required");
+                    continue;
+                }
+
+                if (string.IsNullOrEmpty(course.CourseName))
+                {
+                    errors.Add($"Row {row}: CourseName is required");
+                    continue;
+                }
+
+                validCourses.Add(course);
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Row {row}: Error processing row - {ex.Message}");
+            }
+        }
+
+        // Save valid courses
+        foreach (var course in validCourses)
+        {
+            try
+            {
+                var existingCourse = await _context.Courses
+                    .FirstOrDefaultAsync(c => c.CourseCode == course.CourseCode);
+
+                if (existingCourse != null)
+                {
+                    // Update existing course
+                    existingCourse.CourseName = course.CourseName;
+                    existingCourse.Description = course.Description;
+                    existingCourse.Credits = course.Credits;
+                    existingCourse.Department = course.Department;
+                    existingCourse.Semester = course.Semester;
+                    existingCourse.MaxStudents = course.MaxStudents;
+                    existingCourse.MinGPA = course.MinGPA;
+                    existingCourse.MinPassedHours = course.MinPassedHours;
+                    existingCourse.PrerequisitesString = course.PrerequisitesString; // ✅ SAVE PREREQUISITES
+                    existingCourse.CourseSpecification = course.CourseSpecification;
+                    existingCourse.Icon = course.Icon;
+                    existingCourse.IsActive = course.IsActive;
+                }
+                else
+                {
+                    // Add new course
+                    _context.Courses.Add(course);
+                }
+
+                await _context.SaveChangesAsync();
+                result.ImportedCount++;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Error saving course {course.CourseCode}: {ex.Message}");
+            }
+        }
+
+        result.Success = true;
+        result.Message = $"Successfully imported {result.ImportedCount} courses. {errors.Count} errors found.";
+        result.Errors = errors;
+    }
+    catch (Exception ex)
+    {
+        result.Message = $"Import failed: {ex.Message}";
+        _logger.LogError(ex, "Error importing courses from Excel");
+    }
+
+    return result;
+}
+         
+         */
+
+
         public async Task<byte[]> ExportCoursesToExcelAsync()
         {
             return await Task.Run(async () =>
