@@ -404,21 +404,27 @@
                                 <span class="text-muted">No description</span>
                             }
                         </td>
-                        <td class="column-prerequisites">
-                            @if (course.Prerequisites != null && course.Prerequisites.Any())
+                        <td class="column-prerequisites text-center">
+                            @if (!string.IsNullOrEmpty(course.PrerequisitesString))
                             {
                                 <div class="prerequisites-list">
-                                    @foreach (var prereq in course.Prerequisites.Take(3))
+                                    @{
+                                        var prereqCodes = course.PrerequisitesString.Split(',')
+                                            .Select(p => p.Trim())
+                                            .Where(p => !string.IsNullOrEmpty(p))
+                                            .Take(3);
+                                    }
+                                    @foreach (var prereqCode in prereqCodes)
                                     {
                                         <span class="badge bg-secondary me-1 mb-1" 
                                               data-bs-toggle="tooltip" 
-                                              title="@prereq.PrerequisiteCourse?.CourseCode - @prereq.PrerequisiteCourse?.CourseName">
-                                            @prereq.PrerequisiteCourse?.CourseCode
+                                              title="@prereqCode">
+                                            @prereqCode
                                         </span>
                                     }
-                                    @if (course.Prerequisites.Count > 3)
+                                    @if (course.PrerequisitesString.Split(',').Length > 3)
                                     {
-                                        <span class="badge bg-light text-dark">+@(course.Prerequisites.Count - 3) more</span>
+                                        <span class="badge bg-light text-dark">+@(course.PrerequisitesString.Split(',').Length - 3) more</span>
                                     }
                                 </div>
                             }

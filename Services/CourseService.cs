@@ -386,6 +386,7 @@ namespace StudentManagementSystem.Services
                         await _context.SaveChangesAsync();
 
                         // ✅ OPTIONAL: Keep the prerequisite relationship processing if you want
+                        // Handle prerequisites
                         if (!string.IsNullOrEmpty(course.PrerequisitesString))
                         {
                             var courseId = existingCourse?.Id ?? course.Id;
@@ -394,12 +395,20 @@ namespace StudentManagementSystem.Services
                                 .Where(p => !string.IsNullOrEmpty(p))
                                 .ToList();
 
+                            Console.WriteLine($"=== PREREQUISITES DEBUG ===");
+                            Console.WriteLine($"Course: {course.CourseCode}");
+                            Console.WriteLine($"Prerequisites from Excel: {course.PrerequisitesString}");
+                            Console.WriteLine($"Parsed codes: {string.Join(", ", prereqCodes)}");
+
                             foreach (var prereqCode in prereqCodes)
                             {
                                 var prereqCourse = await GetCourseByCodeAsync(prereqCode);
+                                Console.WriteLine($"Looking for prerequisite: '{prereqCode}' - Found: {prereqCourse != null}");
+
                                 if (prereqCourse != null && prereqCourse.Id != courseId)
                                 {
                                     await AddPrerequisiteAsync(courseId, prereqCourse.Id, null);
+                                    Console.WriteLine($"Created relationship: {course.CourseCode} -> {prereqCode}");
                                 }
                             }
                         }
