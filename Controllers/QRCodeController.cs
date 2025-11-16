@@ -132,75 +132,75 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        [HttpPost]
-        [AllowAnonymous]
-        public async Task<JsonResult> Scan(string token, int studentId)
-        {
-            try
-            {
-                Console.WriteLine($"=== SCAN DEBUG START ===");
-                Console.WriteLine($"Token: {token}");
-                Console.WriteLine($"StudentId: {studentId}");
-                Console.WriteLine($"Current Time: {DateTime.Now}");
+        //[HttpPost]
+        //[AllowAnonymous]
+        //public async Task<JsonResult> Scan(string token, int studentId)
+        //{
+        //    try
+        //    {
+        //        Console.WriteLine($"=== SCAN DEBUG START ===");
+        //        Console.WriteLine($"Token: {token}");
+        //        Console.WriteLine($"StudentId: {studentId}");
+        //        Console.WriteLine($"Current Time: {DateTime.Now}");
 
-                // ✅ USE DIRECT DATABASE QUERY (same as validation logic)
-                var session = await _context.QRCodeSessions
-                    .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
+        //        // ✅ USE DIRECT DATABASE QUERY (same as validation logic)
+        //        var session = await _context.QRCodeSessions
+        //            .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
 
-                Console.WriteLine($"Direct DB Query - Found: {session != null}");
-                Console.WriteLine($"Session ID: {session?.Id}");
-                Console.WriteLine($"Session IsActive: {session?.IsActive}");
+        //        Console.WriteLine($"Direct DB Query - Found: {session != null}");
+        //        Console.WriteLine($"Session ID: {session?.Id}");
+        //        Console.WriteLine($"Session IsActive: {session?.IsActive}");
 
-                if (session == null)
-                {
-                    return Json(new { success = false, message = "Session not found or inactive" });
-                }
+        //        if (session == null)
+        //        {
+        //            return Json(new { success = false, message = "Session not found or inactive" });
+        //        }
 
-                // ✅ CALCULATE EXPIRATION (same as validation logic)
-                var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
-                Console.WriteLine($"Session CreatedAt: {session.CreatedAt}");
-                Console.WriteLine($"Session Duration: {session.DurationMinutes} minutes");
-                Console.WriteLine($"Calculated ExpiresAt: {expiresAt}");
-                Console.WriteLine($"Is Expired: {expiresAt < DateTime.Now}");
+        //        // ✅ CALCULATE EXPIRATION (same as validation logic)
+        //        var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
+        //        Console.WriteLine($"Session CreatedAt: {session.CreatedAt}");
+        //        Console.WriteLine($"Session Duration: {session.DurationMinutes} minutes");
+        //        Console.WriteLine($"Calculated ExpiresAt: {expiresAt}");
+        //        Console.WriteLine($"Is Expired: {expiresAt < DateTime.Now}");
 
-                if (expiresAt < DateTime.Now)
-                {
-                    // Auto-deactivate expired session
-                    session.IsActive = false;
-                    await _context.SaveChangesAsync();
-                    return Json(new { success = false, message = "Session has expired" });
-                }
+        //        if (expiresAt < DateTime.Now)
+        //        {
+        //            // Auto-deactivate expired session
+        //            session.IsActive = false;
+        //            await _context.SaveChangesAsync();
+        //            return Json(new { success = false, message = "Session has expired" });
+        //        }
 
-                // ✅ Check if student exists
-                var student = await _context.Students.FindAsync(studentId);
-                if (student == null)
-                {
-                    return Json(new { success = false, message = "Student ID not found" });
-                }
+        //        // ✅ Check if student exists
+        //        var student = await _context.Students.FindAsync(studentId);
+        //        if (student == null)
+        //        {
+        //            return Json(new { success = false, message = "Student ID not found" });
+        //        }
 
-                // ✅ Create attendance
-                var attendance = new QRAttendance
-                {
-                    QRCodeSessionId = session.Id,
-                    StudentId = studentId,
-                    DeviceInfo = Request.Headers["User-Agent"],
-                    IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                    ScannedAt = DateTime.Now
-                };
+        //        // ✅ Create attendance
+        //        var attendance = new QRAttendance
+        //        {
+        //            QRCodeSessionId = session.Id,
+        //            StudentId = studentId,
+        //            DeviceInfo = Request.Headers["User-Agent"],
+        //            IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+        //            ScannedAt = DateTime.Now
+        //        };
 
-                _context.QRAttendances.Add(attendance);
-                await _context.SaveChangesAsync();
+        //        _context.QRAttendances.Add(attendance);
+        //        await _context.SaveChangesAsync();
 
-                Console.WriteLine($"=== ATTENDANCE SAVED SUCCESSFULLY ===");
-                return Json(new { success = true, message = "Attendance marked successfully!" });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"=== SCAN ERROR: {ex.Message} ===");
-                Console.WriteLine($"Stack: {ex.StackTrace}");
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
+        //        Console.WriteLine($"=== ATTENDANCE SAVED SUCCESSFULLY ===");
+        //        return Json(new { success = true, message = "Attendance marked successfully!" });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"=== SCAN ERROR: {ex.Message} ===");
+        //        Console.WriteLine($"Stack: {ex.StackTrace}");
+        //        return Json(new { success = false, message = ex.Message });
+        //    }
+        //}
         public async Task<IActionResult> Display(int id)
         {
             var session = await _qrCodeService.GetSessionByIdAsync(id);
@@ -797,41 +797,55 @@ namespace StudentManagementSystem.Controllers
             try
             {
                 Console.WriteLine($"=== SCAN DEBUG START ===");
-                Console.WriteLine($"Token: {request.Token}");
-                Console.WriteLine($"StudentId: {request.StudentId}");
-                Console.WriteLine($"Request received at: {DateTime.Now}");
 
-                // ✅ DEBUG: Check if session exists at all
-                var allSessions = await _context.QRCodeSessions
-                    .Where(s => s.Token == request.Token)
-                    .ToListAsync();
-
-                Console.WriteLine($"Total sessions with token: {allSessions.Count}");
-                foreach (var s in allSessions)
+                // ✅ NULL CHECK: Request object
+                if (request == null)
                 {
-                    Console.WriteLine($"Session {s.Id}: IsActive={s.IsActive}, CreatedAt={s.CreatedAt}, Duration={s.DurationMinutes}min");
+                    Console.WriteLine("ERROR: Request is null!");
+                    return Json(new { success = false, message = "Invalid request data" });
+                }
+
+                Console.WriteLine($"Token: {request.Token}");
+                Console.WriteLine($"StudentId from request: {request.StudentId}");
+
+                // ✅ NULL CHECK: Database context
+                if (_context == null)
+                {
+                    Console.WriteLine("ERROR: _context is null!");
+                    return Json(new { success = false, message = "Database context is not available" });
+                }
+
+                // ✅ NULL CHECK: Token
+                if (string.IsNullOrEmpty(request.Token))
+                {
+                    Console.WriteLine("ERROR: Token is null or empty!");
+                    return Json(new { success = false, message = "Invalid token" });
                 }
 
                 // ✅ Find active session
-                var session = allSessions.FirstOrDefault(s => s.IsActive);
-                Console.WriteLine($"Active session found: {session != null}");
+                Console.WriteLine("Looking for session...");
+                var session = await _context.QRCodeSessions
+                    .FirstOrDefaultAsync(s => s.Token == request.Token && s.IsActive);
 
+                Console.WriteLine($"Session found: {session != null}");
                 if (session == null)
                 {
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"No active session found. Total sessions with token: {allSessions.Count}"
-                    });
+                    return Json(new { success = false, message = "Session not found or inactive" });
                 }
 
+                // ✅ NULL CHECK: Session properties
+                if (session.CreatedAt == default)
+                {
+                    Console.WriteLine("ERROR: Session CreatedAt is not set!");
+                    return Json(new { success = false, message = "Session configuration error" });
+                }
+
+                Console.WriteLine($"Session ID: {session.Id}, Title: {session.SessionTitle}");
+
                 // ✅ Check expiration
+                Console.WriteLine("Checking expiration...");
                 var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
-                Console.WriteLine($"Session CreatedAt: {session.CreatedAt}");
-                Console.WriteLine($"Duration: {session.DurationMinutes} minutes");
-                Console.WriteLine($"ExpiresAt: {expiresAt}");
-                Console.WriteLine($"Current Time: {DateTime.Now}");
-                Console.WriteLine($"Is Expired: {expiresAt < DateTime.Now}");
+                Console.WriteLine($"CreatedAt: {session.CreatedAt}, Duration: {session.DurationMinutes}, ExpiresAt: {expiresAt}, Now: {DateTime.Now}");
 
                 if (expiresAt < DateTime.Now)
                 {
@@ -840,24 +854,35 @@ namespace StudentManagementSystem.Controllers
                     return Json(new { success = false, message = "Session expired" });
                 }
 
-                // ✅ Check student - IMPORTANT: StudentId might be string in database
-                Console.WriteLine($"Looking for student with ID: {request.StudentId}");
+                // ✅ STUDENT LOOKUP
+                Console.WriteLine($"Looking for student with StudentId: '{request.StudentId}'");
+
+                string studentIdString = request.StudentId.ToString();
+                Console.WriteLine($"Converted to string: '{studentIdString}'");
+
                 var student = await _context.Students
-                    .FirstOrDefaultAsync(s => s.StudentId == request.StudentId.ToString());
+                    .FirstOrDefaultAsync(s => s.StudentId == studentIdString);
 
                 Console.WriteLine($"Student found: {student != null}");
+
                 if (student == null)
                 {
-                    // Try alternative lookup
-                    var studentById = await _context.Students.FindAsync(request.StudentId);
-                    Console.WriteLine($"Student by FindAsync: {studentById != null}");
-
-                    return Json(new { success = false, message = $"Student ID {request.StudentId} not found" });
+                    return Json(new { success = false, message = $"Student ID '{studentIdString}' not found" });
                 }
 
+                // ✅ NULL CHECK: Student properties
+                if (student.Id == 0)
+                {
+                    Console.WriteLine("ERROR: Student ID is 0!");
+                    return Json(new { success = false, message = "Invalid student record" });
+                }
+
+                Console.WriteLine($"Student details - ID: {student.Id}, StudentId: {student.StudentId}, Name: {student.Name}");
+
                 // ✅ Check for existing attendance
+                Console.WriteLine("Checking existing attendance...");
                 var existingAttendance = await _context.QRAttendances
-                    .FirstOrDefaultAsync(a => a.QRCodeSessionId == session.Id && a.StudentId == request.StudentId);
+                    .FirstOrDefaultAsync(a => a.QRCodeSessionId == session.Id && a.StudentId == student.Id);
 
                 Console.WriteLine($"Existing attendance found: {existingAttendance != null}");
 
@@ -867,29 +892,37 @@ namespace StudentManagementSystem.Controllers
                 }
 
                 // ✅ Create attendance
+                Console.WriteLine("Creating attendance record...");
                 var attendance = new QRAttendance
                 {
                     QRCodeSessionId = session.Id,
-                    StudentId = request.StudentId,
+                    StudentId = student.Id,
                     DeviceInfo = request.DeviceInfo ?? Request.Headers["User-Agent"],
                     IPAddress = request.IPAddress ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
                     ScannedAt = DateTime.Now
                 };
 
-                Console.WriteLine($"Creating attendance record...");
+                Console.WriteLine($"Attendance object created: SessionId={attendance.QRCodeSessionId}, StudentId={attendance.StudentId}");
+
+                // ✅ NULL CHECK: Attendance object
+                if (attendance == null)
+                {
+                    Console.WriteLine("ERROR: Failed to create attendance object!");
+                    return Json(new { success = false, message = "Failed to create attendance record" });
+                }
+
                 _context.QRAttendances.Add(attendance);
+                Console.WriteLine("Saving to database...");
                 await _context.SaveChangesAsync();
 
                 Console.WriteLine($"=== ATTENDANCE SAVED SUCCESSFULLY ===");
-                Console.WriteLine($"Attendance ID: {attendance.Id}");
-
                 return Json(new { success = true, message = "Attendance marked successfully!" });
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"=== SCAN ERROR ===");
                 Console.WriteLine($"Error: {ex.Message}");
-                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                Console.WriteLine($"Stack: {ex.StackTrace}");
 
                 if (ex.InnerException != null)
                 {
@@ -900,7 +933,7 @@ namespace StudentManagementSystem.Controllers
                 return Json(new
                 {
                     success = false,
-                    message = $"Server error: {ex.Message}"
+                    message = $"Error: {ex.Message}"
                 });
             }
         }
@@ -909,7 +942,7 @@ namespace StudentManagementSystem.Controllers
         public class ScanRequest
         {
             public string Token { get; set; } = string.Empty;
-            public int StudentId { get; set; }
+            public long StudentId { get; set; }
             public string? DeviceInfo { get; set; }
             public string? IPAddress { get; set; }
         }
