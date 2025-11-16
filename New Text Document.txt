@@ -85,6 +85,9 @@ Add-Migration InitialCreate
 # Update database
 Update-Database
 
+dotnet ef migrations add UpdateCourseModel
+
+dotnet ef migrations add UpdateCourseDescriptionAndMaxStudents
 
 dotnet ef migrations add UpdateUniversityStructure
 
