@@ -53,7 +53,7 @@ namespace StudentManagementSystem.Models
 
         [Display(Name = "Min Passed Hours")]
         public int MinPassedHours { get; set; } = 0;
-
+                
         [StringLength(1000)]
         [Display(Name = "Prerequisites")]
         public string? PrerequisitesString { get; set; }

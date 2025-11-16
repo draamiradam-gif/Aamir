@@ -429,20 +429,16 @@ namespace StudentManagementSystem.Services
         {
             return await Task.Run(async () =>
             {
-                // ✅ INCLUDE PREREQUISITES AND NEW FIELDS
-                var courses = await _context.Courses
-                    .Include(c => c.Prerequisites)
-                        .ThenInclude(p => p.PrerequisiteCourse)
-                    .ToListAsync();
+                var courses = await GetAllCoursesAsync();
 
                 using var package = new ExcelPackage();
                 var worksheet = package.Workbook.Worksheets.Add("Courses");
 
-                // ✅ UPDATED HEADERS WITH NEW FIELDS
+                // Headers - ADD PREREQUISITES
                 string[] headers = {
             "CourseCode", "CourseName", "Description", "Credits",
             "Department", "Semester", "MaxStudents", "MinGPA",
-            "MinPassedHours", "Prerequisites", "CourseSpecification", "Icon", "IsActive"
+            "MinPassedHours", "Prerequisites", "IsActive"  // ✅ ADDED PREREQUISITES
         };
 
                 for (int i = 0; i < headers.Length; i++)
@@ -450,31 +446,21 @@ namespace StudentManagementSystem.Services
                     worksheet.Cells[1, i + 1].Value = headers[i];
                 }
 
-                // ✅ UPDATED DATA WITH NEW FIELDS (SAFE VERSION)
+                // Data
                 for (int i = 0; i < courses.Count; i++)
                 {
                     var course = courses[i];
                     worksheet.Cells[i + 2, 1].Value = course.CourseCode;
                     worksheet.Cells[i + 2, 2].Value = course.CourseName;
-                    worksheet.Cells[i + 2, 3].Value = course.Description ?? ""; // ✅ Handle null
+                    worksheet.Cells[i + 2, 3].Value = course.Description;
                     worksheet.Cells[i + 2, 4].Value = course.Credits;
-                    worksheet.Cells[i + 2, 5].Value = course.Department ?? ""; // ✅ Handle null
+                    worksheet.Cells[i + 2, 5].Value = course.Department;
                     worksheet.Cells[i + 2, 6].Value = course.Semester;
                     worksheet.Cells[i + 2, 7].Value = course.MaxStudents;
                     worksheet.Cells[i + 2, 8].Value = course.MinGPA;
                     worksheet.Cells[i + 2, 9].Value = course.MinPassedHours;
-
-                    // ✅ SAFE PREREQUISITES HANDLING
-                    var prerequisiteCodes = course.Prerequisites
-                        .Select(p => p.PrerequisiteCourse?.CourseCode)
-                        .Where(code => !string.IsNullOrEmpty(code))
-                        .ToList();
-                    worksheet.Cells[i + 2, 10].Value = prerequisiteCodes.Any() ? string.Join(", ", prerequisiteCodes) : "None";
-
-                    // ✅ NEW FIELDS WITH NULL HANDLING
-                    worksheet.Cells[i + 2, 11].Value = course.CourseSpecification ?? "";
-                    worksheet.Cells[i + 2, 12].Value = course.Icon ?? "";
-                    worksheet.Cells[i + 2, 13].Value = course.IsActive ? "Yes" : "No";
+                    worksheet.Cells[i + 2, 10].Value = course.PrerequisitesString ?? ""; // ✅ USE PrerequisitesString
+                    worksheet.Cells[i + 2, 11].Value = course.IsActive ? "Yes" : "No";
                 }
 
                 // Format headers
@@ -489,61 +475,61 @@ namespace StudentManagementSystem.Services
                 return package.GetAsByteArray();
             });
         }
-/*
-        
-        public async Task<byte[]> ExportCoursesToExcelAsync()
-        {
-        return await Task.Run(async () =>
-        {
-            var courses = await GetAllCoursesAsync();
+        /*
 
-            using var package = new ExcelPackage();
-            var worksheet = package.Workbook.Worksheets.Add("Courses");
+                public async Task<byte[]> ExportCoursesToExcelAsync()
+                {
+                return await Task.Run(async () =>
+                {
+                    var courses = await GetAllCoursesAsync();
 
-            // ✅ UPDATED HEADERS WITH NEW FIELDS
-            string[] headers = {
-                "CourseCode", "CourseName", "Description", "Credits",
-                "Department", "Semester", "MaxStudents", "MinGPA",
-                "MinPassedHours", "Prerequisites", "CourseSpecification", "Icon", "IsActive"
-            };
+                    using var package = new ExcelPackage();
+                    var worksheet = package.Workbook.Worksheets.Add("Courses");
 
-            for (int i = 0; i < headers.Length; i++)
-            {
-                worksheet.Cells[1, i + 1].Value = headers[i];
-            }
+                    // ✅ UPDATED HEADERS WITH NEW FIELDS
+                    string[] headers = {
+                        "CourseCode", "CourseName", "Description", "Credits",
+                        "Department", "Semester", "MaxStudents", "MinGPA",
+                        "MinPassedHours", "Prerequisites", "CourseSpecification", "Icon", "IsActive"
+                    };
 
-            // ✅ UPDATED DATA WITH NEW FIELDS
-            for (int i = 0; i < courses.Count; i++)
-            {
-                var course = courses[i];
-                worksheet.Cells[i + 2, 1].Value = course.CourseCode;
-                worksheet.Cells[i + 2, 2].Value = course.CourseName;
-                worksheet.Cells[i + 2, 3].Value = course.Description;
-                worksheet.Cells[i + 2, 4].Value = course.Credits;
-                worksheet.Cells[i + 2, 5].Value = course.Department;
-                worksheet.Cells[i + 2, 6].Value = course.Semester;
-                worksheet.Cells[i + 2, 7].Value = course.MaxStudents;
-                worksheet.Cells[i + 2, 8].Value = course.MinGPA;
-                worksheet.Cells[i + 2, 9].Value = course.MinPassedHours;
-                worksheet.Cells[i + 2, 10].Value = course.PrerequisitesString; // ✅ SIMPLER
-                worksheet.Cells[i + 2, 11].Value = course.CourseSpecification;
-                worksheet.Cells[i + 2, 12].Value = course.Icon;
-                worksheet.Cells[i + 2, 13].Value = course.IsActive ? "Yes" : "No";
-            }
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        worksheet.Cells[1, i + 1].Value = headers[i];
+                    }
 
-            // Format headers
-            using (var range = worksheet.Cells[1, 1, 1, headers.Length])
-            {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
-            }
+                    // ✅ UPDATED DATA WITH NEW FIELDS
+                    for (int i = 0; i < courses.Count; i++)
+                    {
+                        var course = courses[i];
+                        worksheet.Cells[i + 2, 1].Value = course.CourseCode;
+                        worksheet.Cells[i + 2, 2].Value = course.CourseName;
+                        worksheet.Cells[i + 2, 3].Value = course.Description;
+                        worksheet.Cells[i + 2, 4].Value = course.Credits;
+                        worksheet.Cells[i + 2, 5].Value = course.Department;
+                        worksheet.Cells[i + 2, 6].Value = course.Semester;
+                        worksheet.Cells[i + 2, 7].Value = course.MaxStudents;
+                        worksheet.Cells[i + 2, 8].Value = course.MinGPA;
+                        worksheet.Cells[i + 2, 9].Value = course.MinPassedHours;
+                        worksheet.Cells[i + 2, 10].Value = course.PrerequisitesString; // ✅ SIMPLER
+                        worksheet.Cells[i + 2, 11].Value = course.CourseSpecification;
+                        worksheet.Cells[i + 2, 12].Value = course.Icon;
+                        worksheet.Cells[i + 2, 13].Value = course.IsActive ? "Yes" : "No";
+                    }
 
-            worksheet.Cells.AutoFitColumns();
-            return package.GetAsByteArray();
-            });
-        } 
-  */       
+                    // Format headers
+                    using (var range = worksheet.Cells[1, 1, 1, headers.Length])
+                    {
+                        range.Style.Font.Bold = true;
+                        range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                        range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
+                    }
+
+                    worksheet.Cells.AutoFitColumns();
+                    return package.GetAsByteArray();
+                    });
+                } 
+          */
 
 
         public async Task<byte[]> ExportCoursesToPdfAsync()
@@ -1852,5 +1838,54 @@ namespace StudentManagementSystem.Services
                 .OrderBy(c => c.CourseCode)
                 .ToListAsync();
         }
+/*
+        private async Task<Course?> GetCourseByCodeAsync(string courseCode)
+        {
+            return await _context.Courses
+                .FirstOrDefaultAsync(c => c.CourseCode == courseCode);
+        }
+
+        private async Task AddPrerequisiteAsync(int courseId, int prerequisiteCourseId, decimal? minGrade)
+        {
+            var existing = await _context.CoursePrerequisites
+                .FirstOrDefaultAsync(cp => cp.CourseId == courseId && cp.PrerequisiteCourseId == prerequisiteCourseId);
+
+            if (existing == null)
+            {
+                var prerequisite = new CoursePrerequisite
+                {
+                    CourseId = courseId,
+                    PrerequisiteCourseId = prerequisiteCourseId,
+                    MinGrade = minGrade,
+                    IsRequired = true
+                };
+                _context.CoursePrerequisites.Add(prerequisite);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        private int TryParseInt(string? value, int defaultValue)
+        {
+            return int.TryParse(value, out int result) ? result : defaultValue;
+        }
+
+        private decimal TryParseDecimal(string? value, decimal defaultValue)
+        {
+            return decimal.TryParse(value, out decimal result) ? result : defaultValue;
+        }
+
+        private bool IsActive(string? value)
+        {
+            return value?.ToLower() switch
+            {
+                "yes" => true,
+                "نعم" => true,
+                "true" => true,
+                "1" => true,
+                "y" => true,
+                _ => false
+            };
+        }
+*/
     }
 }
