@@ -9,7 +9,6 @@ namespace StudentManagementSystem.Services
         Task<QRAttendance> ScanQRCodeAsync(string token, int studentId, string? deviceInfo = null, string? ipAddress = null);
         Task<List<QRCodeSession>> GetActiveSessionsAsync();
         Task<QRCodeSession?> GetSessionByIdAsync(int id);
-        Task<QRCodeSession?> GetSessionByTokenAsync(string token);
         Task<bool> ValidateSessionAsync(string token);
         Task<List<QRAttendance>> GetSessionAttendancesAsync(int sessionId);
         Task<bool> ReopenSessionAsync(int sessionId, int additionalMinutes = 15);
@@ -23,13 +22,8 @@ namespace StudentManagementSystem.Services
         byte[] GenerateAttendanceImportTemplate();
         Task<string> GetCurrentTokenAsync(int sessionId);
         Task UpdateSessionAsync(QRCodeSession session);
+        Task<QRCodeSession?> GetSessionByTokenAsync(string token);
 
-        // ✅ REMOVED: Conflicting duplicate methods
-        // string GenerateSessionToken();
-        // Task<QRCodeSession> CreateSessionAsync(int courseId, int durationMinutes = 60);
-        // Task<bool> ValidateQRScanAsync(string sessionToken, int studentId, string? deviceInfo = null, string? ipAddress = null);
-        // Task<bool> EndSessionAsync(int sessionId);
-        // Task<bool> IsSessionActiveAsync(int sessionId);
-        // Task<QRCodeSession?> GetActiveSessionByCourseAsync(int courseId);
+
     }
 }

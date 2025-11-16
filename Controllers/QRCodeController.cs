@@ -134,21 +134,73 @@ namespace StudentManagementSystem.Controllers
 
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> Scan(string token, int studentId)
+        public async Task<JsonResult> Scan(string token, int studentId)
         {
             try
             {
-                var attendance = await _qrCodeService.ScanQRCodeAsync(token, studentId,
-                    Request.Headers["User-Agent"], HttpContext.Connection.RemoteIpAddress?.ToString());
+                Console.WriteLine($"=== SCAN DEBUG START ===");
+                Console.WriteLine($"Token: {token}");
+                Console.WriteLine($"StudentId: {studentId}");
+                Console.WriteLine($"Current Time: {DateTime.Now}");
 
+                // ✅ USE DIRECT DATABASE QUERY (same as validation logic)
+                var session = await _context.QRCodeSessions
+                    .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
+
+                Console.WriteLine($"Direct DB Query - Found: {session != null}");
+                Console.WriteLine($"Session ID: {session?.Id}");
+                Console.WriteLine($"Session IsActive: {session?.IsActive}");
+
+                if (session == null)
+                {
+                    return Json(new { success = false, message = "Session not found or inactive" });
+                }
+
+                // ✅ CALCULATE EXPIRATION (same as validation logic)
+                var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
+                Console.WriteLine($"Session CreatedAt: {session.CreatedAt}");
+                Console.WriteLine($"Session Duration: {session.DurationMinutes} minutes");
+                Console.WriteLine($"Calculated ExpiresAt: {expiresAt}");
+                Console.WriteLine($"Is Expired: {expiresAt < DateTime.Now}");
+
+                if (expiresAt < DateTime.Now)
+                {
+                    // Auto-deactivate expired session
+                    session.IsActive = false;
+                    await _context.SaveChangesAsync();
+                    return Json(new { success = false, message = "Session has expired" });
+                }
+
+                // ✅ Check if student exists
+                var student = await _context.Students.FindAsync(studentId);
+                if (student == null)
+                {
+                    return Json(new { success = false, message = "Student ID not found" });
+                }
+
+                // ✅ Create attendance
+                var attendance = new QRAttendance
+                {
+                    QRCodeSessionId = session.Id,
+                    StudentId = studentId,
+                    DeviceInfo = Request.Headers["User-Agent"],
+                    IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    ScannedAt = DateTime.Now
+                };
+
+                _context.QRAttendances.Add(attendance);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"=== ATTENDANCE SAVED SUCCESSFULLY ===");
                 return Json(new { success = true, message = "Attendance marked successfully!" });
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"=== SCAN ERROR: {ex.Message} ===");
+                Console.WriteLine($"Stack: {ex.StackTrace}");
                 return Json(new { success = false, message = ex.Message });
             }
         }
-
         public async Task<IActionResult> Display(int id)
         {
             var session = await _qrCodeService.GetSessionByIdAsync(id);
@@ -738,56 +790,56 @@ namespace StudentManagementSystem.Controllers
             return Json(sessions);
         }
 
-        [HttpPost]
-        [AllowAnonymous]
-        public async Task<JsonResult> Scan([FromBody] ScanRequest request)
-        {
-            try
-            {
-                Console.WriteLine($"=== CONTROLLER SCAN DEBUG ===");
-                Console.WriteLine($"Token: {request.Token}");
-                Console.WriteLine($"StudentId: {request.StudentId}");
+        //[HttpPost]
+        //[AllowAnonymous]
+        //public async Task<JsonResult> Scan([FromBody] ScanRequest request)
+        //{
+        //    try
+        //    {
+        //        Console.WriteLine($"=== CONTROLLER SCAN DEBUG ===");
+        //        Console.WriteLine($"Token: {request.Token}");
+        //        Console.WriteLine($"StudentId: {request.StudentId}");
 
-                // ✅ FIRST: Validate the session using the working method
-                var isValid = await _qrCodeService.ValidateSessionAsync(request.Token);
-                Console.WriteLine($"Session Valid: {isValid}");
+        //        // ✅ FIRST: Validate the session using the working method
+        //        var isValid = await _qrCodeService.ValidateSessionAsync(request.Token);
+        //        Console.WriteLine($"Session Valid: {isValid}");
 
-                if (!isValid)
-                {
-                    return Json(new { success = false, message = "Invalid or expired session" });
-                }
+        //        if (!isValid)
+        //        {
+        //            return Json(new { success = false, message = "Invalid or expired session" });
+        //        }
 
-                // ✅ If validation passes, try to get the session directly
-                var session = await _qrCodeService.GetSessionByTokenAsync(request.Token);
-                Console.WriteLine($"GetSessionByToken - Found: {session != null}");
+        //        // ✅ If validation passes, try to get the session directly
+        //        var session = await _qrCodeService.GetSessionByTokenAsync(request.Token);
+        //        Console.WriteLine($"GetSessionByToken - Found: {session != null}");
 
-                if (session == null)
-                {
-                    return Json(new { success = false, message = "Session validation passed but session not found" });
-                }
+        //        if (session == null)
+        //        {
+        //            return Json(new { success = false, message = "Session validation passed but session not found" });
+        //        }
 
-                // ✅ Create attendance manually
-                var attendance = new QRAttendance
-                {
-                    QRCodeSessionId = session.Id,
-                    StudentId = request.StudentId,
-                    DeviceInfo = request.DeviceInfo,
-                    IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                    ScannedAt = DateTime.Now
-                };
+        //        // ✅ Create attendance manually
+        //        var attendance = new QRAttendance
+        //        {
+        //            QRCodeSessionId = session.Id,
+        //            StudentId = request.StudentId,
+        //            DeviceInfo = request.DeviceInfo,
+        //            IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+        //            ScannedAt = DateTime.Now
+        //        };
 
-                _context.QRAttendances.Add(attendance);
-                await _context.SaveChangesAsync();
+        //        _context.QRAttendances.Add(attendance);
+        //        await _context.SaveChangesAsync();
 
-                Console.WriteLine("=== ATTENDANCE SAVED SUCCESSFULLY ===");
-                return Json(new { success = true, message = "Attendance marked successfully!" });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"=== SCAN ERROR: {ex.Message} ===");
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
+        //        Console.WriteLine("=== ATTENDANCE SAVED SUCCESSFULLY ===");
+        //        return Json(new { success = true, message = "Attendance marked successfully!" });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"=== SCAN ERROR: {ex.Message} ===");
+        //        return Json(new { success = false, message = ex.Message });
+        //    }
+        //}
 
         //[HttpPost]
         //[AllowAnonymous]

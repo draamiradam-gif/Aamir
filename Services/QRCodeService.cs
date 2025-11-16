@@ -29,6 +29,7 @@ namespace StudentManagementSystem.Services
 
         public async Task<QRCodeSession> CreateSessionAsync(QRCodeSession session)
         {
+            //session.ExpiresAt = DateTime.Now.AddMinutes(session.DurationMinutes);
             _context.QRCodeSessions.Add(session);
             await _context.SaveChangesAsync();
             return session;
@@ -154,39 +155,39 @@ namespace StudentManagementSystem.Services
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
 
-        public async Task<QRCodeSession?> GetSessionByTokenAsync(string token)
-        {
-            // ✅ USE RAW SQL FOR CONSISTENCY
-            return await _context.QRCodeSessions
-                .FromSqlRaw("SELECT * FROM QRCodeSessions WHERE Token = {0}", token)
-                .Include(s => s.Course)
-                .Include(s => s.Attendances)
-                .FirstOrDefaultAsync();
-        }
+        //public async Task<QRCodeSession?> GetSessionByTokenAsync(string token)
+        //{
+        //    // ✅ USE RAW SQL FOR CONSISTENCY
+        //    return await _context.QRCodeSessions
+        //        .FromSqlRaw("SELECT * FROM QRCodeSessions WHERE Token = {0}", token)
+        //        .Include(s => s.Course)
+        //        .Include(s => s.Attendances)
+        //        .FirstOrDefaultAsync();
+        //}
 
+        // In QRCodeService.cs - should be identical logic
         public async Task<bool> ValidateSessionAsync(string token)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(token))
-                    return false;
+            var session = await _context.QRCodeSessions
+                .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
 
-                // ✅ USE RAW SQL FOR CONSISTENCY
-                var session = await _context.QRCodeSessions
-                    .FromSqlRaw("SELECT * FROM QRCodeSessions WHERE Token = {0}", token)
-                    .FirstOrDefaultAsync();
+            if (session == null) return false;
 
-                if (session == null)
-                    return false;
+            var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
+            return expiresAt > DateTime.Now;
+        }
 
-                var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
-                return expiresAt > DateTime.Now && session.IsActive;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in ValidateSessionAsync for token: {Token}", token);
-                return false;
-            }
+        public async Task<QRCodeSession?> GetSessionByTokenAsync(string token)
+        {
+            var currentTime = DateTime.Now;
+            var session = await _context.QRCodeSessions
+                .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
+
+            if (session == null) return null;
+
+            // Calculate expiration instead of using ExpiresAt property
+            var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
+            return expiresAt > currentTime ? session : null;
         }
 
         public async Task<List<QRAttendance>> GetSessionAttendancesAsync(int sessionId)
@@ -578,5 +579,30 @@ namespace StudentManagementSystem.Services
                 throw;
             }
         }
+
+
+
+
+        //public async Task<QRCodeSession> CreateSessionAsync(QRCodeSession session) { ... }
+        //public async Task<QRAttendance> ScanQRCodeAsync(string token, int studentId, string? deviceInfo = null, string? ipAddress = null) { ... }
+        //public async Task<List<QRCodeSession>> GetActiveSessionsAsync() { ... }
+        //public async Task<QRCodeSession?> GetSessionByIdAsync(int id) { ... }
+        //public async Task<QRCodeSession?> GetSessionByTokenAsync(string token) { ... }
+        //public async Task<bool> ValidateSessionAsync(string token) { ... }
+        //public async Task<List<QRAttendance>> GetSessionAttendancesAsync(int sessionId) { ... }
+        //public async Task<bool> ReopenSessionAsync(int sessionId, int additionalMinutes = 15) { ... }
+        //public async Task<bool> DeleteSessionWithAttendanceAsync(int sessionId) { ... }
+
+        //// Export/Import
+        //public async Task<byte[]> ExportAttendanceToExcelAsync(int sessionId) { ... }
+        //public async Task<byte[]> ExportAttendanceToPdfAsync(int sessionId) { ... }
+        //public async Task<byte[]> ExportAllSessionsToExcelAsync(DateTime? startDate = null, DateTime? endDate = null) { ... }
+        //public async Task<ImportResult> ImportAttendanceFromExcelAsync(Stream fileStream) { ... }
+        //public byte[] GenerateAttendanceImportTemplate() { ... }
+        //public async Task<string> GetCurrentTokenAsync(int sessionId) { ... }
+        //public async Task UpdateSessionAsync(QRCodeSession session) { ... }
+
+
+
     }
 }
