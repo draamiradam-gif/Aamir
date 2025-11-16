@@ -88,13 +88,13 @@ namespace StudentManagementSystem.Data
 
                 entity.Property(c => c.CourseCode).IsRequired().HasMaxLength(20);
                 entity.Property(c => c.CourseName).IsRequired().HasMaxLength(100);
-                entity.Property(c => c.Description).HasMaxLength(500);
+                entity.Property(c => c.Description).HasMaxLength(5000);
                 entity.Property(c => c.Department).IsRequired().HasMaxLength(50);
 
                 entity.Property(c => c.Credits).HasDefaultValue(3);
                 entity.Property(c => c.Semester).HasDefaultValue(1);
                 entity.Property(c => c.IsActive).HasDefaultValue(true);
-                entity.Property(c => c.MaxStudents).HasDefaultValue(30);
+                entity.Property(c => c.MaxStudents).HasDefaultValue(1000);
                 entity.Property(c => c.MinGPA).HasColumnType("decimal(4,2)").HasDefaultValue(2.0m);
             });
 
