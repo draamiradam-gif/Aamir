@@ -58,7 +58,12 @@
 
                     <div class="mb-3">
                         <label asp-for="Description" class="form-label fw-semibold">Description</label>
-                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter course description"></textarea>
+                        <textarea asp-for="Description" class="form-control" rows="6" 
+                                  placeholder="Enter course description (max 5000 characters)"
+                                  maxlength="5000"></textarea>
+                        <div class="form-text">
+                            <span id="descriptionCounter">0</span> / 5000 characters
+                        </div>
                         <span asp-validation-for="Description" class="text-danger small"></span>
                     </div>
 
@@ -101,7 +106,7 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label asp-for="MaxStudents" class="form-label fw-semibold">Max Students</label>
-                            <input asp-for="MaxStudents" class="form-control" type="number" min="1" max="100" value="30">
+                            <input asp-for="MaxStudents" class="form-control" type="number" min="1" max="1000" value="30">
                             <span asp-validation-for="MaxStudents" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4 mb-3">
@@ -249,6 +254,23 @@
                     </text>
             }
         });
+    </script>
+    <script>
+    // Character counter for description
+    document.addEventListener('DOMContentLoaded', function() {
+        const descriptionTextarea = document.querySelector('textarea[name="Description"]');
+        const counter = document.getElementById('descriptionCounter');
+        
+        if (descriptionTextarea && counter) {
+            // Update counter on load
+            counter.textContent = descriptionTextarea.value.length;
+            
+            // Update counter on input
+            descriptionTextarea.addEventListener('input', function() {
+                counter.textContent = this.value.length;
+            });
+        }
+    });
     </script>
 
     @{

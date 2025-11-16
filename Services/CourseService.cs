@@ -27,16 +27,27 @@ namespace StudentManagementSystem.Services
         }
 
         // BASIC COURSE CRUD
+        //public async Task<List<Course>> GetAllCoursesAsync()
+        //{
+        //    return await _context.Courses
+        //        .Include(c => c.CourseEnrollments)
+        //        .Include(c => c.Prerequisites)
+        //        .ThenInclude(p => p.PrerequisiteCourse)
+        //        .OrderBy(c => c.CourseCode)
+        //        .ToListAsync();
+        //}
         public async Task<List<Course>> GetAllCoursesAsync()
         {
             return await _context.Courses
+                .Include(c => c.CourseDepartment)
+                .Include(c => c.CourseSemester)
                 .Include(c => c.CourseEnrollments)
-                .Include(c => c.Prerequisites)
-                .ThenInclude(p => p.PrerequisiteCourse)
+                .Include(c => c.Prerequisites)  // ✅ ADD THIS
+                    .ThenInclude(p => p.PrerequisiteCourse)  // ✅ ADD THIS
+                .Where(c => c.IsActive)
                 .OrderBy(c => c.CourseCode)
                 .ToListAsync();
         }
-
         public async Task<Course?> GetCourseByIdAsync(int id)
         {
             return await _context.Courses
@@ -398,37 +409,52 @@ namespace StudentManagementSystem.Services
         {
             return await Task.Run(async () =>
             {
-                var courses = await GetAllCoursesAsync();
+                // ✅ INCLUDE PREREQUISITES AND NEW FIELDS
+                var courses = await _context.Courses
+                    .Include(c => c.Prerequisites)
+                        .ThenInclude(p => p.PrerequisiteCourse)
+                    .ToListAsync();
 
                 using var package = new ExcelPackage();
                 var worksheet = package.Workbook.Worksheets.Add("Courses");
 
-                // Headers
+                // ✅ UPDATED HEADERS WITH NEW FIELDS
                 string[] headers = {
-                    "CourseCode", "CourseName", "Description", "Credits",
-                    "Department", "Semester", "MaxStudents", "MinGPA",
-                    "MinPassedHours", "IsActive"
-                };
+            "CourseCode", "CourseName", "Description", "Credits",
+            "Department", "Semester", "MaxStudents", "MinGPA",
+            "MinPassedHours", "Prerequisites", "CourseSpecification", "Icon", "IsActive"
+        };
 
                 for (int i = 0; i < headers.Length; i++)
                 {
                     worksheet.Cells[1, i + 1].Value = headers[i];
                 }
 
-                // Data
+                // ✅ UPDATED DATA WITH NEW FIELDS (SAFE VERSION)
                 for (int i = 0; i < courses.Count; i++)
                 {
                     var course = courses[i];
                     worksheet.Cells[i + 2, 1].Value = course.CourseCode;
                     worksheet.Cells[i + 2, 2].Value = course.CourseName;
-                    worksheet.Cells[i + 2, 3].Value = course.Description;
+                    worksheet.Cells[i + 2, 3].Value = course.Description ?? ""; // ✅ Handle null
                     worksheet.Cells[i + 2, 4].Value = course.Credits;
-                    worksheet.Cells[i + 2, 5].Value = course.Department;
+                    worksheet.Cells[i + 2, 5].Value = course.Department ?? ""; // ✅ Handle null
                     worksheet.Cells[i + 2, 6].Value = course.Semester;
                     worksheet.Cells[i + 2, 7].Value = course.MaxStudents;
                     worksheet.Cells[i + 2, 8].Value = course.MinGPA;
                     worksheet.Cells[i + 2, 9].Value = course.MinPassedHours;
-                    worksheet.Cells[i + 2, 10].Value = course.IsActive ? "Yes" : "No";
+
+                    // ✅ SAFE PREREQUISITES HANDLING
+                    var prerequisiteCodes = course.Prerequisites
+                        .Select(p => p.PrerequisiteCourse?.CourseCode)
+                        .Where(code => !string.IsNullOrEmpty(code))
+                        .ToList();
+                    worksheet.Cells[i + 2, 10].Value = prerequisiteCodes.Any() ? string.Join(", ", prerequisiteCodes) : "None";
+
+                    // ✅ NEW FIELDS WITH NULL HANDLING
+                    worksheet.Cells[i + 2, 11].Value = course.CourseSpecification ?? "";
+                    worksheet.Cells[i + 2, 12].Value = course.Icon ?? "";
+                    worksheet.Cells[i + 2, 13].Value = course.IsActive ? "Yes" : "No";
                 }
 
                 // Format headers
@@ -443,6 +469,61 @@ namespace StudentManagementSystem.Services
                 return package.GetAsByteArray();
             });
         }
+
+        /*
+        public async Task<byte[]> ExportCoursesToExcelAsync()
+{
+    return await Task.Run(async () =>
+    {
+        var courses = await GetAllCoursesAsync();
+
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Courses");
+
+        // ✅ UPDATED HEADERS WITH NEW FIELDS
+        string[] headers = {
+            "CourseCode", "CourseName", "Description", "Credits",
+            "Department", "Semester", "MaxStudents", "MinGPA",
+            "MinPassedHours", "Prerequisites", "CourseSpecification", "Icon", "IsActive"
+        };
+
+        for (int i = 0; i < headers.Length; i++)
+        {
+            worksheet.Cells[1, i + 1].Value = headers[i];
+        }
+
+        // ✅ UPDATED DATA WITH NEW FIELDS
+        for (int i = 0; i < courses.Count; i++)
+        {
+            var course = courses[i];
+            worksheet.Cells[i + 2, 1].Value = course.CourseCode;
+            worksheet.Cells[i + 2, 2].Value = course.CourseName;
+            worksheet.Cells[i + 2, 3].Value = course.Description;
+            worksheet.Cells[i + 2, 4].Value = course.Credits;
+            worksheet.Cells[i + 2, 5].Value = course.Department;
+            worksheet.Cells[i + 2, 6].Value = course.Semester;
+            worksheet.Cells[i + 2, 7].Value = course.MaxStudents;
+            worksheet.Cells[i + 2, 8].Value = course.MinGPA;
+            worksheet.Cells[i + 2, 9].Value = course.MinPassedHours;
+            worksheet.Cells[i + 2, 10].Value = course.PrerequisitesString; // ✅ SIMPLER
+            worksheet.Cells[i + 2, 11].Value = course.CourseSpecification;
+            worksheet.Cells[i + 2, 12].Value = course.Icon;
+            worksheet.Cells[i + 2, 13].Value = course.IsActive ? "Yes" : "No";
+        }
+
+        // Format headers
+        using (var range = worksheet.Cells[1, 1, 1, headers.Length])
+        {
+            range.Style.Font.Bold = true;
+            range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+            range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
+        }
+
+        worksheet.Cells.AutoFitColumns();
+        return package.GetAsByteArray();
+    });
+} 
+         */
 
 
         public async Task<byte[]> ExportCoursesToPdfAsync()
@@ -840,6 +921,228 @@ namespace StudentManagementSystem.Services
 
         ///////////////////////
         ///
+        //public async Task<ImportResult> AnalyzeExcelImportAsync(Stream stream, ImportSettings? settings = null)
+        //{
+        //    return await Task.Run(() =>
+        //    {
+        //        var result = new ImportResult();
+
+        //        try
+        //        {
+        //            using var package = new ExcelPackage(stream);
+        //            var worksheet = package.Workbook.Worksheets[0];
+
+        //            if (worksheet == null || worksheet.Dimension == null)
+        //            {
+        //                result.Success = false;
+        //                result.Message = "Excel file is empty or invalid.";
+        //                return result;
+        //            }
+
+        //            var rowCount = worksheet.Dimension.Rows;
+        //            var colCount = worksheet.Dimension.Columns;
+
+        //            // Analyze headers
+        //            var headers = new List<string>();
+        //            for (int col = 1; col <= colCount; col++)
+        //            {
+        //                var headerValue = worksheet.Cells[1, col].Text.Trim();
+        //                if (!string.IsNullOrEmpty(headerValue))
+        //                {
+        //                    headers.Add(headerValue);
+        //                }
+        //            }
+
+        //            result.TotalRows = rowCount - 1;
+        //            result.Headers = headers;
+
+        //            // Preview data and validate
+        //            var validCourses = new List<Course>();
+        //            var invalidCourses = new List<InvalidCourse>();
+        //            var errors = new List<string>();
+        //            var previewData = new List<Dictionary<string, object>>();
+
+        //            // Process ALL rows from 2 to rowCount
+        //            for (int row = 2; row <= rowCount; row++)
+        //            {
+        //                try
+        //                {
+        //                    // Flexible column mapping
+        //                    var course = new Course();
+        //                    var rowData = new Dictionary<string, object>();
+        //                    string? prerequisitesValue = null;
+
+        //                    // Map columns by header name
+        //                    for (int col = 1; col <= headers.Count; col++)
+        //                    {
+        //                        var header = headers[col - 1].ToLower();
+        //                        var value = worksheet.Cells[row, col].Text.Trim();
+
+        //                        // Store all row data
+        //                        rowData[headers[col - 1]] = value;
+
+        //                        switch (header)
+        //                        {
+        //                            case "coursecode":
+        //                            case "كود المادة":
+        //                                course.CourseCode = value;
+        //                                break;
+        //                            case "coursename":
+        //                            case "اسم المادة":
+        //                                course.CourseName = value;
+        //                                break;
+        //                            case "description":
+        //                            case "الوصف":
+        //                                course.Description = value;
+        //                                break;
+        //                            case "credits":
+        //                            case "الساعات المعتمدة":
+        //                                if (int.TryParse(value, out int credits))
+        //                                    course.Credits = credits;
+        //                                break;
+        //                            case "department":
+        //                            case "القسم":
+        //                                course.Department = value;
+        //                                break;
+        //                            case "semester":
+        //                            case "الفصل الدراسي":
+        //                                if (int.TryParse(value, out int semester))
+        //                                    course.Semester = semester;
+        //                                break;
+        //                            case "maxstudents":
+        //                            case "الحد الأقصى للطلاب":
+        //                                if (int.TryParse(value, out int maxStudents))
+        //                                    course.MaxStudents = maxStudents;
+        //                                break;
+        //                            case "mingpa":
+        //                            case "الحد الأدنى للمعدل التراكمي":
+        //                                if (decimal.TryParse(value, out decimal minGPA))
+        //                                    course.MinGPA = minGPA;
+        //                                break;
+        //                            case "minpassedhours":
+        //                            case "الحد الأدنى للساعات المنجزة":
+        //                                if (int.TryParse(value, out int minPassedHours))
+        //                                    course.MinPassedHours = minPassedHours;
+        //                                break;
+        //                            case "prerequisites":
+        //                            case "المتطلبات السابقة":
+        //                                prerequisitesValue = value;
+        //                                break;
+        //                            case "isactive":
+        //                            case "نشط":
+        //                                course.IsActive = value.ToLower() switch
+        //                                {
+        //                                    "yes" => true,
+        //                                    "نعم" => true,
+        //                                    "true" => true,
+        //                                    "1" => true,
+        //                                    _ => false
+        //                                };
+        //                                break;
+        //                        }
+        //                    }
+
+        //                    // ✅ STORE PREREQUISITES DATA FOR LATER PROCESSING
+        //                    if (!string.IsNullOrEmpty(prerequisitesValue))
+        //                    {
+        //                        // Store prerequisites in a property that can be used later
+        //                        // You can add a temporary property to Course or store in rowData
+        //                        rowData["PrerequisitesRaw"] = prerequisitesValue;
+        //                    }
+
+        //                    string? validationError = null;
+
+        //                    // Validate required fields
+        //                    if (string.IsNullOrEmpty(course.CourseCode))
+        //                    {
+        //                        validationError = "Course Code is required";
+        //                    }
+        //                    else if (string.IsNullOrEmpty(course.CourseName))
+        //                    {
+        //                        validationError = "Course Name is required";
+        //                    }
+        //                    else if (course.Credits < 1 || course.Credits > 6)
+        //                    {
+        //                        validationError = "Credits must be between 1 and 6";
+        //                    }
+        //                    else if (course.Semester < 1 || course.Semester > 8)
+        //                    {
+        //                        validationError = "Semester must be between 1 and 8";
+        //                    }
+
+        //                    if (validationError != null)
+        //                    {
+        //                        var invalidCourse = new InvalidCourse
+        //                        {
+        //                            RowNumber = row,
+        //                            CourseCode = course.CourseCode,
+        //                            CourseName = course.CourseName,
+        //                            ErrorMessage = validationError,
+        //                            RowData = rowData
+        //                        };
+        //                        invalidCourses.Add(invalidCourse);
+        //                        errors.Add($"Row {row}: {validationError}");
+        //                        continue;
+        //                    }
+
+        //                    // If valid, add to courses
+        //                    validCourses.Add(course);
+
+        //                    // Add to preview data
+        //                    if (previewData.Count < 10)
+        //                    {
+        //                        var previewRow = new Dictionary<string, object>
+        //                        {
+        //                            ["CourseCode"] = course.CourseCode,
+        //                            ["CourseName"] = course.CourseName,
+        //                            ["Description"] = course.Description ?? "N/A",
+        //                            ["Credits"] = course.Credits,
+        //                            ["Department"] = course.Department ?? "N/A",
+        //                            ["Semester"] = course.Semester,
+        //                            ["MaxStudents"] = course.MaxStudents,
+        //                            ["MinGPA"] = course.MinGPA,
+        //                            ["Prerequisites"] = prerequisitesValue ?? "None", // ✅ ADD PREREQUISITES TO PREVIEW
+        //                            ["IsActive"] = course.IsActive ? "Yes" : "No"
+        //                        };
+        //                        previewData.Add(previewRow);
+        //                    }
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    var errorMsg = $"Row {row}: {ex.Message}";
+        //                    errors.Add(errorMsg);
+        //                    var invalidCourse = new InvalidCourse
+        //                    {
+        //                        RowNumber = row,
+        //                        ErrorMessage = errorMsg
+        //                    };
+        //                    invalidCourses.Add(invalidCourse);
+        //                }
+        //            }
+
+        //            result.ValidCourses = validCourses;
+        //            result.InvalidCourses = invalidCourses;
+        //            result.PreviewData = previewData;
+        //            result.Errors = errors;
+        //            result.ErrorCount = errors.Count;
+        //            result.Success = true;
+        //            result.Message = $"File analyzed successfully. Found {result.TotalRows} rows, {validCourses.Count} valid courses.";
+
+        //            if (invalidCourses.Any())
+        //            {
+        //                result.Message += $" {invalidCourses.Count} invalid courses found.";
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            result.Success = false;
+        //            result.Message = $"Error analyzing file: {ex.Message}";
+        //        }
+
+        //        return result;
+        //    });
+        //}
+
         public async Task<ImportResult> AnalyzeExcelImportAsync(Stream stream, ImportSettings? settings = null)
         {
             return await Task.Run(() =>
@@ -861,11 +1164,6 @@ namespace StudentManagementSystem.Services
                     var rowCount = worksheet.Dimension.Rows;
                     var colCount = worksheet.Dimension.Columns;
 
-                    // Debug logging
-                    Console.WriteLine($"=== DEBUG: Excel Analysis ===");
-                    Console.WriteLine($"Total rows in Excel: {rowCount}");
-                    Console.WriteLine($"Total columns in Excel: {colCount}");
-
                     // Analyze headers
                     var headers = new List<string>();
                     for (int col = 1; col <= colCount; col++)
@@ -877,12 +1175,10 @@ namespace StudentManagementSystem.Services
                         }
                     }
 
-                    Console.WriteLine($"Headers found: {string.Join(", ", headers)}");
-
                     result.TotalRows = rowCount - 1;
                     result.Headers = headers;
 
-                    // Preview data and validate - PROCESS ALL ROWS
+                    // Preview data and validate
                     var validCourses = new List<Course>();
                     var invalidCourses = new List<InvalidCourse>();
                     var errors = new List<string>();
@@ -893,29 +1189,30 @@ namespace StudentManagementSystem.Services
                     {
                         try
                         {
-                            Console.WriteLine($"--- Processing row {row} ---");
-
                             // Flexible column mapping
                             var course = new Course();
-                            var rowData = new Dictionary<string, object>(); // For invalid course data
+                            var rowData = new Dictionary<string, object>();
+                            string? prerequisitesValue = null;
+                            string? courseSpecValue = null;
+                            string? iconValue = null;
 
-                            // Map columns by header name instead of fixed position
+                            // Map columns by header name
                             for (int col = 1; col <= headers.Count; col++)
                             {
                                 var header = headers[col - 1].ToLower();
                                 var value = worksheet.Cells[row, col].Text.Trim();
 
-                                Console.WriteLine($"  Column {col} ('{header}'): '{value}'");
-
-                                // Store all row data for potential invalid course
+                                // Store all row data
                                 rowData[headers[col - 1]] = value;
 
                                 switch (header)
                                 {
+                                    case "coursecode (required)":
                                     case "coursecode":
                                     case "كود المادة":
                                         course.CourseCode = value;
                                         break;
+                                    case "coursename (required)":
                                     case "coursename":
                                     case "اسم المادة":
                                         course.CourseName = value;
@@ -928,6 +1225,8 @@ namespace StudentManagementSystem.Services
                                     case "الساعات المعتمدة":
                                         if (int.TryParse(value, out int credits))
                                             course.Credits = credits;
+                                        else if (string.IsNullOrEmpty(value))
+                                            course.Credits = 3; // Default value
                                         break;
                                     case "department":
                                     case "القسم":
@@ -937,21 +1236,39 @@ namespace StudentManagementSystem.Services
                                     case "الفصل الدراسي":
                                         if (int.TryParse(value, out int semester))
                                             course.Semester = semester;
+                                        else if (string.IsNullOrEmpty(value))
+                                            course.Semester = 1; // Default value
                                         break;
                                     case "maxstudents":
                                     case "الحد الأقصى للطلاب":
                                         if (int.TryParse(value, out int maxStudents))
                                             course.MaxStudents = maxStudents;
+                                        else if (string.IsNullOrEmpty(value))
+                                            course.MaxStudents = 1000; // Default value
                                         break;
                                     case "mingpa":
                                     case "الحد الأدنى للمعدل التراكمي":
                                         if (decimal.TryParse(value, out decimal minGPA))
                                             course.MinGPA = minGPA;
+                                        else if (string.IsNullOrEmpty(value))
+                                            course.MinGPA = 2.0m; // Default value
                                         break;
                                     case "minpassedhours":
                                     case "الحد الأدنى للساعات المنجزة":
                                         if (int.TryParse(value, out int minPassedHours))
                                             course.MinPassedHours = minPassedHours;
+                                        else if (string.IsNullOrEmpty(value))
+                                            course.MinPassedHours = 0; // Default value
+                                        break;
+                                    case "prerequisites":
+                                    case "المتطلبات السابقة":
+                                        prerequisitesValue = value;
+                                        break;
+                                    case "coursespecification":
+                                        courseSpecValue = value;
+                                        break;
+                                    case "icon":
+                                        iconValue = value;
                                         break;
                                     case "isactive":
                                     case "نشط":
@@ -961,20 +1278,31 @@ namespace StudentManagementSystem.Services
                                             "نعم" => true,
                                             "true" => true,
                                             "1" => true,
+                                            "y" => true,
                                             _ => false
                                         };
                                         break;
                                 }
                             }
 
-                            Console.WriteLine($"  Parsed CourseCode: '{course.CourseCode}'");
-                            Console.WriteLine($"  Parsed CourseName: '{course.CourseName}'");
-                            Console.WriteLine($"  Is CourseCode empty: {string.IsNullOrEmpty(course.CourseCode)}");
-                            Console.WriteLine($"  Is CourseName empty: {string.IsNullOrEmpty(course.CourseName)}");
+                            // ✅ STORE NEW FIELDS
+                            // ✅ STORE NEW FIELDS
+                            if (!string.IsNullOrEmpty(prerequisitesValue))
+                            {
+                                course.PrerequisitesString = prerequisitesValue;  // Use the new property
+                            }
+                            if (!string.IsNullOrEmpty(courseSpecValue))
+                            {
+                                course.CourseSpecification = courseSpecValue;
+                            }
+                            if (!string.IsNullOrEmpty(iconValue))
+                            {
+                                course.Icon = iconValue;
+                            }
 
                             string? validationError = null;
 
-                            // Validate required fields
+                            // ✅ FIXED VALIDATION: More flexible validation
                             if (string.IsNullOrEmpty(course.CourseCode))
                             {
                                 validationError = "Course Code is required";
@@ -991,10 +1319,13 @@ namespace StudentManagementSystem.Services
                             {
                                 validationError = "Semester must be between 1 and 8";
                             }
+                            else if (course.MaxStudents < 1 || course.MaxStudents > 1000)
+                            {
+                                validationError = "Max Students must be between 1 and 1000";
+                            }
 
                             if (validationError != null)
                             {
-                                // Create invalid course record
                                 var invalidCourse = new InvalidCourse
                                 {
                                     RowNumber = row,
@@ -1003,18 +1334,15 @@ namespace StudentManagementSystem.Services
                                     ErrorMessage = validationError,
                                     RowData = rowData
                                 };
-
                                 invalidCourses.Add(invalidCourse);
                                 errors.Add($"Row {row}: {validationError}");
-
-                                Console.WriteLine($"  -> INVALID: {validationError}");
                                 continue;
                             }
 
-                            // If we get here, course is valid
+                            // If valid, add to courses
                             validCourses.Add(course);
 
-                            // Only add first 10 rows to preview data for display
+                            // Add to preview data
                             if (previewData.Count < 10)
                             {
                                 var previewRow = new Dictionary<string, object>
@@ -1027,36 +1355,27 @@ namespace StudentManagementSystem.Services
                                     ["Semester"] = course.Semester,
                                     ["MaxStudents"] = course.MaxStudents,
                                     ["MinGPA"] = course.MinGPA,
+                                    ["MinPassedHours"] = course.MinPassedHours,
+                                    ["Prerequisites"] = prerequisitesValue ?? "None",
+                                    ["CourseSpecification"] = courseSpecValue ?? "None",
+                                    ["Icon"] = iconValue ?? "None",
                                     ["IsActive"] = course.IsActive ? "Yes" : "No"
                                 };
                                 previewData.Add(previewRow);
                             }
-
-                            Console.WriteLine($"  -> VALID course added");
                         }
                         catch (Exception ex)
                         {
                             var errorMsg = $"Row {row}: {ex.Message}";
                             errors.Add(errorMsg);
-
-                            // Create invalid course for exception cases too
                             var invalidCourse = new InvalidCourse
                             {
                                 RowNumber = row,
                                 ErrorMessage = errorMsg
                             };
                             invalidCourses.Add(invalidCourse);
-
-                            Console.WriteLine($"  -> EXCEPTION: {errorMsg}");
                         }
                     }
-
-                    Console.WriteLine($"=== ANALYSIS COMPLETE ===");
-                    Console.WriteLine($"Total rows processed: {rowCount - 1}");
-                    Console.WriteLine($"Valid courses found: {validCourses.Count}");
-                    Console.WriteLine($"Invalid courses found: {invalidCourses.Count}");
-                    Console.WriteLine($"Errors found: {errors.Count}");
-                    Console.WriteLine($"Preview data entries: {previewData.Count}");
 
                     result.ValidCourses = validCourses;
                     result.InvalidCourses = invalidCourses;
@@ -1075,17 +1394,42 @@ namespace StudentManagementSystem.Services
                 {
                     result.Success = false;
                     result.Message = $"Error analyzing file: {ex.Message}";
-
-                    Console.WriteLine($"=== ANALYSIS FAILED ===");
-                    Console.WriteLine($"Error: {ex.Message}");
-                    Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 }
 
                 return result;
             });
         }
 
+        // Add this method to process prerequisites after courses are imported
+        private async Task ProcessPrerequisitesAsync(List<Course> importedCourses, Dictionary<string, string> prerequisitesMapping)
+        {
+            foreach (var course in importedCourses)
+            {
+                if (prerequisitesMapping.ContainsKey(course.CourseCode))
+                {
+                    var prerequisiteCodes = prerequisitesMapping[course.CourseCode]
+                        .Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
+                    foreach (var prereqCode in prerequisiteCodes)
+                    {
+                        var prerequisiteCourse = await _context.Courses
+                            .FirstOrDefaultAsync(c => c.CourseCode == prereqCode.Trim());
+
+                        if (prerequisiteCourse != null)
+                        {
+                            var coursePrerequisite = new CoursePrerequisite
+                            {
+                                CourseId = course.Id,
+                                PrerequisiteCourseId = prerequisiteCourse.Id,
+                                IsRequired = true
+                            };
+                            _context.CoursePrerequisites.Add(coursePrerequisite);
+                        }
+                    }
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
 
         public async Task<ImportResult> ExecuteImportAsync(ImportResult analysisResult, ImportSettings settings)
         {
@@ -1474,6 +1818,19 @@ namespace StudentManagementSystem.Services
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<List<Course>> GetAllCoursesWithPrerequisitesAsync()
+        {
+            return await _context.Courses
+                .Include(c => c.CourseDepartment)
+                .Include(c => c.CourseSemester)
+                .Include(c => c.CourseEnrollments)
+                .Include(c => c.Prerequisites)
+                    .ThenInclude(p => p.PrerequisiteCourse)
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.CourseCode)
+                .ToListAsync();
         }
     }
 }

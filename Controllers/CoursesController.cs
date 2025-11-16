@@ -32,36 +32,80 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses
-        public async Task<IActionResult> Index(string searchString, string department, int? semester)
+        public async Task<IActionResult> Index(string searchString, string department, int? semester, string sortBy = "CourseCode", string sortOrder = "asc")
         {
             try
             {
-                var courses = await _courseService.GetAllCoursesAsync();
+                // ✅ USE DIRECT DB CONTEXT TO INCLUDE PREREQUISITES
+                var courses = _context.Courses
+                    .Include(c => c.CourseDepartment)
+                    .Include(c => c.CourseSemester)
+                    .Include(c => c.Prerequisites)
+                        .ThenInclude(p => p.PrerequisiteCourse)
+                    .AsQueryable();
 
+                // Apply filters
                 if (!string.IsNullOrEmpty(searchString))
                 {
                     courses = courses.Where(c =>
                         c.CourseCode.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
                         c.CourseName.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
                         (c.Description != null && c.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-                    ).ToList();
+                    );
                 }
 
                 if (!string.IsNullOrEmpty(department))
                 {
-                    courses = courses.Where(c => c.Department == department).ToList();
+                    courses = courses.Where(c => c.Department == department);
                 }
 
                 if (semester.HasValue)
                 {
-                    courses = courses.Where(c => c.Semester == semester.Value).ToList();
+                    courses = courses.Where(c => c.Semester == semester.Value);
                 }
+
+                // ✅ ADD PREREQUISITES SORTING
+                courses = sortBy?.ToLower() switch
+                {
+                    "prerequisites" => sortOrder == "desc"
+                        ? courses.OrderByDescending(c => c.Prerequisites.Count)
+                        : courses.OrderBy(c => c.Prerequisites.Count),
+                    "coursecode" => sortOrder == "desc"
+                        ? courses.OrderByDescending(c => c.CourseCode)
+                        : courses.OrderBy(c => c.CourseCode),
+                    "coursename" => sortOrder == "desc"
+                        ? courses.OrderByDescending(c => c.CourseName)
+                        : courses.OrderBy(c => c.CourseName),
+                    "description" => sortOrder == "desc"
+                        ? courses.OrderByDescending(c => c.Description)
+                        : courses.OrderBy(c => c.Description),
+                    "credits" => sortOrder == "desc"
+                        ? courses.OrderByDescending(c => c.Credits)
+                        : courses.OrderBy(c => c.Credits),
+                    "department" => sortOrder == "desc"
+                        ? courses.OrderByDescending(c => c.Department)
+                        : courses.OrderBy(c => c.Department),
+                    "semester" => sortOrder == "desc"
+                        ? courses.OrderByDescending(c => c.Semester)
+                        : courses.OrderBy(c => c.Semester),
+                    "enrollment" => sortOrder == "desc"
+                        ? courses.OrderByDescending(c => c.CurrentEnrollment)
+                        : courses.OrderBy(c => c.CurrentEnrollment),
+                    "status" => sortOrder == "desc"
+                        ? courses.OrderByDescending(c => c.IsActive)
+                        : courses.OrderBy(c => c.IsActive),
+                    _ => courses.OrderBy(c => c.CourseCode)
+                };
+
+                var courseList = await courses.ToListAsync();
 
                 ViewData["CurrentFilter"] = searchString;
                 ViewData["CurrentDepartment"] = department;
                 ViewData["CurrentSemester"] = semester;
+                ViewData["CurrentSort"] = sortBy;
+                ViewData["CurrentOrder"] = sortOrder;
 
-                return View(courses);
+                return View(courseList);
             }
             catch (Exception ex)
             {
@@ -1088,7 +1132,7 @@ namespace StudentManagementSystem.Controllers
             using var package = new ExcelPackage();
             var worksheet = package.Workbook.Worksheets.Add("Courses Template");
 
-            // Headers with instructions
+            // Headers with instructions - UPDATED WITH NEW FIELDS
             string[] headers = {
         "CourseCode (Required)",
         "CourseName (Required)",
@@ -1099,20 +1143,26 @@ namespace StudentManagementSystem.Controllers
         "MaxStudents",
         "MinGPA",
         "MinPassedHours",
+        "Prerequisites", // ✅ NEW FIELD
+        "CourseSpecification", // ✅ NEW FIELD
+        "Icon", // ✅ NEW FIELD
         "IsActive"
     };
 
             string[] descriptions = {
-        "Unique course identifier",
-        "Course name",
-        "Course description",
+        "Unique course identifier (e.g., CS101)",
+        "Course name (e.g., Introduction to Computer Science)",
+        "Course description (max 5000 characters)",
         "Credit hours (1-6)",
-        "Department name",
+        "Department name (e.g., Computer Science)",
         "Semester number (1-8)",
-        "Maximum students (1-100)",
-        "Minimum GPA required",
+        "Maximum students (1-1000)",
+        "Minimum GPA required (0.00-4.00)",
         "Minimum passed hours required",
-        "Yes/No or true/false"
+        "Prerequisite course codes separated by commas (e.g., CS101,MATH201)", // ✅ NEW
+        "Course specification document link or text", // ✅ NEW
+        "Icon name or URL (e.g., fas fa-code)", // ✅ NEW
+        "Yes/No or true/false or 1/0"
     };
 
             // Add headers and descriptions
@@ -1131,28 +1181,117 @@ namespace StudentManagementSystem.Controllers
                 worksheet.Cells[2, i + 1].Style.Font.Color.SetColor(System.Drawing.Color.Gray);
             }
 
-            // Add sample data
+            // Add sample data - UPDATED WITH NEW FIELDS
             var sampleCourses = new[]
             {
-        new { CourseCode = "CS101", CourseName = "Introduction to Computer Science", Credits = 3, Department = "Computer Science", Semester = 1 },
-        new { CourseCode = "MATH201", CourseName = "Calculus I", Credits = 4, Department = "Mathematics", Semester = 2 }
+        new {
+            CourseCode = "CS101",
+            CourseName = "Introduction to Computer Science",
+            Description = "Basic concepts of computer science and programming",
+            Credits = 3,
+            Department = "Computer Science",
+            Semester = 1,
+            MaxStudents = 1000,
+            MinGPA = 2.0m,
+            MinPassedHours = 0,
+            Prerequisites = "",
+            CourseSpecification = "https://example.com/cs101-spec.pdf",
+            Icon = "fas fa-laptop-code",
+            IsActive = "Yes"
+        },
+        new {
+            CourseCode = "MATH201",
+            CourseName = "Calculus I",
+            Description = "Differential and integral calculus of single variable functions",
+            Credits = 4,
+            Department = "Mathematics",
+            Semester = 2,
+            MaxStudents = 800,
+            MinGPA = 2.5m,
+            MinPassedHours = 30,
+            Prerequisites = "MATH101",
+            CourseSpecification = "https://example.com/math201-spec.pdf",
+            Icon = "fas fa-calculator",
+            IsActive = "Yes"
+        },
+        new {
+            CourseCode = "CS301",
+            CourseName = "Data Structures",
+            Description = "Advanced data structures and algorithms analysis",
+            Credits = 3,
+            Department = "Computer Science",
+            Semester = 3,
+            MaxStudents = 500,
+            MinGPA = 3.0m,
+            MinPassedHours = 60,
+            Prerequisites = "CS101,CS201",
+            CourseSpecification = "https://example.com/cs301-spec.pdf",
+            Icon = "fas fa-diagram-project",
+            IsActive = "Yes"
+        }
     };
 
+            // Add sample data to worksheet
             for (int i = 0; i < sampleCourses.Length; i++)
             {
                 var course = sampleCourses[i];
                 worksheet.Cells[i + 3, 1].Value = course.CourseCode;
                 worksheet.Cells[i + 3, 2].Value = course.CourseName;
+                worksheet.Cells[i + 3, 3].Value = course.Description;
                 worksheet.Cells[i + 3, 4].Value = course.Credits;
                 worksheet.Cells[i + 3, 5].Value = course.Department;
                 worksheet.Cells[i + 3, 6].Value = course.Semester;
-                worksheet.Cells[i + 3, 10].Value = "Yes";
+                worksheet.Cells[i + 3, 7].Value = course.MaxStudents;
+                worksheet.Cells[i + 3, 8].Value = course.MinGPA;
+                worksheet.Cells[i + 3, 9].Value = course.MinPassedHours;
+                worksheet.Cells[i + 3, 10].Value = course.Prerequisites; // ✅ NEW
+                worksheet.Cells[i + 3, 11].Value = course.CourseSpecification; // ✅ NEW
+                worksheet.Cells[i + 3, 12].Value = course.Icon; // ✅ NEW
+                worksheet.Cells[i + 3, 13].Value = course.IsActive;
             }
+
+            // Add data validation for numeric fields
+            AddExcelDataValidation(worksheet);
 
             // Auto-fit columns
             worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
             return package.GetAsByteArray();
+        }
+
+        private void AddExcelDataValidation(ExcelWorksheet worksheet)
+        {
+            // Credits validation (1-6)
+            var creditsValidation = worksheet.DataValidations.AddIntegerValidation("D4:D100");
+            creditsValidation.Formula.Value = 1;
+            creditsValidation.Formula2.Value = 6;
+            creditsValidation.ShowErrorMessage = true;
+            creditsValidation.ErrorTitle = "Invalid Credits";
+            creditsValidation.Error = "Credits must be between 1 and 6";
+
+            // Semester validation (1-8)
+            var semesterValidation = worksheet.DataValidations.AddIntegerValidation("F4:F100");
+            semesterValidation.Formula.Value = 1;
+            semesterValidation.Formula2.Value = 8;
+            semesterValidation.ShowErrorMessage = true;
+            semesterValidation.ErrorTitle = "Invalid Semester";
+            semesterValidation.Error = "Semester must be between 1 and 8";
+
+            // MaxStudents validation (1-1000)
+            var maxStudentsValidation = worksheet.DataValidations.AddIntegerValidation("G4:G100");
+            maxStudentsValidation.Formula.Value = 1;
+            maxStudentsValidation.Formula2.Value = 1000;
+            maxStudentsValidation.ShowErrorMessage = true;
+            maxStudentsValidation.ErrorTitle = "Invalid Max Students";
+            maxStudentsValidation.Error = "Max Students must be between 1 and 1000";
+
+            // MinGPA validation (0.00-4.00)
+            var minGPAValidation = worksheet.DataValidations.AddDecimalValidation("H4:H100");
+            minGPAValidation.Formula.Value = 0;
+            minGPAValidation.Formula2.Value = 4.00;
+            minGPAValidation.ShowErrorMessage = true;
+            minGPAValidation.ErrorTitle = "Invalid Min GPA";
+            minGPAValidation.Error = "Min GPA must be between 0.00 and 4.00";
         }
 
         // POST: Courses/DeleteMultiple

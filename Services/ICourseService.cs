@@ -79,5 +79,7 @@ namespace StudentManagementSystem.Services
 
         Task DeleteMultipleCoursesAsync(int[] courseIds);
         Task DeleteAllCoursesAsync();
+        Task<List<Course>> GetAllCoursesWithPrerequisitesAsync();
+
     }
 }

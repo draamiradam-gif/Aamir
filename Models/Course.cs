@@ -18,7 +18,7 @@ namespace StudentManagementSystem.Models
         [Display(Name = "Course Name")]
         public string CourseName { get; set; } = string.Empty;
 
-        [StringLength(500)]
+        [StringLength(5000)]
         [Display(Name = "Description")]
         public string? Description { get; set; }
 
@@ -43,7 +43,7 @@ namespace StudentManagementSystem.Models
         [Display(Name = "Active")]
         public bool IsActive { get; set; } = true;
 
-        [Range(1, 100)]
+        [Range(1, 1000)]
         [Display(Name = "Max Students")]
         public int MaxStudents { get; set; } = 30;
 
@@ -53,6 +53,19 @@ namespace StudentManagementSystem.Models
 
         [Display(Name = "Min Passed Hours")]
         public int MinPassedHours { get; set; } = 0;
+
+        [StringLength(1000)]
+        [Display(Name = "Prerequisites")]
+        public string? PrerequisitesString { get; set; }
+
+        [StringLength(20000)]
+        [Display(Name = "Course Specification")]
+        public string? CourseSpecification { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Icon")]
+        public string? Icon { get; set; }
+
 
         [NotMapped]
         [Display(Name = "Current Enrollment")]

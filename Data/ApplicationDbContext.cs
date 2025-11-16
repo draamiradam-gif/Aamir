@@ -96,6 +96,11 @@ namespace StudentManagementSystem.Data
                 entity.Property(c => c.IsActive).HasDefaultValue(true);
                 entity.Property(c => c.MaxStudents).HasDefaultValue(1000);
                 entity.Property(c => c.MinGPA).HasColumnType("decimal(4,2)").HasDefaultValue(2.0m);
+                entity.Property(c => c.CourseSpecification)
+                    .HasMaxLength(20000);
+
+                entity.Property(c => c.Icon)
+                    .HasMaxLength(100);
             });
 
             // Configure CourseEnrollment entity - USE CASCADE HERE
