@@ -1,0 +1,28 @@
+﻿@model List<CourseEnrollment>
+@{
+    ViewData["Title"] = "Debug Enrollments";
+}
+<div class="container">
+    <h3>Debug Info</h3>
+    <p>Total Students: @ViewBag.TotalStudents</p>
+    <p>Total Courses: @ViewBag.TotalCourses</p>
+    <p>Total Enrollments: @ViewBag.TotalEnrollments</p>
+
+    <a href="@Url.Action("CreateTestData")" class="btn btn-primary">Create Test Enrollments</a>
+
+    <table class="table">
+        <thead>
+            <tr><th>Student</th><th>Course</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var e in Model)
+            {
+                <tr>
+                    <td>@e.Student?.Name</td>
+                    <td>@e.Course?.CourseName</td>
+                    <td>@e.GradeStatus</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

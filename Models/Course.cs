@@ -132,72 +132,72 @@ namespace StudentManagementSystem.Models
         public virtual Course? PrerequisiteCourse { get; set; }
     }
 
-    public class CourseEnrollment : BaseEntity
-    {
-        public int CourseId { get; set; }
-        public int StudentId { get; set; }
+    //public class CourseEnrollment : BaseEntity
+    //{
+    //    public int CourseId { get; set; }
+    //    public int StudentId { get; set; }
 
-        [Range(0, 100)]
-        [Display(Name = "Grade")]
-        public decimal? Grade { get; set; }
+    //    [Range(0, 100)]
+    //    [Display(Name = "Grade")]
+    //    public decimal? Grade { get; set; }
 
-        [StringLength(2)]
-        [Display(Name = "Grade Letter")]
-        public string? GradeLetter { get; set; }
+    //    [StringLength(2)]
+    //    [Display(Name = "Grade Letter")]
+    //    public string? GradeLetter { get; set; }
 
-        [Display(Name = "Enrollment Date")]
-        public DateTime EnrollmentDate { get; set; } = DateTime.Now;
+    //    [Display(Name = "Enrollment Date")]
+    //    public DateTime EnrollmentDate { get; set; } = DateTime.Now;
 
-        [Display(Name = "Active")]
-        public bool IsActive { get; set; } = true;
+    //    [Display(Name = "Active")]
+    //    public bool IsActive { get; set; } = true;
 
-        // Grade-related properties
-        [Display(Name = "Grade Points")]
-        [Column(TypeName = "decimal(4,2)")]
-        public decimal? GradePoints { get; set; }
+    //    // Grade-related properties
+    //    [Display(Name = "Grade Points")]
+    //    [Column(TypeName = "decimal(4,2)")]
+    //    public decimal? GradePoints { get; set; }
 
-        [Display(Name = "Grade Status")]
-        public GradeStatus GradeStatus { get; set; } = GradeStatus.InProgress;
+    //    [Display(Name = "Grade Status")]
+    //    public GradeStatus GradeStatus { get; set; } = GradeStatus.InProgress;
 
-        [Display(Name = "Completion Date")]
-        public DateTime? CompletionDate { get; set; }
+    //    [Display(Name = "Completion Date")]
+    //    public DateTime? CompletionDate { get; set; }
 
-        [Display(Name = "Remarks")]
-        [StringLength(500)]
-        public string? Remarks { get; set; }
+    //    [Display(Name = "Remarks")]
+    //    [StringLength(500)]
+    //    public string? Remarks { get; set; }
 
-        // Navigation properties
-        [ForeignKey("CourseId")]
-        public virtual Course? Course { get; set; }
+    //    // Navigation properties
+    //    [ForeignKey("CourseId")]
+    //    public virtual Course? Course { get; set; }
 
-        [ForeignKey("StudentId")]
-        public virtual Student? Student { get; set; }
+    //    [ForeignKey("StudentId")]
+    //    public virtual Student? Student { get; set; }
 
-        // Computed properties
-        [NotMapped]
-        public bool IsCompleted => GradeStatus == GradeStatus.Completed;
+    //    // Computed properties
+    //    [NotMapped]
+    //    public bool IsCompleted => GradeStatus == GradeStatus.Completed;
 
-        [NotMapped]
-        public bool IsFailed => GradeStatus == GradeStatus.Failed;
-    }
+    //    [NotMapped]
+    //    public bool IsFailed => GradeStatus == GradeStatus.Failed;
+    //}
 
-    public enum GradeStatus
-    {
-        [Display(Name = "In Progress")]
-        InProgress,
+    //public enum GradeStatus
+    //{
+    //    [Display(Name = "In Progress")]
+    //    InProgress,
 
-        [Display(Name = "Completed")]
-        Completed,
+    //    [Display(Name = "Completed")]
+    //    Completed,
 
-        [Display(Name = "Failed")]
-        Failed,
+    //    [Display(Name = "Failed")]
+    //    Failed,
 
-        [Display(Name = "Withdrawn")]
-        Withdrawn,
+    //    [Display(Name = "Withdrawn")]
+    //    Withdrawn,
 
-        [Display(Name = "Incomplete")]
-        Incomplete
-    }
+    //    [Display(Name = "Incomplete")]
+    //    Incomplete
+    //}
 
 
 }

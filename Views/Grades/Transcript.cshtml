@@ -1,0 +1,128 @@
+﻿@model StudentTranscript
+
+@{
+    ViewData["Title"] = "Student Transcript";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Official Transcript</h3>
+                    <div class="card-tools">
+                        <button class="btn btn-primary" onclick="window.print()">
+                            <i class="fas fa-print"></i> Print Transcript
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Student Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h4>Student Information</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Name:</th>
+                                    <td>@(Model.Student?.Name ?? "N/A")</td>
+                                </tr>
+                                <tr>
+                                    <th>Student ID:</th>
+                                    <td>@(Model.Student?.StudentId ?? "N/A")</td>
+                                </tr>
+                                <tr>
+                                    <th>Department:</th>
+                                    <td>@(Model.Student?.Department ?? "N/A")</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>Academic Summary</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Cumulative GPA:</th>
+                                    <td><strong>@Model.GPA.ToString("0.00")</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Academic Standing:</th>
+                                    <td><span class="badge badge-@(Model.GPA >= 3.5m ? "success" : Model.GPA >= 2.0m ? "primary" : "danger")">@Model.AcademicStanding</span></td>
+                                </tr>
+                                <tr>
+                                    <th>Total Credits:</th>
+                                    <td>@Model.TotalCredits</td>
+                                </tr>
+                                <tr>
+                                    <th>Completed Courses:</th>
+                                    <td>@Model.CompletedCourses</td>
+                                </tr>
+                                <tr>
+                                    <th>Generated Date:</th>
+                                    <td>@Model.GeneratedDate.ToString("yyyy-MM-dd")</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Course History -->
+                    <h4>Course History</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Credits</th>
+                                    <th>Grade</th>
+                                    <th>Points</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var enrollment in Model.Enrollments)
+                                {
+                                    <tr>
+                                        <td>@(enrollment.Course?.CourseCode ?? "N/A")</td>
+                                        <td>@(enrollment.Course?.CourseName ?? "N/A")</td>
+                                        <td>@(enrollment.Course?.Credits ?? 0)</td>
+                                        <td>
+                                            <strong>@(enrollment.GradeLetter ?? "N/A")</strong>
+                                            @if (enrollment.Grade.HasValue)
+                                            {
+                                                <span class="text-muted">(@enrollment.Grade.Value.ToString("0.00"))</span>
+                                            }
+                                        </td>
+                                        <td>@(enrollment.GradePoints?.ToString("0.00") ?? "-")</td>
+                                        <td>
+                                            <span class="badge badge-@(enrollment.GradeStatus == GradeStatus.Completed ? "success" : "danger")">
+                                                @enrollment.GradeStatus
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-info">
+                                    <td colspan="2" class="text-right"><strong>Totals:</strong></td>
+                                    <td><strong>@Model.TotalCredits</strong></td>
+                                    <td colspan="2"><strong>Cumulative GPA: @Model.GPA.ToString("0.00")</strong></td>
+                                    <td><strong>@Model.AcademicStanding</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        .card-header .card-tools {
+            display: none;
+        }
+        .btn {
+            display: none;
+        }
+    }
+</style>

@@ -1,0 +1,95 @@
+﻿@model List<GradeScale>
+
+@{
+    ViewData["Title"] = "Grade Scale";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Grade Scale Configuration</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Grade Letter</th>
+                                    <th>Description</th>
+                                    <th>Percentage Range</th>
+                                    <th>Grade Points</th>
+                                    <th>Passing Grade</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var scale in Model)
+                                {
+                                    <tr>
+                                        <td><strong>@scale.GradeLetter</strong></td>
+                                        <td>@scale.Description</td>
+                                        <td>@scale.MinPercentage% - @scale.MaxPercentage%</td>
+                                        <td>
+                                            <span class="badge badge-info">@scale.GradePoints.ToString("0.00")</span>
+                                        </td>
+                                        <td>
+                                            @if (scale.IsPassingGrade)
+                                            {
+                                                <span class="badge badge-success">Passing</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-danger">Failing</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (scale.IsActive)
+                                            {
+                                                <span class="badge badge-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-secondary">Inactive</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h5 class="card-title">GPA Calculation</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Formula:</strong> GPA = Total Grade Points ÷ Total Credits</p>
+                                    <p><strong>Example:</strong> If a student takes two 3-credit courses and gets A (4.0) and B (3.0):</p>
+                                    <p>Total Points = (4.0 × 3) + (3.0 × 3) = 21.0</p>
+                                    <p>Total Credits = 3 + 3 = 6</p>
+                                    <p>GPA = 21.0 ÷ 6 = <strong>3.50</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h5 class="card-title">Academic Standing</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Honors:</strong> GPA ≥ 3.50</p>
+                                    <p><strong>Good Standing:</strong> GPA ≥ 2.00</p>
+                                    <p><strong>Academic Probation:</strong> GPA < 2.00</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

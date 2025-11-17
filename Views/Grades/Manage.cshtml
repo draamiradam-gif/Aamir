@@ -1,0 +1,172 @@
+﻿@model List<CourseEnrollment>
+
+@{
+    ViewData["Title"] = "Manage Grades";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Manage Grades</h3>
+                    <div class="card-tools">
+                        <a href="@Url.Action("Scale")" class="btn btn-info btn-sm">
+                            <i class="fas fa-cog"></i> Grade Scale
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                            @TempData["Success"]
+                        </div>
+                    }
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                            @TempData["Error"]
+                        </div>
+                    }
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <form method="get" class="form-inline">
+                                <div class="form-group mr-2">
+                                    <label for="courseId" class="mr-2">Filter by Course:</label>
+                                    <select name="courseId" class="form-control" onchange="this.form.submit()">
+                                        <option value="">All Courses</option>
+                                        @foreach (var course in Model.Select(e => e.Course).Where(c => c != null).Distinct().OrderBy(c => c!.CourseName))
+                                        {
+                                            <option value="@course!.Id" selected="@(Context.Request.Query["courseId"] == course.Id.ToString())">
+                                                @course!.CourseCode - @course!.CourseName
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Course</th>
+                                    <th>Enrollment Date</th>
+                                    <th>Status</th>
+                                    <th>Grade</th>
+                                    <th>Points</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var enrollment in Model)
+                                {
+                                    <tr>
+                                        <td>@(enrollment.Student?.Name ?? "N/A") (@(enrollment.Student?.StudentId ?? "N/A"))</td>
+                                        <td>@(enrollment.Course?.CourseCode ?? "N/A") - @(enrollment.Course?.CourseName ?? "N/A")</td>
+                                        <td>@enrollment.EnrollmentDate.ToString("yyyy-MM-dd")</td>
+                                        <td>
+                                            <span class="badge badge-@(enrollment.GradeStatus == GradeStatus.Completed ? "success" :
+                                                                                                                enrollment.GradeStatus == GradeStatus.Failed ? "danger" :
+                                                                                                                enrollment.GradeStatus == GradeStatus.InProgress ? "primary" : "warning")">
+                                            @enrollment.GradeStatus
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (enrollment.Grade.HasValue)
+                                            {
+                                                <span class="font-weight-bold">@(enrollment.GradeLetter ?? "N/A") (@enrollment.Grade.Value.ToString("0.00"))</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not Graded</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (enrollment.GradePoints.HasValue)
+                                            {
+                                                <span class="badge badge-info">@enrollment.GradePoints.Value.ToString("0.00")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#gradeModal-@enrollment.Id">
+                                                <i class="fas fa-edit"></i> Assign Grade
+                                            </button>
+                                            <a href="@Url.Action("Transcript", new { studentId = enrollment.StudentId })" class="btn btn-info btn-sm">
+                                                <i class="fas fa-file-alt"></i> Transcript
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals Section - Place AFTER the table -->
+@foreach (var enrollment in Model)
+{
+    <div class="modal fade" id="gradeModal-@enrollment.Id" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign Grade</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="post" action="@Url.Action("AssignGrade")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="enrollmentId" value="@enrollment.Id" />
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Student: <strong>@(enrollment.Student?.Name ?? "N/A")</strong></label>
+                        </div>
+                        <div class="form-group">
+                            <label>Course: <strong>@(enrollment.Course?.CourseName ?? "N/A")</strong></label>
+                        </div>
+                        <div class="form-group">
+                            <label for="mark-@enrollment.Id">Mark (0-100):</label>
+                            <input type="number" class="form-control" id="mark-@enrollment.Id" name="mark"
+                                   min="0" max="100" step="0.01" value="@enrollment.Grade" required />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Grade</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.table').DataTable({
+                "paging": true,
+                "lengthChange": true,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": true
+            });
+        });
+    </script>
+}

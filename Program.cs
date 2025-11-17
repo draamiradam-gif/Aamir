@@ -70,6 +70,8 @@ builder.Services.Configure<IISServerOptions>(options =>
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IGradeService, GradeService>();
+
 
 // Set QuestPDF license
 QuestPDF.Settings.License = LicenseType.Community;

@@ -1,0 +1,100 @@
+﻿@{
+    ViewData["Title"] = "Student GPA";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">GPA Calculation</h3>
+                </div>
+                <div class="card-body text-center">
+                    <div class="gpa-display mb-4">
+                        <h4>@ViewBag.StudentName</h4>
+                        <h5>Student ID: @ViewBag.StudentId</h5>
+                        <div class="gpa-circle mx-auto mt-4">
+                            <div class="gpa-value @(ViewBag.GPA >= 3.5 ? "gpa-excellent" : ViewBag.GPA >= 2.0 ? "gpa-good" : "gpa-poor")">
+                                <span class="gpa-number">@ViewBag.GPA.ToString("0.00")</span>
+                                <span class="gpa-label">GPA</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gpa-status mb-4">
+                        @if (ViewBag.GPA >= 3.5m)
+                        {
+                            <div class="alert alert-success">
+                                <h5><i class="fas fa-trophy"></i> Honors Standing</h5>
+                                <p class="mb-0">Excellent academic performance!</p>
+                            </div>
+                        }
+                        else if (ViewBag.GPA >= 2.0m)
+                        {
+                            <div class="alert alert-primary">
+                                <h5><i class="fas fa-check-circle"></i> Good Standing</h5>
+                                <p class="mb-0">Meeting academic requirements.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-danger">
+                                <h5><i class="fas fa-exclamation-triangle"></i> Academic Probation</h5>
+                                <p class="mb-0">Please meet with your academic advisor.</p>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="gpa-actions">
+                        <a href="@Url.Action("Transcript", new { studentId = ViewBag.StudentId })" class="btn btn-info">
+                            <i class="fas fa-file-alt"></i> View Full Transcript
+                        </a>
+                        <a href="@Url.Action("Manage")" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Grades
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .gpa-circle {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 8px solid #e9ecef;
+    }
+
+    .gpa-value {
+        text-align: center;
+    }
+
+    .gpa-number {
+        font-size: 3rem;
+        font-weight: bold;
+        display: block;
+        line-height: 1;
+    }
+
+    .gpa-label {
+        font-size: 1.2rem;
+        color: #6c757d;
+    }
+
+    .gpa-excellent .gpa-number {
+        color: #28a745;
+    }
+
+    .gpa-good .gpa-number {
+        color: #007bff;
+    }
+
+    .gpa-poor .gpa-number {
+        color: #dc3545;
+    }
+</style>
