@@ -40,27 +40,74 @@
                 </h5>
             </div>
             <div class="card-body">
+
+                <!-- COURSE SELECTION SECTION -->
+                <div class="card mb-4 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-search me-2"></i>Course Selection
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold">Choose Existing Course</label>
+                                <select id="courseSelector" class="form-select">
+                                    <option value="">-- Select an existing course to auto-fill --</option>
+                                    @foreach (var course in ViewBag.AvailableCourses ?? new List<Course>())
+                                    {
+                                        <option value="@course.Id"
+                                                data-code="@course.CourseCode"
+                                                data-name="@course.CourseName"
+                                                data-description="@course.Description"
+                                                data-credits="@course.Credits"
+                                                data-department="@course.Department"
+                                                data-semester="@course.Semester"
+                                                data-maxstudents="@course.MaxStudents"
+                                                data-mingpa="@course.MinGPA"
+                                                data-minpassedhours="@course.MinPassedHours"
+                                                data-prerequisites="@course.PrerequisitesString"
+                                                data-coursespecification="@course.CourseSpecification"
+                                                data-icon="@course.Icon">
+                                            @course.CourseCode - @course.CourseName
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">&nbsp;</label>
+                                <button type="button" id="clearSelection" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-times me-2"></i>Clear Selection
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Select a course to automatically fill all fields below</small>
+                        </div>
+                    </div>
+                </div>
+
                 <form asp-action="Create" method="post" id="courseForm">
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label asp-for="CourseCode" class="form-label fw-semibold">Course Code *</label>
-                            <input asp-for="CourseCode" class="form-control" placeholder="e.g., CS101">
+                            <input asp-for="CourseCode" class="form-control" placeholder="e.g., CS101" id="CourseCode">
                             <span asp-validation-for="CourseCode" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label asp-for="CourseName" class="form-label fw-semibold">Course Name *</label>
-                            <input asp-for="CourseName" class="form-control" placeholder="Enter course name">
+                            <input asp-for="CourseName" class="form-control" placeholder="Enter course name" id="CourseName">
                             <span asp-validation-for="CourseName" class="text-danger small"></span>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label asp-for="Description" class="form-label fw-semibold">Description</label>
-                        <textarea asp-for="Description" class="form-control" rows="6" 
+                        <textarea asp-for="Description" class="form-control" rows="6"
                                   placeholder="Enter course description (max 5000 characters)"
-                                  maxlength="5000"></textarea>
+                                  maxlength="5000" id="Description"></textarea>
                         <div class="form-text">
                             <span id="descriptionCounter">0</span> / 5000 characters
                         </div>
@@ -70,19 +117,19 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label asp-for="Credits" class="form-label fw-semibold">Credits *</label>
-                            <input asp-for="Credits" class="form-control" type="number" min="1" max="6" value="3">
+                            <input asp-for="Credits" class="form-control" type="number" min="1" max="6" value="3" id="Credits">
                             <span asp-validation-for="Credits" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label asp-for="DepartmentId" class="form-label fw-semibold">Department</label>
-                            <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.DepartmentId">
+                            <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.DepartmentId" id="DepartmentId">
                                 <option value="">-- Select Department --</option>
                             </select>
                             <span asp-validation-for="DepartmentId" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label asp-for="SemesterId" class="form-label fw-semibold">Semester</label>
-                            <select asp-for="SemesterId" class="form-select" asp-items="ViewBag.SemesterId">
+                            <select asp-for="SemesterId" class="form-select" asp-items="ViewBag.SemesterId" id="SemesterId">
                                 <option value="">-- Select Semester --</option>
                             </select>
                             <span asp-validation-for="SemesterId" class="text-danger small"></span>
@@ -93,12 +140,12 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label asp-for="Department" class="form-label fw-semibold">Department Name *</label>
-                            <input asp-for="Department" class="form-control" placeholder="Enter department name">
+                            <input asp-for="Department" class="form-control" placeholder="Enter department name" id="Department">
                             <span asp-validation-for="Department" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label asp-for="Semester" class="form-label fw-semibold">Semester Number *</label>
-                            <input asp-for="Semester" class="form-control" type="number" min="1" max="8" value="1">
+                            <input asp-for="Semester" class="form-control" type="number" min="1" max="8" value="1" id="SemesterNumber">
                             <span asp-validation-for="Semester" class="text-danger small"></span>
                         </div>
                     </div>
@@ -106,18 +153,32 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label asp-for="MaxStudents" class="form-label fw-semibold">Max Students</label>
-                            <input asp-for="MaxStudents" class="form-control" type="number" min="1" max="1000" value="30">
+                            <input asp-for="MaxStudents" class="form-control" type="number" min="1" max="1000" value="30" id="MaxStudents">
                             <span asp-validation-for="MaxStudents" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label asp-for="MinGPA" class="form-label fw-semibold">Min GPA</label>
-                            <input asp-for="MinGPA" class="form-control" type="number" step="0.01" min="0.0" max="4.0" value="2.0">
+                            <input asp-for="MinGPA" class="form-control" type="number" step="0.01" min="0.0" max="4.0" value="2.0" id="MinGPA">
                             <span asp-validation-for="MinGPA" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label asp-for="MinPassedHours" class="form-label fw-semibold">Min Passed Hours</label>
-                            <input asp-for="MinPassedHours" class="form-control" type="number" min="0" value="0">
+                            <input asp-for="MinPassedHours" class="form-control" type="number" min="0" value="0" id="MinPassedHours">
                             <span asp-validation-for="MinPassedHours" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- New Fields -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CourseSpecification" class="form-label fw-semibold">Course Specification</label>
+                            <input asp-for="CourseSpecification" class="form-control" placeholder="Course specification document link" id="CourseSpecification">
+                            <span asp-validation-for="CourseSpecification" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Icon" class="form-label fw-semibold">Icon</label>
+                            <input asp-for="Icon" class="form-control" placeholder="e.g., fas fa-laptop-code" id="Icon">
+                            <span asp-validation-for="Icon" class="text-danger small"></span>
                         </div>
                     </div>
 
@@ -131,7 +192,7 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Select Prerequisites</label>
-                                <div class="prerequisites-list" style="max-height: 200px; overflow-y: auto;">
+                                <div class="prerequisites-list" style="max-height: 200px; overflow-y: auto;" id="PrerequisitesList">
                                     @foreach (var course in Model.AvailablePrerequisites)
                                     {
                                         <div class="form-check">
@@ -146,7 +207,6 @@
                                                 @if (!string.IsNullOrEmpty(course.Description))
                                                 {
                                                     <br>
-                                            
                                                     <small class="text-muted">@course.Description</small>
                                                 }
                                             </label>
@@ -159,18 +219,17 @@
                                 }
                             </div>
 
-                            @if (!string.IsNullOrEmpty(Model.PrerequisiteCodes))
-                            {
-                                <div class="alert alert-info">
-                                    <strong>Selected Prerequisites:</strong> @Model.PrerequisiteCodes
-                                </div>
-                            }
+                            <div class="mb-3">
+                                <label asp-for="PrerequisitesString" class="form-label fw-semibold">Prerequisites String (Auto-filled)</label>
+                                <input asp-for="PrerequisitesString" class="form-control" readonly id="PrerequisitesString">
+                                <small class="text-muted">This field is automatically populated when you select prerequisites</small>
+                            </div>
                         </div>
                     </div>
 
                     <div class="mb-4 mt-3">
                         <div class="form-check form-switch">
-                            <input asp-for="IsActive" class="form-check-input" checked role="switch">
+                            <input asp-for="IsActive" class="form-check-input" checked role="switch" id="IsActive">
                             <label asp-for="IsActive" class="form-check-label fw-semibold">Active Course</label>
                         </div>
                     </div>
@@ -179,7 +238,7 @@
                         <button type="submit" class="btn btn-primary px-4">
                             <i class="fas fa-save me-2"></i>Create Course
                         </button>
-                        <button type="reset" class="btn btn-outline-secondary">
+                        <button type="reset" class="btn btn-outline-secondary" id="resetForm">
                             <i class="fas fa-undo me-2"></i>Reset
                         </button>
                     </div>
@@ -192,27 +251,27 @@
         <div class="card-university card">
             <div class="card-header bg-white py-3">
                 <h5 class="card-title mb-0 text-dark">
-                    <i class="fas fa-lightbulb me-2"></i>Course Information
+                    <i class="fas fa-lightbulb me-2"></i>Quick Tips
                 </h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-info border-0">
-                    <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>About Courses</h6>
+                    <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Course Selection</h6>
                     <ul class="mb-0 small">
-                        <li><strong>Course Code:</strong> Unique identifier for the course</li>
-                        <li><strong>Credits:</strong> Academic weight of the course (1-6 credits)</li>
-                        <li><strong>Prerequisites:</strong> Courses that must be completed before taking this course</li>
-                        <li><strong>Max Students:</strong> Maximum number of students allowed to enroll</li>
-                        <li><strong>Min GPA:</strong> Minimum GPA required to enroll in this course</li>
+                        <li><strong>Choose Existing:</strong> Select a course to auto-fill all fields</li>
+                        <li><strong>Create New:</strong> Fill the form manually for a new course</li>
+                        <li><strong>Max Students:</strong> Can be up to 1000 students</li>
+                        <li><strong>Auto-fill:</strong> All fields including prerequisites will be filled</li>
                     </ul>
                 </div>
 
                 <div class="alert alert-warning border-0 mt-3">
-                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Options</h6>
-                    <p class="mb-2">You can either:</p>
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Important Notes</h6>
                     <ul class="mb-0 small">
-                        <li><strong>Create New Course:</strong> Fill out the form to create a completely new course</li>
-                        <li><strong>Select from Existing:</strong> Choose from existing courses and add them to this semester</li>
+                        <li>Course Code must be unique</li>
+                        <li>You can modify any auto-filled field</li>
+                        <li>Prerequisites will be copied from selected course</li>
+                        <li>Use "Clear Selection" to start fresh</li>
                     </ul>
                 </div>
             </div>
@@ -223,11 +282,51 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            // Auto-fill legacy fields from dropdowns
+            // Course Selection Auto-fill
+            $('#courseSelector').change(function() {
+                var selectedOption = $(this).find('option:selected');
+                if (selectedOption.val()) {
+                    // Fill all form fields from selected course
+                    $('#CourseCode').val(selectedOption.data('code'));
+                    $('#CourseName').val(selectedOption.data('name'));
+                    $('#Description').val(selectedOption.data('description'));
+                    $('#Credits').val(selectedOption.data('credits'));
+                    $('#Department').val(selectedOption.data('department'));
+                    $('#SemesterNumber').val(selectedOption.data('semester'));
+                    $('#MaxStudents').val(selectedOption.data('maxstudents') || 1000); // Default to 1000 if empty
+                    $('#MinGPA').val(selectedOption.data('mingpa') || 2.0);
+                    $('#MinPassedHours').val(selectedOption.data('minpassedhours') || 0);
+                    $('#PrerequisitesString').val(selectedOption.data('prerequisites') || '');
+                    $('#CourseSpecification').val(selectedOption.data('coursespecification') || '');
+                    $('#Icon').val(selectedOption.data('icon') || '');
+
+                    // Update character counter
+                    $('#descriptionCounter').text(selectedOption.data('description')?.length || 0);
+
+                    // Show success message
+                    showToast('Course fields auto-filled successfully!', 'success');
+                }
+            });
+
+            // Clear selection
+            $('#clearSelection').click(function() {
+                $('#courseSelector').val('');
+                $('#resetForm').click();
+                showToast('Selection cleared. You can now create a new course.', 'info');
+            });
+
+            // Enhanced reset button
+            $('#resetForm').click(function() {
+                $('#courseSelector').val('');
+                $('#PrerequisitesString').val('');
+                // Update character counter
+                $('#descriptionCounter').text($('#Description').val().length);
+            });
+
+            // Auto-fill legacy fields from dropdowns (existing functionality)
             $('#DepartmentId').change(function () {
                 var selectedText = $(this).find('option:selected').text();
                 if (selectedText && selectedText !== '-- Select Department --') {
-                    // Extract just the department name (last part after →)
                     var parts = selectedText.split('→');
                     if (parts.length > 0) {
                         $('#Department').val(parts[parts.length - 1].trim());
@@ -238,10 +337,9 @@
             $('#SemesterId').change(function () {
                 var selectedText = $(this).find('option:selected').text();
                 if (selectedText && selectedText !== '-- Select Semester --') {
-                    // Extract semester number if possible
                     var semesterMatch = selectedText.match(/Semester\s*(\d+)/i);
                     if (semesterMatch && semesterMatch[1]) {
-                        $('#Semester').val(semesterMatch[1]);
+                        $('#SemesterNumber').val(semesterMatch[1]);
                     }
                 }
             });
@@ -253,24 +351,31 @@
                     $('#SemesterId').val('@ViewBag.ParentSemester.Id');
                     </text>
             }
+
+            // Toast notification function
+            function showToast(message, type = 'info') {
+                // Simple toast implementation
+                const toast = $(`<div class="alert alert-${type} alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999;">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`);
+                $('body').append(toast);
+                setTimeout(() => toast.alert('close'), 3000);
+            }
         });
-    </script>
-    <script>
-    // Character counter for description
-    document.addEventListener('DOMContentLoaded', function() {
-        const descriptionTextarea = document.querySelector('textarea[name="Description"]');
-        const counter = document.getElementById('descriptionCounter');
-        
-        if (descriptionTextarea && counter) {
-            // Update counter on load
-            counter.textContent = descriptionTextarea.value.length;
-            
-            // Update counter on input
-            descriptionTextarea.addEventListener('input', function() {
-                counter.textContent = this.value.length;
-            });
-        }
-    });
+
+        // Character counter for description
+        document.addEventListener('DOMContentLoaded', function() {
+            const descriptionTextarea = document.querySelector('textarea[name="Description"]');
+            const counter = document.getElementById('descriptionCounter');
+
+            if (descriptionTextarea && counter) {
+                counter.textContent = descriptionTextarea.value.length;
+                descriptionTextarea.addEventListener('input', function() {
+                    counter.textContent = this.value.length;
+                });
+            }
+        });
     </script>
 
     @{

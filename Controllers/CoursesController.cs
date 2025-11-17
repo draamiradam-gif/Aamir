@@ -140,6 +140,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/Create
+        // GET: Courses/Create
         public async Task<IActionResult> Create(int? semesterId, int? copyFromCourseId)
         {
             var course = new Course();
@@ -183,6 +184,14 @@ namespace StudentManagementSystem.Controllers
                         .ToList();
                 }
             }
+
+            // ✅ NEW: Get all available courses for the selection dropdown
+            var availableCourses = await _context.Courses
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.CourseCode)
+                .ToListAsync();
+
+            ViewBag.AvailableCourses = availableCourses;
 
             await PopulateDropdowns();
             await PopulatePrerequisites(course);
@@ -1423,7 +1432,116 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
+        // POST: Courses/BulkAddToSemester
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkAddToSemester(int semesterId, string courseIds)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(courseIds))
+                {
+                    TempData["ErrorMessage"] = "No courses selected.";
+                    return RedirectToAction("SelectFromExisting", new { semesterId });
+                }
 
+                var courseIdArray = courseIds.Split(',').Select(int.Parse).ToArray();
+                var semester = await _context.Semesters.FindAsync(semesterId);
+
+                if (semester == null)
+                {
+                    TempData["ErrorMessage"] = "Semester not found.";
+                    return RedirectToAction("SelectFromExisting", new { semesterId });
+                }
+
+                int successCount = 0;
+                var addedCourses = new List<string>();
+
+                foreach (var courseId in courseIdArray)
+                {
+                    var course = await _context.Courses
+                        .Include(c => c.Prerequisites)
+                        .ThenInclude(p => p.PrerequisiteCourse)
+                        .FirstOrDefaultAsync(c => c.Id == courseId);
+
+                    if (course != null)
+                    {
+                        // Generate unique course code
+                        var baseCourseCode = course.CourseCode;
+                        var newCourseCode = $"{baseCourseCode}-{semester.Id}";
+                        var counter = 1;
+
+                        while (await _context.Courses.AnyAsync(c => c.CourseCode == newCourseCode && c.IsActive))
+                        {
+                            newCourseCode = $"{baseCourseCode}-{semester.Id}-{counter}";
+                            counter++;
+                        }
+
+                        // Create course copy
+                        var newCourse = new Course
+                        {
+                            CourseCode = newCourseCode,
+                            CourseName = $"{course.CourseName} - {semester.Name}",
+                            Description = course.Description,
+                            Credits = course.Credits,
+                            Department = course.Department,
+                            Semester = course.Semester,
+                            IsActive = true,
+                            MaxStudents = course.MaxStudents,
+                            MinGPA = course.MinGPA,
+                            MinPassedHours = course.MinPassedHours,
+                            DepartmentId = course.DepartmentId,
+                            SemesterId = semesterId,
+                            CreatedDate = DateTime.Now
+                        };
+
+                        _context.Courses.Add(newCourse);
+                        await _context.SaveChangesAsync();
+
+                        // Copy prerequisites
+                        if (course.Prerequisites != null && course.Prerequisites.Any())
+                        {
+                            foreach (var prerequisite in course.Prerequisites.Where(p => p.PrerequisiteCourse != null))
+                            {
+                                var newPrerequisite = new CoursePrerequisite
+                                {
+                                    CourseId = newCourse.Id,
+                                    PrerequisiteCourseId = prerequisite.PrerequisiteCourseId,
+                                    IsRequired = prerequisite.IsRequired,
+                                    MinGrade = prerequisite.MinGrade
+                                };
+                                _context.CoursePrerequisites.Add(newPrerequisite);
+                            }
+                            await _context.SaveChangesAsync();
+                        }
+
+                        successCount++;
+                        addedCourses.Add($"{course.CourseCode} → {newCourseCode}");
+                    }
+                }
+
+                if (successCount > 0)
+                {
+                    TempData["SuccessMessage"] = $"Successfully added {successCount} courses to semester '{semester.Name}'.";
+                    if (addedCourses.Any())
+                    {
+                        TempData["AddedCourses"] = string.Join("<br>", addedCourses);
+                    }
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "No courses were added to the semester.";
+                }
+
+                return RedirectToAction("Details", "Semesters", new { id = semesterId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error bulk adding courses to semester");
+                TempData["ErrorMessage"] = "An error occurred while adding courses to the semester.";
+                return RedirectToAction("SelectFromExisting", new { semesterId });
+            }
+        }
     }
 
 }

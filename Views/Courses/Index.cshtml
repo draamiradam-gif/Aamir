@@ -169,38 +169,147 @@
     </div>
 
     <!-- Search and Filters Card -->
-    <div class="card mb-4">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">
-                <i class="fas fa-filter"></i> Filters & Search
-            </h5>
-        </div>
-        <div class="card-body">
-            <form method="get" asp-action="Index" class="row g-3">
-                <div class="col-md-8">
-                    <div class="input-group">
-                        <input type="text" name="searchString" class="form-control"
-                               placeholder="Search by course code, name, or department..."
-                               value="@currentFilter" />
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-search"></i> Search
-                        </button>
-                    </div>
+    <!-- Search and Filters Card -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">
+            <i class="fas fa-filter"></i> Filters & Search
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row g-3" id="filterForm">
+            <!-- Search Input -->
+            <div class="col-md-4">
+                <label for="searchString" class="form-label">Search Courses</label>
+                <div class="input-group">
+                    <input type="text" 
+                           name="searchString" 
+                           class="form-control" 
+                           placeholder="Search by code, name, description..."
+                           value="@currentFilter" />
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
                 </div>
-                <div class="col-md-4">
+            </div>
+            
+            <!-- Department Filter -->
+            <div class="col-md-3">
+                <label for="department" class="form-label">Department</label>
+                <select name="department" class="form-select" id="departmentSelect">
+                    <option value="">All Departments</option>
+                    @foreach (var dept in Model.Select(c => c.Department).Distinct().OrderBy(d => d))
+                    {
+                        <option value="@dept" selected="@(currentDepartment == dept)">@dept</option>
+                    }
+                </select>
+            </div>
+            
+            <!-- Semester Filter -->
+            <div class="col-md-3">
+                <label for="semester" class="form-label">Semester</label>
+                <select name="semester" class="form-select" id="semesterSelect">
+                    <option value="">All Semesters</option>
+                    @foreach (var sem in Model.Select(c => c.Semester).Distinct().OrderBy(s => s))
+                    {
+                        <option value="@sem" selected="@(currentSemester?.ToString() == sem.ToString())">Semester @sem</option>
+                    }
+                </select>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="fas fa-filter"></i> Apply
+                    </button>
                     @if (!string.IsNullOrEmpty(currentFilter) || !string.IsNullOrEmpty(currentDepartment) || currentSemester.HasValue)
                     {
-                        <a href="@Url.Action("Index")" class="btn btn-secondary">
-                            <i class="fas fa-times"></i> Clear Filters
+                        <a href="@Url.Action("Index")" class="btn btn-outline-danger">
+                            <i class="fas fa-times"></i>
                         </a>
                     }
-                    <span class="text-muted ms-2">
-                        @Model.Count courses found
-                    </span>
                 </div>
-            </form>
+            </div>
+            
+            <!-- Hidden fields to preserve sorting -->
+            <input type="hidden" name="sortBy" value="@currentSort" />
+            <input type="hidden" name="sortOrder" value="@currentOrder" />
+        </form>
+        
+        <!-- Active Filters Display -->
+        @if (!string.IsNullOrEmpty(currentFilter) || !string.IsNullOrEmpty(currentDepartment) || currentSemester.HasValue)
+        {
+            <div class="mt-3 p-3 bg-light rounded">
+                <small class="text-muted fw-bold">Active Filters:</small>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    @if (!string.IsNullOrEmpty(currentFilter))
+                    {
+                        <span class="badge bg-primary">
+                            <i class="fas fa-search me-1"></i> Search: "@currentFilter"
+                            <a href="@Url.Action("Index", new { 
+                                department = currentDepartment, 
+                                semester = currentSemester,
+                                sortBy = currentSort,
+                                sortOrder = currentOrder
+                            })" class="text-white ms-2">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </span>
+                    }
+                    @if (!string.IsNullOrEmpty(currentDepartment))
+                    {
+                        <span class="badge bg-info">
+                            <i class="fas fa-building me-1"></i> Department: @currentDepartment
+                            <a href="@Url.Action("Index", new { 
+                                searchString = currentFilter, 
+                                semester = currentSemester,
+                                sortBy = currentSort,
+                                sortOrder = currentOrder
+                            })" class="text-white ms-2">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </span>
+                    }
+                    @if (currentSemester.HasValue)
+                    {
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-calendar me-1"></i> Semester: @currentSemester
+                            <a href="@Url.Action("Index", new { 
+                                searchString = currentFilter, 
+                                department = currentDepartment,
+                                sortBy = currentSort,
+                                sortOrder = currentOrder
+                            })" class="text-dark ms-2">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </span>
+                    }
+                </div>
+            </div>
+        }
+        
+        <!-- DEBUG: Remove this after testing -->
+        <div class="mt-3 alert alert-info">
+            <h6 class="mb-2">Debug Info (Current Values):</h6>
+            <div class="row small">
+                <div class="col-md-3">
+                    <strong>searchString:</strong> @(string.IsNullOrEmpty(currentFilter) ? "null" : $"\"{currentFilter}\"")
+                </div>
+                <div class="col-md-3">
+                    <strong>department:</strong> @(string.IsNullOrEmpty(currentDepartment) ? "null" : $"\"{currentDepartment}\"")
+                </div>
+                <div class="col-md-3">
+                    <strong>semester:</strong> @(currentSemester?.ToString() ?? "null")
+                </div>
+                <div class="col-md-3">
+                    <strong>Results:</strong> @Model.Count courses
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
     <!-- Courses Table Container -->
     <div class="card">
@@ -1198,5 +1307,46 @@
             });
         });
     });
+
+
+    // Add this to your existing JavaScript section
+document.addEventListener('DOMContentLoaded', function () {
+    // Auto-submit form when dropdowns change
+    const departmentSelect = document.getElementById('departmentSelect');
+    const semesterSelect = document.getElementById('semesterSelect');
+    
+    if (departmentSelect) {
+        departmentSelect.addEventListener('change', function() {
+            document.getElementById('filterForm').submit();
+        });
+    }
+    
+    if (semesterSelect) {
+        semesterSelect.addEventListener('change', function() {
+            document.getElementById('filterForm').submit();
+        });
+    }
+    
+    // Real-time search with debounce
+    const searchInput = document.querySelector('input[name="searchString"]');
+    if (searchInput) {
+        let searchTimeout;
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // Show loading state
+                const submitBtn = document.querySelector('#filterForm button[type="submit"]');
+                const originalHtml = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                submitBtn.disabled = true;
+                
+                // Submit form after typing stops
+                document.getElementById('filterForm').submit();
+            }, 800);
+        });
+    }
+});
+
 </script>
 }

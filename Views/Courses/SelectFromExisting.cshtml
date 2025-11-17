@@ -7,9 +7,9 @@
     <div class="d-flex justify-content-between align-items-center">
         <div>
             <h1 class="h2 fw-bold text-primary mb-2">
-                <i class="fas fa-book me-2"></i>Select Existing Course
+                <i class="fas fa-book me-2"></i>Select Existing Courses
             </h1>
-            <p class="text-muted mb-0">Choose a course to add to the semester</p>
+            <p class="text-muted mb-0">Choose courses to add to the semester</p>
         </div>
         <a href="@Url.Action("Details", "Semesters", new { id = ViewBag.SemesterId })" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-2"></i>Back to Semester
@@ -17,13 +17,88 @@
     </div>
 </div>
 
+<!-- Bulk Actions Toolbar -->
+<div class="card mb-4" id="bulkActionsToolbar" style="display: none;">
+    <div class="card-header bg-warning">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0 text-white">
+                    <i class="fas fa-tools me-2"></i>Bulk Actions
+                    <span class="badge bg-light text-dark ms-2" id="selectedCount">0</span>
+                </h5>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success btn-sm" id="addSelectedBtn">
+                        <i class="fas fa-plus me-1"></i>Add Selected to Semester
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm" id="selectAllBtn">
+                        <i class="fas fa-check-square me-1"></i>Select All
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm" id="deselectAllBtn">
+                        <i class="fas fa-square me-1"></i>Deselect All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card-university card">
     <div class="card-header bg-white py-3">
-        <h5 class="card-title mb-0 text-dark">
-            <i class="fas fa-list me-2"></i>Available Courses
-        </h5>
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 text-dark">
+                <i class="fas fa-list me-2"></i>Available Courses
+                <span class="badge bg-primary ms-2">@Model.Count() Total</span>
+            </h5>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#filterModal">
+                    <i class="fas fa-filter me-1"></i>Filters
+                </button>
+                <a asp-action="Create" asp-route-semesterId="@ViewBag.SemesterId" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Create New
+                </a>
+            </div>
+        </div>
     </div>
     <div class="card-body">
+
+        <!-- Search and Quick Filters -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search in all columns...">
+                    <button type="button" id="clearSearch" class="btn btn-outline-secondary" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2 flex-wrap">
+                    <select id="departmentFilter" class="form-select form-select-sm" style="min-width: 150px;">
+                        <option value="">All Departments</option>
+                        @foreach (var dept in Model.Select(c => c.Department).Distinct().OrderBy(d => d))
+                        {
+                            <option value="@dept">@dept</option>
+                        }
+                    </select>
+                    <select id="creditsFilter" class="form-select form-select-sm" style="min-width: 120px;">
+                        <option value="">All Credits</option>
+                        @foreach (var credit in Model.Select(c => c.Credits).Distinct().OrderBy(c => c))
+                        {
+                            <option value="@credit">@credit Credits</option>
+                        }
+                    </select>
+                    <button type="button" id="clearFilters" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
         @if (!Model.Any())
         {
             <div class="text-center py-5">
@@ -38,52 +113,469 @@
         else
         {
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover table-striped" id="coursesTable">
+                    <thead class="table-light">
                         <tr>
-                            <th>Course Code</th>
-                            <th>Course Name</th>
-                            <th>Credits</th>
-                            <th>Department</th>
-                            <th>Current Semester</th>
-                            <th class="text-center">Actions</th>
+                            <th width="50" class="text-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                </div>
+                            </th>
+                            <th data-sort="courseCode" class="sortable">
+                                Course Code
+                                <i class="fas fa-sort float-end mt-1 text-muted"></i>
+                            </th>
+                            <th data-sort="courseName" class="sortable">
+                                Course Name
+                                <i class="fas fa-sort float-end mt-1 text-muted"></i>
+                            </th>
+                            <th data-sort="credits" class="sortable text-center">
+                                Credits
+                                <i class="fas fa-sort float-end mt-1 text-muted"></i>
+                            </th>
+                            <th data-sort="department" class="sortable">
+                                Department
+                                <i class="fas fa-sort float-end mt-1 text-muted"></i>
+                            </th>
+                            <th data-sort="semester" class="sortable">
+                                Current Semester
+                                <i class="fas fa-sort float-end mt-1 text-muted"></i>
+                            </th>
+                            <th data-sort="prerequisites" class="sortable">
+                                Prerequisites
+                                <i class="fas fa-sort float-end mt-1 text-muted"></i>
+                            </th>
+                            <th class="text-center">Single Action</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="coursesTableBody">
                         @foreach (var course in Model)
                         {
-                            <tr>
-                                <td>
-                                    <span class="fw-semibold">@course.CourseCode</span>
+                            <tr class="course-row"
+                                data-code="@course.CourseCode"
+                                data-name="@course.CourseName"
+                                data-description="@course.Description"
+                                data-credits="@course.Credits"
+                                data-department="@course.Department"
+                                data-semester="@(course.CourseSemester?.Name ?? "Not Assigned")"
+                                data-prerequisites="@(course.Prerequisites?.Any() == true ? string.Join(", ", course.Prerequisites.Select(p => p.PrerequisiteCourse?.CourseCode).Where(code => !string.IsNullOrEmpty(code))) : "None")">
+                                <td class="text-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input course-checkbox" type="checkbox" value="@course.Id" data-course-name="@course.CourseName">
+                                    </div>
                                 </td>
-                                <td>@course.CourseName</td>
-                                <td>@course.Credits</td>
+                                <td>
+                                    <span class="fw-semibold text-primary">@course.CourseCode</span>
+                                </td>
+                                <td>
+                                    <div class="fw-medium">@course.CourseName</div>
+                                    @if (!string.IsNullOrEmpty(course.Description))
+                                    {
+                                        <small class="text-muted d-block" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            @course.Description
+                                        </small>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">@course.Credits</span>
+                                </td>
                                 <td>@course.Department</td>
                                 <td>
                                     @if (course.CourseSemester != null)
                                     {
-                                        <span class="badge bg-info">@course.CourseSemester.Name</span>
+                                        <span class="badge bg-success">@course.CourseSemester.Name</span>
                                     }
                                     else
                                     {
                                         <span class="badge bg-secondary">Not Assigned</span>
                                     }
                                 </td>
+                                <td>
+                                    @if (course.Prerequisites?.Any() == true)
+                                    {
+                                        <small class="text-muted">
+                                            @string.Join(", ", course.Prerequisites.Select(p => p.PrerequisiteCourse?.CourseCode).Where(code => !string.IsNullOrEmpty(code)))
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">None</small>
+                                    }
+                                </td>
                                 <td class="text-center">
-                                    <form asp-action="AddToSemester" method="post">
+                                    <form asp-action="AddToSemester" method="post" class="d-inline">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="courseId" value="@course.Id" />
                                         <input type="hidden" name="semesterId" value="@ViewBag.SemesterId" />
                                         <button type="submit" class="btn btn-success btn-sm">
-                                            <i class="fas fa-plus me-1"></i>Add to Semester
+                                            <i class="fas fa-plus me-1"></i>Add
                                         </button>
                                     </form>
+                                    <button type="button" class="btn btn-info btn-sm ms-1"
+                                            data-bs-toggle="tooltip"
+                                            title="Quick View"
+                                            onclick="showCourseDetails(@course.Id, '@course.CourseCode', '@course.CourseName', '@course.Description', @course.Credits, '@course.Department')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
                                 </td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
+
+            <!-- Results Counter -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted small">
+                    Showing <span id="visibleCount">@Model.Count()</span> of <span id="totalCount">@Model.Count()</span> courses
+                    | Selected: <span id="selectedBadge" class="badge bg-warning">0</span>
+                </div>
+                <div class="text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Click column headers to sort
+                </div>
+            </div>
         }
     </div>
 </div>
+
+<!-- Bulk Add Confirmation Modal -->
+<div class="modal fade" id="bulkAddModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Add Courses to Semester
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to add <strong id="addCourseCount">0</strong> courses to this semester?</p>
+                <div id="selectedCoursesList" class="small text-muted mt-2" style="max-height: 150px; overflow-y: auto;"></div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Each course will be copied with a unique course code for this semester.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="bulkAddForm" asp-action="BulkAddToSemester" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="semesterId" value="@ViewBag.SemesterId" />
+                    <input type="hidden" name="courseIds" id="bulkCourseIds" />
+                    <button type="submit" class="btn btn-success">Add Courses</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal (Keep your existing filter modal) -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <!-- Your existing filter modal content -->
+</div>
+
+<!-- Course Details Modal (Keep your existing details modal) -->
+<div class="modal fade" id="courseDetailsModal" tabindex="-1">
+    <!-- Your existing course details modal content -->
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Selection functionality
+            const selectAll = document.getElementById('selectAll');
+            const courseCheckboxes = document.querySelectorAll('.course-checkbox');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectedBadge = document.getElementById('selectedBadge');
+            const bulkActionsToolbar = document.getElementById('bulkActionsToolbar');
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const deselectAllBtn = document.getElementById('deselectAllBtn');
+            const addSelectedBtn = document.getElementById('addSelectedBtn');
+
+            // Modal elements
+            const bulkAddModal = new bootstrap.Modal(document.getElementById('bulkAddModal'));
+            const addCourseCount = document.getElementById('addCourseCount');
+            const selectedCoursesList = document.getElementById('selectedCoursesList');
+            const bulkCourseIds = document.getElementById('bulkCourseIds');
+            const bulkAddForm = document.getElementById('bulkAddForm');
+
+            // Your existing search, filter, and sort functionality
+            let currentSort = { column: 'courseCode', direction: 'asc' };
+            let allRows = $('.course-row').toArray();
+
+            // Initialize tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // Selection functionality
+            function updateSelectedCount() {
+                const selected = document.querySelectorAll('.course-checkbox:checked').length;
+                selectedCount.textContent = selected;
+                selectedBadge.textContent = selected;
+
+                // Show/hide bulk actions toolbar
+                if (selected > 0) {
+                    bulkActionsToolbar.style.display = 'block';
+                } else {
+                    bulkActionsToolbar.style.display = 'none';
+                }
+            }
+
+            function selectAllCourses(select) {
+                courseCheckboxes.forEach(checkbox => {
+                    checkbox.checked = select;
+                });
+                selectAll.checked = select;
+                updateSelectedCount();
+            }
+
+            function getSelectedCourseIds() {
+                const selectedIds = [];
+                courseCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        selectedIds.push(checkbox.value);
+                    }
+                });
+                return selectedIds;
+            }
+
+            function getSelectedCourses() {
+                const selected = [];
+                courseCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        selected.push({
+                            id: checkbox.value,
+                            name: checkbox.dataset.courseName
+                        });
+                    }
+                });
+                return selected;
+            }
+
+            // Event listeners for selection
+            selectAll.addEventListener('change', function () {
+                selectAllCourses(this.checked);
+            });
+
+            courseCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    const allChecked = document.querySelectorAll('.course-checkbox:checked').length === courseCheckboxes.length;
+                    selectAll.checked = allChecked;
+                    updateSelectedCount();
+                });
+            });
+
+            selectAllBtn.addEventListener('click', function () {
+                selectAllCourses(true);
+            });
+
+            deselectAllBtn.addEventListener('click', function () {
+                selectAllCourses(false);
+            });
+
+            // Bulk add functionality
+            addSelectedBtn.addEventListener('click', function () {
+                const selected = getSelectedCourses();
+                if (selected.length > 0) {
+                    // Update modal content
+                    addCourseCount.textContent = selected.length;
+
+                    // Show selected courses list
+                    selectedCoursesList.innerHTML = '';
+                    selected.forEach(course => {
+                        const div = document.createElement('div');
+                        div.className = 'border-bottom pb-1 mb-1';
+                        div.textContent = course.name;
+                        selectedCoursesList.appendChild(div);
+                    });
+
+                    // Set course IDs for form submission
+                    bulkCourseIds.value = getSelectedCourseIds().join(',');
+
+                    // Show modal
+                    bulkAddModal.show();
+                } else {
+                    alert('Please select at least one course to add.');
+                }
+            });
+
+            // Your existing search functionality
+            $('#searchInput').on('input', function() {
+                filterAndSortCourses();
+                $('#clearSearch').toggle(!!$(this).val());
+            });
+
+            $('#clearSearch').click(function() {
+                $('#searchInput').val('').trigger('input');
+            });
+
+            // Your existing filter functionality
+            $('#departmentFilter, #creditsFilter').change(function() {
+                filterAndSortCourses();
+            });
+
+            $('#clearFilters').click(function() {
+                $('#searchInput').val('');
+                $('#departmentFilter, #creditsFilter').val('');
+                $('#modalDepartmentFilter, #modalCreditsFilter, #prerequisitesFilter, #semesterFilter').val('');
+                filterAndSortCourses();
+                $('#clearSearch').hide();
+            });
+
+            // Your existing sorting functionality
+            $('.sortable').click(function() {
+                const column = $(this).data('sort');
+                const $icon = $(this).find('i');
+
+                if (currentSort.column === column) {
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.column = column;
+                    currentSort.direction = 'asc';
+                }
+
+                $('.sortable i').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort text-muted');
+                $icon.removeClass('fa-sort text-muted')
+                     .addClass(currentSort.direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+
+                filterAndSortCourses();
+            });
+
+            function filterAndSortCourses() {
+                const searchTerm = $('#searchInput').val().toLowerCase();
+                const departmentFilter = $('#departmentFilter').val();
+                const creditsFilter = $('#creditsFilter').val();
+                const prerequisitesFilter = $('#prerequisitesFilter').val();
+                const semesterFilter = $('#semesterFilter').val();
+
+                // First filter the rows
+                let filteredRows = allRows.filter(row => {
+                    const $row = $(row);
+                    const code = $row.data('code').toLowerCase();
+                    const name = $row.data('name').toLowerCase();
+                    const description = $row.data('description')?.toLowerCase() || '';
+                    const credits = $row.data('credits').toString();
+                    const department = $row.data('department');
+                    const semester = $row.data('semester');
+                    const prerequisites = $row.data('prerequisites');
+
+                    const matchesSearch = !searchTerm ||
+                        code.includes(searchTerm) ||
+                        name.includes(searchTerm) ||
+                        description.includes(searchTerm) ||
+                        department.toLowerCase().includes(searchTerm) ||
+                        semester.toLowerCase().includes(searchTerm) ||
+                        prerequisites.toLowerCase().includes(searchTerm);
+
+                    const matchesDepartment = !departmentFilter || department === departmentFilter;
+                    const matchesCredits = !creditsFilter || credits === creditsFilter;
+                    const matchesPrerequisites = !prerequisitesFilter ||
+                        (prerequisitesFilter === 'with' && prerequisites !== 'None') ||
+                        (prerequisitesFilter === 'without' && prerequisites === 'None');
+                    const matchesSemester = !semesterFilter ||
+                        (semesterFilter === 'assigned' && semester !== 'Not Assigned') ||
+                        (semesterFilter === 'unassigned' && semester === 'Not Assigned');
+
+                    return matchesSearch && matchesDepartment && matchesCredits && matchesPrerequisites && matchesSemester;
+                });
+
+                // Then sort the filtered rows
+                filteredRows.sort((a, b) => {
+                    const $a = $(a);
+                    const $b = $(b);
+
+                    let aValue, bValue;
+
+                    switch (currentSort.column) {
+                        case 'courseCode':
+                            aValue = $a.data('code').toLowerCase();
+                            bValue = $b.data('code').toLowerCase();
+                            break;
+                        case 'courseName':
+                            aValue = $a.data('name').toLowerCase();
+                            bValue = $b.data('name').toLowerCase();
+                            break;
+                        case 'credits':
+                            aValue = parseInt($a.data('credits'));
+                            bValue = parseInt($b.data('credits'));
+                            break;
+                        case 'department':
+                            aValue = $a.data('department').toLowerCase();
+                            bValue = $b.data('department').toLowerCase();
+                            break;
+                        case 'semester':
+                            aValue = $a.data('semester').toLowerCase();
+                            bValue = $b.data('semester').toLowerCase();
+                            break;
+                        case 'prerequisites':
+                            aValue = $a.data('prerequisites').toLowerCase();
+                            bValue = $b.data('prerequisites').toLowerCase();
+                            break;
+                        default:
+                            aValue = $a.data('code').toLowerCase();
+                            bValue = $b.data('code').toLowerCase();
+                    }
+
+                    if (currentSort.column === 'credits') {
+                        return currentSort.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    }
+
+                    if (aValue < bValue) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (aValue > bValue) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                // Update the table
+                const $tbody = $('#coursesTableBody');
+                $tbody.empty();
+                filteredRows.forEach(row => $tbody.append(row));
+
+                // Update counters
+                $('#visibleCount').text(filteredRows.length);
+                updateSelectedCount();
+            }
+
+            // Course details modal
+            window.showCourseDetails = function(id, code, name, description, credits, department) {
+                $('#detailCode').text(code);
+                $('#detailName').text(name);
+                $('#detailCredits').text(credits);
+                $('#detailDepartment').text(department);
+                $('#detailDescription').text(description || 'No description available');
+                $('#courseDetailsModal').modal('show');
+            };
+
+            // Initialize
+            filterAndSortCourses();
+            updateSelectedCount();
+        });
+    </script>
+
+    <style>
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+            .sortable:hover {
+                background-color: #f8f9fa;
+            }
+
+        .course-row td {
+            vertical-align: middle;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.075);
+        }
+
+        .fa-sort-up, .fa-sort-down {
+            color: #007bff !important;
+        }
+
+        #bulkActionsToolbar {
+            transition: all 0.3s ease;
+        }
+    </style>
+}
