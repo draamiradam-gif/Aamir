@@ -16,8 +16,11 @@ using Microsoft.Data.SqlClient;
 namespace StudentManagementSystem.Controllers
 {
     [Authorize]
-    [Route("[controller]")]
-    [ApiController]
+    [Route("Courses")]
+    //[Route("[controller]")]
+    //[Route("[controller]/[action]")]
+    //[Route("Courses/[action]")]
+    //[ApiController]
     public class CoursesController : Controller
     {
         private readonly ICourseService _courseService;
@@ -34,6 +37,9 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses
+        [HttpGet]
+        [Route("")]
+        [Route("Index")]
         public async Task<IActionResult> Index(string searchString, string department, int? semester, string sortBy = "CourseCode", string sortOrder = "asc")
         {
             try
@@ -117,32 +123,9 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        // GET: Courses/Details/5
-        public async Task<IActionResult> Details(int id)
-        {
-            try
-            {
-                var course = await _courseService.GetCourseByIdAsync(id);
-                if (course == null)
-                {
-                    return NotFound();
-                }
-
-                var enrollments = await _courseService.GetCourseEnrollmentsAsync(id);
-                ViewBag.Enrollments = enrollments;
-
-                return View(course);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading course details");
-                TempData["Error"] = "Error loading course details.";
-                return RedirectToAction(nameof(Index));
-            }
-        }
 
         // GET: Courses/Create
-        // GET: Courses/Create
+        [HttpGet("Create")]
         public async Task<IActionResult> Create(int? semesterId, int? copyFromCourseId)
         {
             var course = new Course();
@@ -256,89 +239,10 @@ namespace StudentManagementSystem.Controllers
             return View(course);
         }
 
-        // GET: Courses/Edit/5
-        public async Task<IActionResult> Edit(int id)
-        {
-            try
-            {
-                var course = await _courseService.GetCourseByIdAsync(id);
-                if (course == null)
-                {
-                    return NotFound();
-                }
-
-                var prerequisites = await _courseService.GetCoursePrerequisitesAsync(id);
-                course.SelectedPrerequisiteIds = prerequisites.Select(p => p.PrerequisiteCourseId).ToList();
-
-                await LoadAvailablePrerequisites(course);
-                await PopulateDropdowns();
-                return View(course);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading course for edit");
-                TempData["Error"] = "Error loading course.";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-        // POST: Courses/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Course course)
-        {
-            if (id != course.Id)
-            {
-                return NotFound();
-            }
-
-            try
-            {
-                if (ModelState.IsValid)
-                {
-                    await _courseService.UpdateCourseAsync(course);
-
-                    var existingPrerequisites = await _courseService.GetCoursePrerequisitesAsync(id);
-                    var existingPrereqIds = existingPrerequisites.Select(p => p.PrerequisiteCourseId).ToList();
-
-                    // FIX: Check for null and use empty list if null
-                    var selectedPrereqIds = course.SelectedPrerequisiteIds ?? new List<int>();
-
-                    foreach (var prereqId in selectedPrereqIds)
-                    {
-                        if (!existingPrereqIds.Contains(prereqId))
-                        {
-                            await _courseService.AddPrerequisiteAsync(course.Id, prereqId, null);
-                        }
-                    }
-
-                    foreach (var existingPrereq in existingPrerequisites)
-                    {
-                        if (!selectedPrereqIds.Contains(existingPrereq.PrerequisiteCourseId))
-                        {
-                            await _courseService.RemovePrerequisiteAsync(existingPrereq.Id);
-                        }
-                    }
-
-                    TempData["Success"] = $"Course {course.CourseCode} updated successfully!";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                await LoadAvailablePrerequisites(course);
-                await PopulateDropdowns();
-                return View(course);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating course");
-                TempData["Error"] = $"Error updating course: {ex.Message}";
-                await LoadAvailablePrerequisites(course);
-                await PopulateDropdowns();
-                return View(course);
-            }
-        }
+       
 
         // GET: Courses/Delete/5
+        [HttpGet("Delete/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -384,6 +288,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/Prerequisites/5
+        [HttpGet("Prerequisites/{id}")]
         public async Task<IActionResult> Prerequisites(int id)
         {
             try
@@ -449,6 +354,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/Enroll/5
+        [HttpGet]
+        [Route("Enroll/{id}")]
         public async Task<IActionResult> Enroll(int id)
         {
             try
@@ -505,7 +412,7 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/EnrollStudent
         [HttpPost("EnrollMultipleStudents")]
-        public async Task<IActionResult> EnrollStudent(int courseId, int[] studentIds)
+        public async Task<IActionResult> EnrollMultipleStudents(int courseId, int[] studentIds)
         {
             try
             {
@@ -576,6 +483,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/UpdateGrade/5
+        [HttpGet("UpdateGrade/{id}")]
         public async Task<IActionResult> UpdateGrade(int id)
         {
             try
@@ -621,6 +529,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/Import
+        [HttpGet]
+        [Route("Import")]
         public IActionResult Import()
         {
             return View();
@@ -672,6 +582,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/Export
+        [HttpGet("Export")]
         public async Task<IActionResult> Export()
         {
             try
@@ -690,6 +601,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/ExportPdf
+        [HttpGet]
+        [Route("ExportPdf")]
         public async Task<IActionResult> ExportPdf()
         {
             try
@@ -708,6 +621,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/ExportCoursePdf/5
+        [HttpGet]
+        [Route("ExportCoursePdf")]
         public async Task<IActionResult> ExportCoursePdf(int id)
         {
             try
@@ -846,6 +761,8 @@ namespace StudentManagementSystem.Controllers
         //}
 
         // GET: Courses/ExportEnrollments/5
+        [HttpGet]
+        [Route("ExportEnrollments")]
         public async Task<IActionResult> ExportEnrollments(int id)
         {
             try
@@ -865,6 +782,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/SelectFromExisting
+        [HttpGet]
+        [Route("SelectFromExisting")]
         public async Task<IActionResult> SelectFromExisting(int? semesterId)
         {
             var courses = await _context.Courses
@@ -881,6 +800,7 @@ namespace StudentManagementSystem.Controllers
         /// POST: Courses/AddToSemester
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Route("AddToSemester")]
         public async Task<IActionResult> AddToSemester(int courseId, int semesterId)
         {
             try
@@ -958,7 +878,8 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction(nameof(SelectFromExisting), new { semesterId });
             }
         }
-
+        [HttpGet]
+        [Route("PopulateDropdowns")]
         private async Task PopulateDropdowns()
         {
             // Populate departments
@@ -993,6 +914,8 @@ namespace StudentManagementSystem.Controllers
             ViewBag.SemesterId = new SelectList(semesters, "Value", "Text");
         }
 
+        [HttpGet]
+        [Route("PopulatePrerequisites")]
         private async Task PopulatePrerequisites(Course course)
         {
             // Get all active courses except the current one (if it exists)
@@ -1015,6 +938,8 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("LoadAvailablePrerequisites")]
         private async Task LoadAvailablePrerequisites(Course course)
         {
             var allCourses = await _courseService.GetAllCoursesAsync();
@@ -1023,6 +948,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // Helper method to check for unique constraint violations
+        [HttpGet]
+        [Route("IsUniqueConstraintViolation")]
         private bool IsUniqueConstraintViolation(DbUpdateException ex)
         {
             return ex.InnerException is SqlException sqlException &&
@@ -1033,7 +960,8 @@ namespace StudentManagementSystem.Controllers
         ///
 
         // GET: Courses/ImportReview
-        public IActionResult ImportReview()
+        [HttpGet("ImportReview")]
+        public IActionResult ImportReview() // Remove 'async Task<' and just use 'IActionResult'
         {
             try
             {
@@ -1070,15 +998,16 @@ namespace StudentManagementSystem.Controllers
 
                 return View(viewModel);
             }
-            catch (Exception) // Remove the unused 'ex' variable
+            catch (Exception ex) // You can use the exception variable now
             {
+                _logger.LogError(ex, "Error loading import preview");
                 TempData["Error"] = "Error loading preview. Please try uploading again.";
                 return RedirectToAction(nameof(Import));
             }
         }
 
         // POST: Courses/ImportExecute
-        [HttpPost]
+        [HttpPost("ImportExecute")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ImportExecute(ImportSettings settings)
         {
@@ -1122,6 +1051,8 @@ namespace StudentManagementSystem.Controllers
             }
         }
         // GET: Courses/DownloadTemplate
+        [HttpGet]
+        [Route("DownloadTemplate")]
         public IActionResult DownloadTemplate()
         {
             try
@@ -1306,7 +1237,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // POST: Courses/DeleteMultiple
-        [HttpPost]
+        [HttpPost("DeleteMultiple")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteMultiple(int[] selectedCourses)
         {
@@ -1331,7 +1262,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // POST: Courses/DeleteAll
-        [HttpPost]
+        [HttpPost("DeleteAll")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAll()
         {
@@ -1403,7 +1334,7 @@ namespace StudentManagementSystem.Controllers
 
 
         // POST: Courses/ExportSelected
-        [HttpPost]
+        [HttpPost("ExportSelected")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExportSelected(int[] selectedCourses)
         {
@@ -1435,7 +1366,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // POST: Courses/BulkAddToSemester
-        [HttpPost]
+        [HttpPost("BulkAddToSemester")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkAddToSemester(int semesterId, string courseIds)
         {
@@ -1546,6 +1477,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Semesters/Dashboard
+        [HttpGet("Dashboard")]
         public async Task<IActionResult> Dashboard()
         {
             var semesters = await _context.Semesters
@@ -1560,30 +1492,6 @@ namespace StudentManagementSystem.Controllers
             return View(semesters);
         }
 
-        //// ADD THIS to CoursesController.cs
-        //[HttpGet]
-        //public async Task<IActionResult> GetCoursesBySemester(int semesterId)
-        //{
-        //    var courses = await _context.Courses
-        //        .Where(c => c.SemesterId == semesterId && c.IsActive)
-        //        .Select(c => new
-        //        {
-        //            id = c.Id,
-        //            courseName = c.CourseName,
-        //            courseCode = c.CourseCode,
-        //            credits = c.Credits,
-        //            description = c.Description,
-        //            isActive = c.IsActive
-        //        })
-        //        .ToListAsync();
-
-        //    return Json(courses);
-        //}
-
-        // ADD THIS METHOD to your CoursesController
-        
-
-       
 
         // In your CoursesController.cs
 
@@ -1595,6 +1503,8 @@ namespace StudentManagementSystem.Controllers
             {
                 var courses = await _context.Courses
                     .Where(c => c.SemesterId == semesterId && c.IsActive)
+                    .Include(c => c.Prerequisites) // Include prerequisites
+                        .ThenInclude(p => p.PrerequisiteCourse) // Include prerequisite course details
                     .Select(c => new
                     {
                         id = c.Id,
@@ -1602,7 +1512,10 @@ namespace StudentManagementSystem.Controllers
                         courseCode = c.CourseCode,
                         credits = c.Credits,
                         description = c.Description,
-                        isActive = c.IsActive
+                        isActive = c.IsActive,
+                        prerequisites = string.Join(", ", c.Prerequisites
+                            .Where(p => p.PrerequisiteCourse != null && !string.IsNullOrEmpty(p.PrerequisiteCourse.CourseCode))
+                            .Select(p => p.PrerequisiteCourse!.CourseCode!)) // Get prerequisite codes
                     })
                     .ToListAsync();
 
@@ -1614,7 +1527,42 @@ namespace StudentManagementSystem.Controllers
                 return Json(new List<object>());
             }
         }
+        /*
+                [HttpGet]
+                [Route("GetCoursesBySemester")]
+                public async Task<IActionResult> GetCoursesBySemester(int semesterId)
+                {
+                    try
+                    {
+                        var courses = await _context.Courses
+                            .Where(c => c.SemesterId == semesterId && c.IsActive)
+                            .Include(c => c.Prerequisites)
+                                .ThenInclude(p => p.PrerequisiteCourse)
+                            .Select(c => new
+                            {
+                                id = c.Id,
+                                courseName = c.CourseName,
+                                courseCode = c.CourseCode,
+                                credits = c.Credits,
+                                description = c.Description ?? string.Empty, // Handle null description
+                                isActive = c.IsActive,
+                                prerequisites = c.Prerequisites != null ?
+                                    string.Join(", ", c.Prerequisites
+                                        .Where(p => p.PrerequisiteCourse != null && !string.IsNullOrEmpty(p.PrerequisiteCourse.CourseCode))
+                                        .Select(p => p.PrerequisiteCourse!.CourseCode!))
+                                    : string.Empty
+                            })
+                            .ToListAsync();
 
+                        return Json(courses);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error loading courses for semester {SemesterId}", semesterId);
+                        return Json(new List<object>());
+                    }
+                }
+        */
         [HttpGet]
         [Route("GetAvailableCoursesForSemester")]
         public async Task<IActionResult> GetAvailableCoursesForSemester(int semesterId)
@@ -1652,46 +1600,134 @@ namespace StudentManagementSystem.Controllers
 
 
 
+
+
         // GET: Courses/Details/5
-        public async Task<IActionResult> Details(int? id)
+        [HttpGet("Details/{id}")]
+        public async Task<IActionResult> Details(int id)
         {
-            if (id == null) return NotFound();
+            try
+            {
+                var course = await _courseService.GetCourseByIdAsync(id);
+                if (course == null)
+                {
+                    return NotFound();
+                }
 
-            var course = await _context.Courses
-                .Include(c => c.CourseDepartment)
-                .Include(c => c.CourseSemester)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                var enrollments = await _courseService.GetCourseEnrollmentsAsync(id);
+                ViewBag.Enrollments = enrollments;
 
-            if (course == null) return NotFound();
-
-            return View(course);
+                return View(course);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading course details");
+                TempData["Error"] = "Error loading course details.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // GET: Courses/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        // GET: Courses/Edit/5
+        [HttpGet("Edit/{id}")]
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null) return NotFound();
+            try
+            {
+                var course = await _courseService.GetCourseByIdAsync(id);
+                if (course == null)
+                {
+                    return NotFound();
+                }
 
-            var course = await _context.Courses.FindAsync(id);
-            if (course == null) return NotFound();
+                var prerequisites = await _courseService.GetCoursePrerequisitesAsync(id);
+                course.SelectedPrerequisiteIds = prerequisites.Select(p => p.PrerequisiteCourseId).ToList();
 
-            // You may need to populate dropdowns here
-            // await PopulateDropdowns();
-            return View(course);
+                await LoadAvailablePrerequisites(course);
+                await PopulateDropdowns();
+                return View(course);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading course for edit");
+                TempData["Error"] = "Error loading course.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
-        [HttpGet("DebugRoutes")]
-        public IActionResult DebugRoutes()
+        // POST: Courses/Edit/5
+        [HttpPost("Edit/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Course course)
         {
-            var routes = new List<string>();
+            if (id != course.Id)
+            {
+                return NotFound();
+            }
 
-            // This will help you see what routes are actually registered
-            routes.Add("Available Courses Controller Routes:");
-            routes.Add("GET /Courses/GetCoursesBySemester");
-            routes.Add("GET /Courses/GetAvailableCoursesForSemester");
-            routes.Add("GET /Courses/VerifyExists/{id}");
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    await _courseService.UpdateCourseAsync(course);
 
-            return Json(routes);
+                    var existingPrerequisites = await _courseService.GetCoursePrerequisitesAsync(id);
+                    var existingPrereqIds = existingPrerequisites.Select(p => p.PrerequisiteCourseId).ToList();
+
+                    // FIX: Check for null and use empty list if null
+                    var selectedPrereqIds = course.SelectedPrerequisiteIds ?? new List<int>();
+
+                    foreach (var prereqId in selectedPrereqIds)
+                    {
+                        if (!existingPrereqIds.Contains(prereqId))
+                        {
+                            await _courseService.AddPrerequisiteAsync(course.Id, prereqId, null);
+                        }
+                    }
+
+                    foreach (var existingPrereq in existingPrerequisites)
+                    {
+                        if (!selectedPrereqIds.Contains(existingPrereq.PrerequisiteCourseId))
+                        {
+                            await _courseService.RemovePrerequisiteAsync(existingPrereq.Id);
+                        }
+                    }
+
+                    TempData["Success"] = $"Course {course.CourseCode} updated successfully!";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                await LoadAvailablePrerequisites(course);
+                await PopulateDropdowns();
+                return View(course);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating course");
+                TempData["Error"] = $"Error updating course: {ex.Message}";
+                await LoadAvailablePrerequisites(course);
+                await PopulateDropdowns();
+                return View(course);
+            }
+        }
+
+        [HttpGet("Debug")]
+        public IActionResult Debug()
+        {
+            var actions = new List<string>();
+
+            // List all public methods that might be causing conflicts
+            var methods = typeof(CoursesController).GetMethods()
+                .Where(m => m.IsPublic && !m.IsSpecialName)
+                .Select(m => m.Name)
+                .Distinct()
+                .ToList();
+
+            return Json(new
+            {
+                PublicMethods = methods,
+                Message = "Check for duplicate method names above"
+            });
         }
     }
 
