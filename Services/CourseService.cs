@@ -1940,7 +1940,7 @@ namespace StudentManagementSystem.Services
                         Credits = 3,
                         Department = "Computer Science",
                         Semester = 1,
-                        MaxStudents = 40,
+                        MaxStudents = 1000,
                         MinGPA = 2.0m,
                         MinPassedHours = 0,
                         IsActive = true
@@ -1953,7 +1953,7 @@ namespace StudentManagementSystem.Services
                         Credits = 4,
                         Department = "Mathematics",
                         Semester = 2,
-                        MaxStudents = 35,
+                        MaxStudents = 1000,
                         MinGPA = 2.5m,
                         MinPassedHours = 15,
                         IsActive = true
@@ -1966,7 +1966,7 @@ namespace StudentManagementSystem.Services
                         Credits = 4,
                         Department = "Physics",
                         Semester = 1,
-                        MaxStudents = 30,
+                        MaxStudents = 1000,
                         MinGPA = 2.0m,
                         MinPassedHours = 0,
                         IsActive = true

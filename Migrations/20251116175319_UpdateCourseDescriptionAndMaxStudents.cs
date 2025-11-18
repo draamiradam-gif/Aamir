@@ -21,7 +21,7 @@ namespace StudentManagementSystem.Migrations
                 name: "Icon",
                 table: "Courses",
                 type: "nvarchar(100)",
-                maxLength: 100,
+                maxLength: 1000,
                 nullable: true);
         }
 

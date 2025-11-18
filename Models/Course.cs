@@ -49,7 +49,7 @@ namespace StudentManagementSystem.Models
 
         [Range(1, 1000)]
         [Display(Name = "Max Students")]
-        public int MaxStudents { get; set; } = 30;
+        public int MaxStudents { get; set; } = 1000;
 
         [Display(Name = "Min GPA")]
         [Column(TypeName = "decimal(4,2)")]
