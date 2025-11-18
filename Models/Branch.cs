@@ -33,16 +33,15 @@ namespace StudentManagementSystem.Models
         public virtual Branch? ParentBranch { get; set; }
         public virtual ICollection<Branch> SubBranches { get; set; } = new List<Branch>();
         public virtual ICollection<Semester> BranchSemesters { get; set; } = new List<Semester>();
-
-
+        public virtual ICollection<Semester> SubBranchSemesters { get; set; } = new List<Semester>();
         /*
         [NotMapped]
         public string FullPath => ParentBranch != null ?
             $"{Department?.FullPath} → {ParentBranch.Name} → {Name}" :
             $"{Department?.FullPath} → {Name}";
         */
-        
-         [NotMapped]
+
+        [NotMapped]
          public bool HasSubBranches => SubBranches?.Any() == true;
 
         [NotMapped]

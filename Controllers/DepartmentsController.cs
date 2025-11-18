@@ -377,6 +377,7 @@ namespace StudentManagementSystem.Controllers
                     .ThenInclude(b => b.SubBranches)
                 .Include(d => d.Students)
                 .Include(d => d.Courses)
+                .Include(d => d.Semesters)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (department == null) return NotFound();

@@ -24,6 +24,54 @@
         </h5>
     </div>
     <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-3">
+                            <i class="fas fa-filter me-2"></i>Filter Semesters
+                        </h6>
+                        <form method="get" asp-action="Index" id="filterForm" class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small">Status</label>
+                                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="">All Status</option>
+                                    <option value="active">Active Only</option>
+                                    <option value="inactive">Inactive Only</option>
+                                    <option value="current">Current Semester</option>
+                                    <option value="registration">Registration Open</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small">Academic Year</label>
+                                <select name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="">All Years</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2023">2023</option>
+                                    <option value="2022">2022</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small">Semester Type</label>
+                                <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="">All Types</option>
+                                    <option value="Fall">Fall</option>
+                                    <option value="Spring">Spring</option>
+                                    <option value="Summer">Summer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-grid">
+                                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-times me-1"></i>Clear Filters
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
         @if (!Model.Any())
         {
             <div class="text-center py-5">
@@ -133,6 +181,7 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
+            // Initialize DataTable
             $('#semestersTable').DataTable({
                 "pageLength": 25,
                 "responsive": true,

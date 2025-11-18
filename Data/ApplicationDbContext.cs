@@ -106,9 +106,10 @@ namespace StudentManagementSystem.Data
             // Configure CourseEnrollment entity - USE CASCADE HERE
             builder.Entity<CourseEnrollment>(entity =>
             {
-                entity.HasIndex(e => new { e.CourseId, e.StudentId })
-                      .HasDatabaseName("IX_CourseEnrollment_UniqueActive")
-                      .HasFilter("[IsActive] = 1");
+                entity.HasIndex(e => new { e.CourseId, e.StudentId, e.SemesterId })
+          .HasDatabaseName("IX_CourseEnrollment_UniqueActive")
+          .HasFilter("[IsActive] = 1")
+          .IsUnique();
 
                 entity.Property(e => e.Grade).HasColumnType("decimal(5,2)");
                 entity.Property(e => e.GradeLetter).HasMaxLength(2);
@@ -119,12 +120,24 @@ namespace StudentManagementSystem.Data
                 entity.HasOne(e => e.Course)
                       .WithMany(c => c.CourseEnrollments)
                       .HasForeignKey(e => e.CourseId)
-                      .OnDelete(DeleteBehavior.Cascade); // CASCADE for enrollments
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.Student)
                       .WithMany(s => s.CourseEnrollments)
                       .HasForeignKey(e => e.StudentId)
-                      .OnDelete(DeleteBehavior.Restrict); // RESTRICT for students
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // ADD THIS: Semester relationship
+                entity.HasOne(e => e.Semester)
+                      .WithMany() // Semester doesn't need CourseEnrollments navigation
+                      .HasForeignKey(e => e.SemesterId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // FIX: Use the new HasCheckConstraint syntax
+                entity.ToTable(tb => tb.HasCheckConstraint(
+                    "CK_CourseEnrollment_Grade",
+                    "[Grade] IS NULL OR ([Grade] >= 0 AND [Grade] <= 100)"
+                ));
             });
 
             // Configure CoursePrerequisite entity - USE CLIENT CASCADE
@@ -219,7 +232,7 @@ namespace StudentManagementSystem.Data
                       .IsRequired(false);
 
                 entity.HasOne(s => s.SubBranch)
-                      .WithMany()
+                      .WithMany(b => b.SubBranchSemesters) // Updated this line
                       .HasForeignKey(s => s.SubBranchId)
                       .OnDelete(DeleteBehavior.Restrict)
                       .IsRequired(false);
@@ -228,7 +241,13 @@ namespace StudentManagementSystem.Data
                     "CK_Semester_Parent",
                     "([DepartmentId] IS NOT NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL) OR " +
                     "([DepartmentId] IS NULL AND [BranchId] IS NOT NULL AND [SubBranchId] IS NULL) OR " +
-                    "([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NOT NULL)"
+                    "([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NOT NULL) OR " +
+                    "([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL)" // Allow no parent
+                ));
+
+                entity.ToTable(tb => tb.HasCheckConstraint(
+                    "CK_Semester_Dates",
+                    "[StartDate] < [EndDate] AND [RegistrationStartDate] < [RegistrationEndDate]"
                 ));
             });
 

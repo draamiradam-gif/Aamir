@@ -7,13 +7,13 @@ namespace StudentManagementSystem.Models
     {
         public int CourseId { get; set; }
         public int StudentId { get; set; }
+        public int SemesterId { get; set; }
 
         [Range(0, 100)]
         [Display(Name = "Grade")]
-        [Column(TypeName = "decimal(5,2)")]
-        public decimal? Grade { get; set; } // Percentage mark (0-100)
+        public decimal? Grade { get; set; }
 
-        [StringLength(5)] // Increased to accommodate "A+", "B-", etc.
+        [StringLength(2)]
         [Display(Name = "Grade Letter")]
         public string? GradeLetter { get; set; }
 
@@ -25,7 +25,7 @@ namespace StudentManagementSystem.Models
 
         // Grade-related properties
         [Display(Name = "Grade Points")]
-        [Column(TypeName = "decimal(3,2)")]
+        [Column(TypeName = "decimal(4,2)")]
         public decimal? GradePoints { get; set; }
 
         [Display(Name = "Grade Status")]
@@ -38,12 +38,15 @@ namespace StudentManagementSystem.Models
         [StringLength(500)]
         public string? Remarks { get; set; }
 
-        // Navigation properties
+        // Navigation properties - MAKE THEM NULLABLE
         [ForeignKey("CourseId")]
-        public virtual Course? Course { get; set; }
+        public virtual Course? Course { get; set; } // ADDED NULLABLE
 
         [ForeignKey("StudentId")]
-        public virtual Student? Student { get; set; }
+        public virtual Student? Student { get; set; } // ADDED NULLABLE
+
+        [ForeignKey("SemesterId")]
+        public virtual Semester? Semester { get; set; } // ADDED NULLABLE
 
         // Computed properties
         [NotMapped]
@@ -53,62 +56,61 @@ namespace StudentManagementSystem.Models
         public bool IsFailed => GradeStatus == GradeStatus.Failed;
 
         [NotMapped]
-        public bool IsPassed => GradePoints >= 1.0m; // D- or better is passing
+        public bool IsPassing => Grade >= 60;
 
-        // Method to calculate grade automatically (using your existing logic)
+
+
         public void CalculateGrade()
         {
             if (Grade.HasValue)
             {
-                GradePoints = CalculatePoints(Grade.Value);
-                GradeLetter = CalculateLetterGrade(Grade.Value);
-                GradeStatus = Grade.Value >= 50 ? GradeStatus.Completed : GradeStatus.Failed;
+                // Calculate grade points based on percentage
+                GradePoints = CalculateGradePoints(Grade.Value);
 
-                if (GradeStatus == GradeStatus.Completed)
-                {
-                    CompletionDate = DateTime.Now;
-                }
+                // Determine grade letter
+                GradeLetter = CalculateGradeLetter(Grade.Value);
+
+                // Update grade status
+                UpdateGradeStatus();
             }
         }
 
-        private decimal CalculatePoints(decimal mark)
+        // ADD THESE HELPER METHODS:
+        private decimal CalculateGradePoints(decimal grade)
         {
-            return mark switch
+            return grade switch
             {
-                >= 96 => 4.0m,
-                >= 92 => 3.7m,
-                >= 88 => 3.4m,
-                >= 84 => 3.2m,
-                >= 80 => 3.0m,
-                >= 76 => 2.8m,
-                >= 72 => 2.6m,
-                >= 68 => 2.4m,
-                >= 64 => 2.2m,
-                >= 60 => 2.0m,
-                >= 55 => 1.5m,
-                >= 50 => 1.0m,
-                _ => 0.0m
+                >= 90 => 4.0m,  // A
+                >= 80 => 3.0m,  // B
+                >= 70 => 2.0m,  // C
+                >= 60 => 1.0m,  // D
+                _ => 0.0m       // F
             };
         }
 
-        private string CalculateLetterGrade(decimal mark)
+        private string CalculateGradeLetter(decimal grade)
         {
-            return mark switch
+            return grade switch
             {
-                >= 96 => "A+",
-                >= 92 => "A",
-                >= 88 => "A-",
-                >= 84 => "B+",
+                >= 90 => "A",
                 >= 80 => "B",
-                >= 76 => "B-",
-                >= 72 => "C+",
-                >= 68 => "C",
-                >= 64 => "C-",
-                >= 60 => "D+",
-                >= 55 => "D",
-                >= 50 => "D-",
+                >= 70 => "C",
+                >= 60 => "D",
                 _ => "F"
             };
+        }
+
+        private void UpdateGradeStatus()
+        {
+            if (Grade >= 60)
+            {
+                GradeStatus = GradeStatus.Completed;
+                CompletionDate ??= DateTime.Now;
+            }
+            else
+            {
+                GradeStatus = GradeStatus.Failed;
+            }
         }
     }
 

@@ -192,14 +192,13 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            // Only enable parent selection logic if no parent is pre-selected
-            var hasParent = @(hasParent.ToString().ToLower());
+            // Fix: Use proper Razor to JS conversion
+            var hasParent = @Json.Serialize(hasParent){}
 
             if (!hasParent) {
                 // Ensure only one parent can be selected
                 $('#departmentSelect, #branchSelect, #subBranchSelect').change(function () {
                     var selectedValue = $(this).val();
-
                     if (selectedValue) {
                         // Clear other dropdowns
                         $('#departmentSelect, #branchSelect, #subBranchSelect').not(this).val('');

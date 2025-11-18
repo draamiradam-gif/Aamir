@@ -118,7 +118,18 @@ namespace StudentManagementSystem.Models
         [NotMapped]
         public bool IsActive => true; // You might want to add an IsActive property
 
-        /*
+
+
+        [Display(Name = "Grade Level")]
+        [Range(1, 12)]
+        public int GradeLevel { get; set; } = 1; // 1, 2, 3, etc.
+
+        // Navigation properties
+        public virtual ICollection<StudentEnrollment> Enrollments { get; set; } = new List<StudentEnrollment>();
+ /*
+        [NotMapped]
+        public string FullName => $"{FirstName} {LastName}";
+       
 
         public class StudentCourse : BaseEntity
         {

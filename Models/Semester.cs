@@ -25,17 +25,26 @@ namespace StudentManagementSystem.Models
         public int? BranchId { get; set; }
         public int? SubBranchId { get; set; }
 
+        [Display(Name = "End Date")]
+        [CustomValidation(typeof(Semester), "ValidateEndDate")]
+        public DateTime EndDate { get; set; } = DateTime.Now.AddMonths(4);
+
+        [Display(Name = "Registration End Date")]
+        [CustomValidation(typeof(Semester), "ValidateRegistrationEndDate")]
+        public DateTime RegistrationEndDate { get; set; } = DateTime.Now.AddDays(14);
+
+
         [Display(Name = "Start Date")]
         public DateTime StartDate { get; set; } = DateTime.Now;
 
-        [Display(Name = "End Date")]
-        public DateTime EndDate { get; set; } = DateTime.Now.AddMonths(4);
+        //[Display(Name = "End Date")]
+        //public DateTime EndDate { get; set; } = DateTime.Now.AddMonths(4);
 
         [Display(Name = "Registration Start Date")]
         public DateTime RegistrationStartDate { get; set; } = DateTime.Now.AddDays(-7);
 
-        [Display(Name = "Registration End Date")]
-        public DateTime RegistrationEndDate { get; set; } = DateTime.Now.AddDays(14);
+        //[Display(Name = "Registration End Date")]
+        //public DateTime RegistrationEndDate { get; set; } = DateTime.Now.AddDays(14);
 
         [Display(Name = "Active")]
         public bool IsActive { get; set; } = true;
@@ -90,6 +99,40 @@ namespace StudentManagementSystem.Models
 
         [NotMapped]
         public bool IsRegistrationPeriod =>
-            DateTime.Now >= RegistrationStartDate && DateTime.Now <= RegistrationEndDate;
+        DateTime.Now >= RegistrationStartDate && DateTime.Now <= RegistrationEndDate;
+
+
+
+
+
+        // Validation methods
+        // Add these validation methods to your Semester class
+        public static ValidationResult? ValidateEndDate(DateTime endDate, ValidationContext context)
+        {
+            var instance = context.ObjectInstance as Semester;
+            if (instance == null)
+                return ValidationResult.Success;
+
+            if (endDate <= instance.StartDate)
+            {
+                return new ValidationResult("End date must be after start date.");
+            }
+            return ValidationResult.Success;
+        }
+
+        public static ValidationResult? ValidateRegistrationEndDate(DateTime registrationEndDate, ValidationContext context)
+        {
+            var instance = context.ObjectInstance as Semester;
+            if (instance == null)
+                return ValidationResult.Success;
+
+            if (registrationEndDate <= instance.RegistrationStartDate)
+            {
+                return new ValidationResult("Registration end date must be after registration start date.");
+            }
+            return ValidationResult.Success;
+        }
+
+
     }
 }

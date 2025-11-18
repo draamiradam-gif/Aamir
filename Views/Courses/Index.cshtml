@@ -598,6 +598,9 @@
                                 <a href="@Url.Action("Delete", new { id = course.Id })" class="btn btn-danger delete-course" title="Delete Course" data-bs-toggle="tooltip" data-course-id="@course.Id" data-course-name="@course.CourseName">
                                     <i class="fas fa-trash"></i>
                                 </a>
+                                <button id="deleteAllBtn" class="btn btn-danger d-none">
+                                    <i class="fas fa-trash me-2"></i>Delete All Courses
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -1103,13 +1106,14 @@
                 }
             });
 
-            deleteAllBtn.addEventListener('click', function () {
-                if (@Model.Count > 0) {
-                    showDeleteConfirmation('all');
-                } else {
-                    alert('No courses found to delete.');
-                }
-            });
+            // document.getElementById('deleteAllBtn')?.addEventListener('click', function () {
+            //     var itemCount = @Json.Serialize(Model?.Count() ?? 0);
+            //     if (itemCount > 0) {
+            //         showDeleteConfirmation('all');
+            //     } else {
+            //         alert('No courses found to delete.');
+            //     }
+            // });
 
             cancelBulkBtn.addEventListener('click', function () {
                 selectAllCourses(false);

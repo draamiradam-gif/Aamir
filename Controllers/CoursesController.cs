@@ -16,6 +16,7 @@ using Microsoft.Data.SqlClient;
 namespace StudentManagementSystem.Controllers
 {
     [Authorize]
+    [Route("[controller]")]
     public class CoursesController : Controller
     {
         private readonly ICourseService _courseService;
@@ -1542,6 +1543,136 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction("SelectFromExisting", new { semesterId });
             }
         }
+
+        // GET: Semesters/Dashboard
+        public async Task<IActionResult> Dashboard()
+        {
+            var semesters = await _context.Semesters
+                .Include(s => s.Department)
+                .Include(s => s.Branch)
+                .Include(s => s.SubBranch)
+                .Where(s => s.IsActive)
+                .OrderByDescending(s => s.AcademicYear)
+                .ThenBy(s => s.StartDate)
+                .ToListAsync();
+
+            return View(semesters);
+        }
+
+        //// ADD THIS to CoursesController.cs
+        //[HttpGet]
+        //public async Task<IActionResult> GetCoursesBySemester(int semesterId)
+        //{
+        //    var courses = await _context.Courses
+        //        .Where(c => c.SemesterId == semesterId && c.IsActive)
+        //        .Select(c => new
+        //        {
+        //            id = c.Id,
+        //            courseName = c.CourseName,
+        //            courseCode = c.CourseCode,
+        //            credits = c.Credits,
+        //            description = c.Description,
+        //            isActive = c.IsActive
+        //        })
+        //        .ToListAsync();
+
+        //    return Json(courses);
+        //}
+
+        // ADD THIS METHOD to your CoursesController
+        
+
+        [HttpGet]
+        public async Task<IActionResult> GetAvailableCoursesForSemester(int semesterId)
+        {
+            try
+            {
+                var availableCourses = await _context.Courses
+                    .Where(c => (c.SemesterId == null || c.SemesterId != semesterId) && c.IsActive)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        courseCode = c.CourseCode,
+                        courseName = c.CourseName,
+                        credits = c.Credits,
+                        description = c.Description
+                    })
+                    .ToListAsync();
+
+                return Json(availableCourses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading available courses for semester {SemesterId}", semesterId);
+                return Json(new List<object>());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCoursesBySemester(int semesterId)
+        {
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => c.SemesterId == semesterId && c.IsActive)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        courseName = c.CourseName,
+                        courseCode = c.CourseCode,
+                        credits = c.Credits,
+                        description = c.Description,
+                        isActive = c.IsActive
+                    })
+                    .ToListAsync();
+
+                return Json(courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading courses for semester {SemesterId}", semesterId);
+                // Return empty array instead of error object to maintain consistent response format
+                return Json(new List<object>());
+            }
+        }
+
+        // GET: Courses/VerifyExists/5
+        [HttpGet]
+        public async Task<IActionResult> VerifyExists(int id)
+        {
+            var exists = await _context.Courses.AnyAsync(c => c.Id == id);
+            return Json(exists);
+        }
+
+        // GET: Courses/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var course = await _context.Courses
+                .Include(c => c.CourseDepartment)
+                .Include(c => c.CourseSemester)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (course == null) return NotFound();
+
+            return View(course);
+        }
+
+        // GET: Courses/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var course = await _context.Courses.FindAsync(id);
+            if (course == null) return NotFound();
+
+            // You may need to populate dropdowns here
+            // await PopulateDropdowns();
+            return View(course);
+        }
+
+
     }
 
 }

@@ -1,0 +1,44 @@
+﻿@model List<Semester>
+@{
+    ViewData["Title"] = "Semesters Debug - All Issues";
+}
+
+<h2>Semesters Debug Information</h2>
+
+<div class="alert @(ViewBag.DetailsActionExists ? "alert-success" : "alert-danger")">
+    <h5>Details Action: @(ViewBag.DetailsActionExists ? "✅ EXISTS" : "❌ MISSING")</h5>
+</div>
+
+<div class="alert @(ViewBag.DetailsViewExists ? "alert-success" : "alert-danger")">
+    <h5>Details View: @(ViewBag.DetailsViewExists ? "✅ EXISTS" : "❌ MISSING")</h5>
+</div>
+
+<h4>All Semesters in Database:</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Year</th>
+            <th>IsActive</th>
+            <th>Test Links</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var semester in Model)
+        {
+            <tr>
+                <td>@semester.Id</td>
+                <td>@semester.Name</td>
+                <td>@semester.SemesterType</td>
+                <td>@semester.AcademicYear</td>
+                <td>@semester.IsActive</td>
+                <td>
+                    <a href="/Semesters/Details/@semester.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                    <a href="/Semesters/Edit/@semester.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

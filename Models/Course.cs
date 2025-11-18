@@ -39,6 +39,10 @@ namespace StudentManagementSystem.Models
         [Display(Name = "Semester Number")]
         public int Semester { get; set; } = 1;
 
+        [Display(Name = "Grade Level")]
+        [Range(1, 12)]
+        public int GradeLevel { get; set; } = 1;
+
         [Required]
         [Display(Name = "Active")]
         public bool IsActive { get; set; } = true;
@@ -73,7 +77,7 @@ namespace StudentManagementSystem.Models
 
         // NEW: University structure relationships - Foreign Keys
         public int? DepartmentId { get; set; }
-        public int? SemesterId { get; set; }
+        
 
         [NotMapped]
         public List<int> SelectedPrerequisiteIds { get; set; } = new List<int>();
@@ -96,6 +100,7 @@ namespace StudentManagementSystem.Models
         [ForeignKey("DepartmentId")]
         public virtual Department? CourseDepartment { get; set; }
 
+        public int? SemesterId { get; set; }
         [ForeignKey("SemesterId")]
         public virtual Semester? CourseSemester { get; set; }
 
@@ -110,6 +115,7 @@ namespace StudentManagementSystem.Models
         [NotMapped]
         public string StatusText => IsActive ?
             (HasAvailableSeats ? "Active" : "Full") : "Inactive";
+
     }
 
     public class CoursePrerequisite : BaseEntity
@@ -130,6 +136,8 @@ namespace StudentManagementSystem.Models
 
         [ForeignKey("PrerequisiteCourseId")]
         public virtual Course? PrerequisiteCourse { get; set; }
+
+
     }
 
     //public class CourseEnrollment : BaseEntity

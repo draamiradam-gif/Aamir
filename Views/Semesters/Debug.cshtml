@@ -1,0 +1,36 @@
+﻿@model List<Semester>
+@{
+    ViewData["Title"] = "Semester Debug";
+}
+
+<h2>Semester Debug Information</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Year</th>
+            <th>Department</th>
+            <th>Branch</th>
+            <th>SubBranch</th>
+            <th>IsActive</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var semester in Model)
+        {
+            <tr>
+                <td>@semester.Id</td>
+                <td>@semester.Name</td>
+                <td>@semester.SemesterType</td>
+                <td>@semester.AcademicYear</td>
+                <td>@semester.DepartmentId - @semester.Department?.Name</td>
+                <td>@semester.BranchId - @semester.Branch?.Name</td>
+                <td>@semester.SubBranchId - @semester.SubBranch?.Name</td>
+                <td>@semester.IsActive</td>
+            </tr>
+        }
+    </tbody>
+</table>
