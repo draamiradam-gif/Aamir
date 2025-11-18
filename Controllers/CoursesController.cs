@@ -17,6 +17,7 @@ namespace StudentManagementSystem.Controllers
 {
     [Authorize]
     [Route("[controller]")]
+    [ApiController]
     public class CoursesController : Controller
     {
         private readonly ICourseService _courseService;
@@ -1582,7 +1583,40 @@ namespace StudentManagementSystem.Controllers
         // ADD THIS METHOD to your CoursesController
         
 
+       
+
+        // In your CoursesController.cs
+
         [HttpGet]
+        [Route("GetCoursesBySemester")]
+        public async Task<IActionResult> GetCoursesBySemester(int semesterId)
+        {
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => c.SemesterId == semesterId && c.IsActive)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        courseName = c.CourseName,
+                        courseCode = c.CourseCode,
+                        credits = c.Credits,
+                        description = c.Description,
+                        isActive = c.IsActive
+                    })
+                    .ToListAsync();
+
+                return Json(courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading courses for semester {SemesterId}", semesterId);
+                return Json(new List<object>());
+            }
+        }
+
+        [HttpGet]
+        [Route("GetAvailableCoursesForSemester")]
         public async Task<IActionResult> GetAvailableCoursesForSemester(int semesterId)
         {
             try
@@ -1609,40 +1643,14 @@ namespace StudentManagementSystem.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetCoursesBySemester(int semesterId)
-        {
-            try
-            {
-                var courses = await _context.Courses
-                    .Where(c => c.SemesterId == semesterId && c.IsActive)
-                    .Select(c => new
-                    {
-                        id = c.Id,
-                        courseName = c.CourseName,
-                        courseCode = c.CourseCode,
-                        credits = c.Credits,
-                        description = c.Description,
-                        isActive = c.IsActive
-                    })
-                    .ToListAsync();
-
-                return Json(courses);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading courses for semester {SemesterId}", semesterId);
-                // Return empty array instead of error object to maintain consistent response format
-                return Json(new List<object>());
-            }
-        }
-
-        // GET: Courses/VerifyExists/5
-        [HttpGet]
+        [Route("VerifyExists/{id}")]
         public async Task<IActionResult> VerifyExists(int id)
         {
             var exists = await _context.Courses.AnyAsync(c => c.Id == id);
             return Json(exists);
         }
+
+
 
         // GET: Courses/Details/5
         public async Task<IActionResult> Details(int? id)
@@ -1672,7 +1680,19 @@ namespace StudentManagementSystem.Controllers
             return View(course);
         }
 
+        [HttpGet("DebugRoutes")]
+        public IActionResult DebugRoutes()
+        {
+            var routes = new List<string>();
 
+            // This will help you see what routes are actually registered
+            routes.Add("Available Courses Controller Routes:");
+            routes.Add("GET /Courses/GetCoursesBySemester");
+            routes.Add("GET /Courses/GetAvailableCoursesForSemester");
+            routes.Add("GET /Courses/VerifyExists/{id}");
+
+            return Json(routes);
+        }
     }
 
 }

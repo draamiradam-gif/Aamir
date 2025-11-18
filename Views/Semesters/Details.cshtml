@@ -398,11 +398,11 @@
             });
         });
 
-                function loadCourses() {
+                        function loadCourses() {
             console.log('Loading courses for semester:', '@Model.Id');
 
-            // FIX: Use the correct URL with action and controller
-            $.get('@Url.Action("GetCoursesBySemester", "Courses")', { semesterId: '@Model.Id' })
+            // Use the direct route consistently
+            $.get('/Courses/GetCoursesBySemester?semesterId=' + '@Model.Id')
                 .done(function (data) {
                     console.log('Courses loaded:', data);
 
@@ -412,9 +412,7 @@
                         $('#courseCount').text(data.length);
 
                         // Calculate and show statistics
-                        if (typeof showCourseStatistics === 'function') {
-                            showCourseStatistics(data);
-                        }
+                        showCourseStatistics(data);
 
                         var tableHtml = `
                             <div class="table-responsive">
@@ -517,9 +515,7 @@
                         $('#noCoursesMessage').show();
                         $('#coursesTable').hide();
                         $('#courseCount').text('0');
-                        if (typeof $('#courseStats').hide === 'function') {
-                            $('#courseStats').hide();
-                        }
+                        $('#courseStats').hide();
                     }
                 })
                 .fail(function (xhr, status, error) {
@@ -531,7 +527,8 @@
                         <div class="alert alert-danger">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>Error loading courses:</strong> ${error}
-                            <br><small>Check the server logs for more details</small>
+                            <br><small>URL: /Courses/GetCoursesBySemester?semesterId=@Model.Id</small>
+                            <br><small>Check browser network tab for details</small>
                         </div>
                     `);
                 });
@@ -591,7 +588,7 @@
         // Function to show course statistics (WORKING)
 function showCourseStatistics() {
     // Get the current course data
-    $.get('@Url.Action("GetCoursesBySemester", "Courses")', { semesterId: '@Model.Id' })
+            $.get('/Courses/GetCoursesBySemester?semesterId=' + '@Model.Id')
         .done(function(courses) {
             if (courses && courses.length > 0) {
                 const activeCourses = courses.filter(c => c.isActive).length;
@@ -670,8 +667,8 @@ function showCourseStatistics() {
 // Function to export courses to CSV (WORKING)
 function exportCoursesToCSV() {
     const semesterId = @Model.Id;
-    
-    $.get('@Url.Action("GetCoursesBySemester", "Courses")', { semesterId: '@Model.Id' })
+
+            $.get('/Courses/GetCoursesBySemester?semesterId=' + '@Model.Id')
         .done(function(courses) {
             if (courses && courses.length > 0) {
                 let csvContent = "data:text/csv;charset=utf-8,";
@@ -706,7 +703,7 @@ function exportCoursesToCSV() {
 
 // Function to select existing course (WORKING - shows available courses)
 function selectExistingCourse() {
-    $.get('@Url.Action("GetAvailableCoursesForSemester", "Courses")', { semesterId: '@Model.Id' })
+            $.get('/Courses/GetAvailableCoursesForSemester', { semesterId: '@Model.Id' })
         .done(function(availableCourses) {
             if (availableCourses && availableCourses.length > 0) {
                 showSelectCourseModal(availableCourses);
@@ -785,7 +782,7 @@ function showSelectCourseModal(availableCourses) {
             let errorCount = 0;
     
             selectedCourses.forEach(function(courseId) {
-                $.post('@Url.Action("AddCourseToSemester", "Semesters")', {
+                        $.post('/Courses/AddCourseToSemester', {
                     semesterId: '@Model.Id',
                     courseId: courseId
                 })
@@ -897,7 +894,7 @@ function showSelectCourseModal(availableCourses) {
                 // Function to view course details with fallback
         function viewCourseDetails(courseId, courseName, courseData = null) {
             // Check if course exists first
-            $.get('/Courses/VerifyExists/' + courseId)
+                    $.get('/Courses/VerifyExists/' + courseId)
                 .done(function(exists) {
                     if (exists) {
                         window.open('/Courses/Details/' + courseId, '_blank');
