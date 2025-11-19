@@ -14,7 +14,7 @@ namespace StudentManagementSystem.Migrations
                 name: "CourseSpecification",
                 table: "Courses",
                 type: "nvarchar(max)",
-                maxLength: 20000,
+                maxLength: 5000,
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(

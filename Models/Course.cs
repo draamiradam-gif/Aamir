@@ -53,7 +53,7 @@ namespace StudentManagementSystem.Models
 
         [Display(Name = "Min GPA")]
         [Column(TypeName = "decimal(4,2)")]
-        public decimal MinGPA { get; set; } = 2.0m;
+        public decimal MinGPA { get; set; } = 0.0m;
 
         [Display(Name = "Min Passed Hours")]
         public int MinPassedHours { get; set; } = 0;
@@ -73,9 +73,10 @@ namespace StudentManagementSystem.Models
 
         [NotMapped]
         [Display(Name = "Current Enrollment")]
-        public int CurrentEnrollment => CourseEnrollments?.Count(e => e.IsActive) ?? 0;
+        public int CurrentEnrollment => CourseEnrollments?.Count(e => e.IsActive && e.GradeStatus == GradeStatus.InProgress) ?? 0;
 
-        // NEW: University structure relationships - Foreign Keys
+
+
         public int? DepartmentId { get; set; }
         
 

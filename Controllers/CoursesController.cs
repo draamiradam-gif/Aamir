@@ -39,7 +39,7 @@ namespace StudentManagementSystem.Controllers
         // GET: Courses
         [HttpGet]
         [Route("")]
-        [Route("Index")]
+        //[Route("Index")]
         public async Task<IActionResult> Index(string searchString, string department, int? semester, string sortBy = "CourseCode", string sortOrder = "asc")
         {
             try
@@ -538,6 +538,7 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/Import
         [HttpPost]
+        [Route("Import")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Import(IFormFile file)
         {
