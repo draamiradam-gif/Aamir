@@ -119,8 +119,35 @@ namespace StudentManagementSystem.Services
             // Check passed hours requirement
             if (student.PassedHours < course.MinPassedHours)
                 return false;
+            var missingPrerequisites = await GetMissingPrerequisitesAsync(studentId, courseId);
+            if (missingPrerequisites.Any())
+                return false;
 
             return true;
+        }
+
+        private async Task<List<string>> GetMissingPrerequisitesAsync(int studentId, int courseId)
+        {
+            var prerequisites = await _context.CoursePrerequisites
+                .Where(cp => cp.CourseId == courseId && cp.IsRequired)
+                .Include(cp => cp.PrerequisiteCourse)
+                .ToListAsync();
+
+            var missing = new List<string>();
+
+            foreach (var prereq in prerequisites)
+            {
+                var hasPassed = await _context.CourseEnrollments
+                    .AnyAsync(ce => ce.StudentId == studentId &&
+                                   ce.CourseId == prereq.PrerequisiteCourseId &&
+                                   ce.Grade >= (prereq.MinGrade ?? 60) && // Default passing grade
+                                   ce.GradeStatus == GradeStatus.Completed);
+
+                if (!hasPassed)
+                    missing.Add(prereq.PrerequisiteCourse?.CourseCode ?? "Unknown");
+            }
+
+            return missing;
         }
     }
 }

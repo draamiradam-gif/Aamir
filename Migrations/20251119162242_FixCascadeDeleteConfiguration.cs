@@ -5,7 +5,7 @@
 namespace StudentManagementSystem.Migrations
 {
     /// <inheritdoc />
-    public partial class FixSemesterDatesBeforeConstraint : Migration
+    public partial class FixCascadeDeleteConfiguration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

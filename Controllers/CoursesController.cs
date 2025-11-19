@@ -16,7 +16,7 @@ using Microsoft.Data.SqlClient;
 namespace StudentManagementSystem.Controllers
 {
     [Authorize]
-    [Route("Courses")]
+    //[Route("Courses")]
     //[Route("[controller]")]
     //[Route("[controller]/[action]")]
     //[Route("Courses/[action]")]
@@ -38,7 +38,7 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses
         [HttpGet]
-        [Route("")]
+        //[Route("")]
         //[Route("Index")]
         public async Task<IActionResult> Index(string searchString, string department, int? semester, string sortBy = "CourseCode", string sortOrder = "asc")
         {
@@ -69,7 +69,7 @@ namespace StudentManagementSystem.Controllers
 
                 if (semester.HasValue)
                 {
-                    courses = courses.Where(c => c.Semester == semester.Value);
+                    courses = courses.Where(c => c.SemesterId == semester.Value);
                 }
 
                 // ✅ ADD PREREQUISITES SORTING
@@ -94,8 +94,8 @@ namespace StudentManagementSystem.Controllers
                         ? courses.OrderByDescending(c => c.Department)
                         : courses.OrderBy(c => c.Department),
                     "semester" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.Semester)
-                        : courses.OrderBy(c => c.Semester),
+                        ? courses.OrderByDescending(c => c.SemesterId)
+                        : courses.OrderBy(c => c.SemesterId),
                     "enrollment" => sortOrder == "desc"
                         ? courses.OrderByDescending(c => c.CurrentEnrollment)
                         : courses.OrderBy(c => c.CurrentEnrollment),
@@ -125,7 +125,8 @@ namespace StudentManagementSystem.Controllers
 
 
         // GET: Courses/Create
-        [HttpGet("Create")]
+        [HttpGet]
+        //[HttpGet("Create")]
         public async Task<IActionResult> Create(int? semesterId, int? copyFromCourseId)
         {
             var course = new Course();
@@ -239,10 +240,10 @@ namespace StudentManagementSystem.Controllers
             return View(course);
         }
 
-       
+
 
         // GET: Courses/Delete/5
-        [HttpGet("Delete/{id}")]
+        [HttpGet]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -263,7 +264,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // POST: Courses/Delete/5
-        [HttpPost, ActionName("Delete")]
+        [HttpPost]
+        [ActionName("Delete")] // ✅ CRITICAL: This makes POST use the same URL as GET
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
@@ -288,7 +290,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/Prerequisites/5
-        [HttpGet("Prerequisites/{id}")]
+        [HttpGet]
+        //[HttpGet("Prerequisites/{id}")]
         public async Task<IActionResult> Prerequisites(int id)
         {
             try
@@ -319,6 +322,8 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/AddPrerequisite
         [HttpPost]
+        //[HttpPost("AddPrerequisite")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddPrerequisite(int courseId, int prerequisiteCourseId, decimal? minGrade)
         {
             try
@@ -337,6 +342,8 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/RemovePrerequisite
         [HttpPost]
+        //[HttpPost("RemovePrerequisite/{prerequisiteId}")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemovePrerequisite(int prerequisiteId, int courseId)
         {
             try
@@ -355,7 +362,7 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/Enroll/5
         [HttpGet]
-        [Route("Enroll/{id}")]
+        //[Route("Enroll/{id}")]
         public async Task<IActionResult> Enroll(int id)
         {
             try
@@ -385,7 +392,8 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        [HttpPost("EnrollSingleStudent")]
+        [HttpPost]
+        //[HttpPost("EnrollSingleStudent")]
         public async Task<IActionResult> EnrollStudent(int courseId, int studentId)
         {
             try
@@ -411,7 +419,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // POST: Courses/EnrollStudent
-        [HttpPost("EnrollMultipleStudents")]
+        [HttpPost]
+        //[HttpPost("EnrollMultipleStudents")]
         public async Task<IActionResult> EnrollMultipleStudents(int courseId, int[] studentIds)
         {
             try
@@ -466,6 +475,8 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/UnenrollStudent
         [HttpPost]
+        //[HttpPost("UnenrollStudent")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UnenrollStudent(int enrollmentId, int courseId)
         {
             try
@@ -483,7 +494,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/UpdateGrade/5
-        [HttpGet("UpdateGrade/{id}")]
+        //[HttpGet("UpdateGrade/{id}")]
+        [HttpGet]
         public async Task<IActionResult> UpdateGrade(int id)
         {
             try
@@ -508,6 +520,8 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/UpdateGrade
         [HttpPost]
+        //[HttpPost("UpdateGrade")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateGrade(int enrollmentId, decimal grade, string gradeLetter)
         {
             try
@@ -530,7 +544,7 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/Import
         [HttpGet]
-        [Route("Import")]
+        //[Route("Import")]
         public IActionResult Import()
         {
             return View();
@@ -538,12 +552,14 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/Import
         [HttpPost]
-        [Route("Import")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Import(IFormFile file)
         {
             try
             {
+                Console.WriteLine($"=== IMPORT STARTED ===");
+                Console.WriteLine($"File: {file?.FileName}, Size: {file?.Length}");
+
                 if (file == null || file.Length == 0)
                 {
                     ViewBag.Error = "Please select a file.";
@@ -561,14 +577,16 @@ namespace StudentManagementSystem.Controllers
                 await file.CopyToAsync(stream);
                 stream.Position = 0;
 
+                Console.WriteLine($"Calling AnalyzeExcelImportAsync...");
                 var analysisResult = await _courseService.AnalyzeExcelImportAsync(stream);
+                Console.WriteLine($"Analysis Result - Success: {analysisResult.Success}, Message: {analysisResult.Message}");
+                Console.WriteLine($"Valid Courses: {analysisResult.ValidCourses?.Count}, Invalid Courses: {analysisResult.InvalidCourses?.Count}");
 
                 if (analysisResult.Success)
                 {
-                    // Store in session
+                    // Store in session for review
                     HttpContext.Session.SetString("ImportAnalysis", System.Text.Json.JsonSerializer.Serialize(analysisResult));
-                    HttpContext.Session.SetString("FileName", file.FileName);
-
+                    Console.WriteLine($"Redirecting to ImportReview...");
                     return RedirectToAction("ImportReview");
                 }
 
@@ -577,13 +595,15 @@ namespace StudentManagementSystem.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"IMPORT ERROR: {ex}");
                 ViewBag.Error = $"Import failed: {ex.Message}";
                 return View();
             }
         }
 
         // GET: Courses/Export
-        [HttpGet("Export")]
+        [HttpGet]
+        //[HttpGet("Export")]
         public async Task<IActionResult> Export()
         {
             try
@@ -603,7 +623,7 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/ExportPdf
         [HttpGet]
-        [Route("ExportPdf")]
+        //[Route("ExportPdf")]
         public async Task<IActionResult> ExportPdf()
         {
             try
@@ -623,7 +643,7 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/ExportCoursePdf/5
         [HttpGet]
-        [Route("ExportCoursePdf")]
+        //[Route("ExportCoursePdf")]
         public async Task<IActionResult> ExportCoursePdf(int id)
         {
             try
@@ -763,7 +783,7 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/ExportEnrollments/5
         [HttpGet]
-        [Route("ExportEnrollments")]
+        //[Route("ExportEnrollments")]
         public async Task<IActionResult> ExportEnrollments(int id)
         {
             try
@@ -784,7 +804,7 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/SelectFromExisting
         [HttpGet]
-        [Route("SelectFromExisting")]
+        //[Route("SelectFromExisting")]
         public async Task<IActionResult> SelectFromExisting(int? semesterId)
         {
             var courses = await _context.Courses
@@ -801,7 +821,7 @@ namespace StudentManagementSystem.Controllers
         /// POST: Courses/AddToSemester
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Route("AddToSemester")]
+        //[Route("AddToSemester")]
         public async Task<IActionResult> AddToSemester(int courseId, int semesterId)
         {
             try
@@ -880,7 +900,7 @@ namespace StudentManagementSystem.Controllers
             }
         }
         [HttpGet]
-        [Route("PopulateDropdowns")]
+        //[Route("PopulateDropdowns")]
         private async Task PopulateDropdowns()
         {
             // Populate departments
@@ -916,7 +936,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         [HttpGet]
-        [Route("PopulatePrerequisites")]
+        //[Route("PopulatePrerequisites")]
         private async Task PopulatePrerequisites(Course course)
         {
             // Get all active courses except the current one (if it exists)
@@ -940,7 +960,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         [HttpGet]
-        [Route("LoadAvailablePrerequisites")]
+        //[Route("LoadAvailablePrerequisites")]
         private async Task LoadAvailablePrerequisites(Course course)
         {
             var allCourses = await _courseService.GetAllCoursesAsync();
@@ -950,7 +970,7 @@ namespace StudentManagementSystem.Controllers
 
         // Helper method to check for unique constraint violations
         [HttpGet]
-        [Route("IsUniqueConstraintViolation")]
+        //[Route("IsUniqueConstraintViolation")]
         private bool IsUniqueConstraintViolation(DbUpdateException ex)
         {
             return ex.InnerException is SqlException sqlException &&
@@ -961,8 +981,8 @@ namespace StudentManagementSystem.Controllers
         ///
 
         // GET: Courses/ImportReview
-        [HttpGet("ImportReview")]
-        public IActionResult ImportReview() // Remove 'async Task<' and just use 'IActionResult'
+        [HttpGet]
+        public IActionResult ImportReview()
         {
             try
             {
@@ -980,14 +1000,9 @@ namespace StudentManagementSystem.Controllers
                     return RedirectToAction(nameof(Import));
                 }
 
-                // Create view model with serial numbers
-                var viewModel = new ImportReviewViewModel
-                {
-                    ImportResult = analysisResult,
-                    ImportSettings = new ImportSettings()
-                };
+                Console.WriteLine($"ImportReview - Valid: {analysisResult.ValidCourses?.Count}, Invalid: {analysisResult.InvalidCourses?.Count}");
 
-                // Add serial numbers to valid courses
+                // Add serial numbers
                 if (analysisResult.ValidCourses != null)
                 {
                     int serial = 1;
@@ -997,18 +1012,25 @@ namespace StudentManagementSystem.Controllers
                     }
                 }
 
+                var viewModel = new ImportReviewViewModel
+                {
+                    ImportResult = analysisResult,
+                    ImportSettings = new ImportSettings()
+                };
+
                 return View(viewModel);
             }
-            catch (Exception ex) // You can use the exception variable now
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading import preview");
-                TempData["Error"] = "Error loading preview. Please try uploading again.";
+                Console.WriteLine($"IMPORT REVIEW ERROR: {ex}");
+                TempData["Error"] = "Error loading import preview.";
                 return RedirectToAction(nameof(Import));
             }
         }
 
         // POST: Courses/ImportExecute
-        [HttpPost("ImportExecute")]
+        [HttpPost]
+        //[HttpPost("ImportExecute")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ImportExecute(ImportSettings settings)
         {
@@ -1053,7 +1075,7 @@ namespace StudentManagementSystem.Controllers
         }
         // GET: Courses/DownloadTemplate
         [HttpGet]
-        [Route("DownloadTemplate")]
+        //[Route("DownloadTemplate")]
         public IActionResult DownloadTemplate()
         {
             try
@@ -1238,7 +1260,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // POST: Courses/DeleteMultiple
-        [HttpPost("DeleteMultiple")]
+        [HttpPost]
+        //[HttpPost("DeleteMultiple")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteMultiple(int[] selectedCourses)
         {
@@ -1263,7 +1286,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // POST: Courses/DeleteAll
-        [HttpPost("DeleteAll")]
+        [HttpPost]
+        //[HttpPost("DeleteAll")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAll()
         {
@@ -1283,6 +1307,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // Helper method to delete course using raw SQL
+        [HttpPost]
+        //[HttpPost("DeleteCourseWithRawSql")]
         private async Task DeleteCourseWithRawSql(int courseId)
         {
             var sql = @"
@@ -1310,6 +1336,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // Helper method to delete all courses using raw SQL
+        [HttpPost]
+        //[HttpPost("DeleteAllCoursesWithRawSql")]
         private async Task DeleteAllCoursesWithRawSql()
         {
             var sql = @"
@@ -1335,7 +1363,8 @@ namespace StudentManagementSystem.Controllers
 
 
         // POST: Courses/ExportSelected
-        [HttpPost("ExportSelected")]
+        [HttpPost]
+        //[HttpPost("ExportSelected")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExportSelected(int[] selectedCourses)
         {
@@ -1367,7 +1396,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // POST: Courses/BulkAddToSemester
-        [HttpPost("BulkAddToSemester")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkAddToSemester(int semesterId, string courseIds)
         {
@@ -1478,7 +1507,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Semesters/Dashboard
-        [HttpGet("Dashboard")]
+        [HttpGet]
         public async Task<IActionResult> Dashboard()
         {
             var semesters = await _context.Semesters
@@ -1497,7 +1526,7 @@ namespace StudentManagementSystem.Controllers
         // In your CoursesController.cs
 
         [HttpGet]
-        [Route("GetCoursesBySemester")]
+        //[Route("GetCoursesBySemester")]
         public async Task<IActionResult> GetCoursesBySemester(int semesterId)
         {
             try
@@ -1565,13 +1594,13 @@ namespace StudentManagementSystem.Controllers
                 }
         */
         [HttpGet]
-        [Route("GetAvailableCoursesForSemester")]
+        //[Route("GetAvailableCoursesForSemester")]
         public async Task<IActionResult> GetAvailableCoursesForSemester(int semesterId)
         {
             try
             {
                 var availableCourses = await _context.Courses
-                    .Where(c => (c.SemesterId == null || c.SemesterId != semesterId) && c.IsActive)
+                    .Where(c => c.SemesterId != semesterId && c.IsActive) // ✅ FIXED: Removed null check
                     .Select(c => new
                     {
                         id = c.Id,
@@ -1592,7 +1621,7 @@ namespace StudentManagementSystem.Controllers
         }
 
         [HttpGet]
-        [Route("VerifyExists/{id}")]
+        //[Route("VerifyExists/{id}")]
         public async Task<IActionResult> VerifyExists(int id)
         {
             var exists = await _context.Courses.AnyAsync(c => c.Id == id);
@@ -1604,7 +1633,8 @@ namespace StudentManagementSystem.Controllers
 
 
         // GET: Courses/Details/5
-        [HttpGet("Details/{id}")]
+        [HttpGet]
+        //[HttpGet("Details/{id}")]
         public async Task<IActionResult> Details(int id)
         {
             try
@@ -1629,8 +1659,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/Edit/5
-        // GET: Courses/Edit/5
-        [HttpGet("Edit/{id}")]
+        [HttpGet]
+        //[HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
             try
@@ -1657,7 +1687,8 @@ namespace StudentManagementSystem.Controllers
         }
 
         // POST: Courses/Edit/5
-        [HttpPost("Edit/{id}")]
+        [HttpPost]
+        //[HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Course course)
         {
@@ -1712,7 +1743,48 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        [HttpGet("Debug")]
+        [HttpPost("CreateDefaultSemester")]
+        public async Task<IActionResult> CreateDefaultSemester()
+        {
+            try
+            {
+                if (!await _context.Semesters.AnyAsync())
+                {
+                    var defaultSemester = new Semester
+                    {
+                        Name = "Fall " + DateTime.Now.Year,
+                        SemesterType = "Fall",
+                        AcademicYear = DateTime.Now.Year,
+                        StartDate = new DateTime(DateTime.Now.Year, 9, 1),
+                        EndDate = new DateTime(DateTime.Now.Year, 12, 31),
+                        RegistrationStartDate = DateTime.Now.AddDays(-30),
+                        RegistrationEndDate = DateTime.Now.AddDays(30),
+                        IsActive = true,
+                        IsCurrent = true,
+                        IsRegistrationOpen = true
+                    };
+
+                    _context.Semesters.Add(defaultSemester);
+                    await _context.SaveChangesAsync();
+
+                    TempData["Success"] = "Default semester created successfully!";
+                }
+                else
+                {
+                    TempData["Info"] = "Semesters already exist in the database.";
+                }
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error creating default semester: {ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpGet]
+        //[HttpGet("Debug")]
         public IActionResult Debug()
         {
             var actions = new List<string>();
@@ -1729,6 +1801,19 @@ namespace StudentManagementSystem.Controllers
                 PublicMethods = methods,
                 Message = "Check for duplicate method names above"
             });
+        }
+
+        [HttpGet("DebugRoutes")]
+        public IActionResult DebugRoutes()
+        {
+            var routes = new
+            {
+                Delete_GET = Url.Action("Delete", new { id = 1 }),
+                DeleteConfirmed_POST = Url.Action("DeleteConfirmed", new { id = 1 }),
+                Current_URL = $"{Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}"
+            };
+
+            return Json(routes);
         }
     }
 

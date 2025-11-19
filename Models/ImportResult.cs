@@ -42,3 +42,4 @@ public class ImportSettings
     public bool UpdateExisting { get; set; } = true;
     public string DuplicateHandling { get; set; } = "Skip"; // Skip, Override, CreateNew
 }
+

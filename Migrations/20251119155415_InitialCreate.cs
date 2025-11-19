@@ -306,10 +306,10 @@ namespace StudentManagementSystem.Migrations
                     DepartmentId = table.Column<int>(type: "int", nullable: true),
                     BranchId = table.Column<int>(type: "int", nullable: true),
                     SubBranchId = table.Column<int>(type: "int", nullable: true),
-                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    RegistrationStartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     RegistrationEndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    RegistrationStartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     IsCurrent = table.Column<bool>(type: "bit", nullable: false),
                     IsRegistrationOpen = table.Column<bool>(type: "bit", nullable: false),
@@ -319,25 +319,22 @@ namespace StudentManagementSystem.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Semesters", x => x.Id);
-                    table.CheckConstraint("CK_Semester_Parent", "([DepartmentId] IS NOT NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL) OR ([DepartmentId] IS NULL AND [BranchId] IS NOT NULL AND [SubBranchId] IS NULL) OR ([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NOT NULL)");
+                    table.CheckConstraint("CK_Semester_Parent", "([DepartmentId] IS NOT NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL) OR ([DepartmentId] IS NULL AND [BranchId] IS NOT NULL AND [SubBranchId] IS NULL) OR ([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NOT NULL) OR ([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL)");
                     table.ForeignKey(
                         name: "FK_Semesters_Branches_BranchId",
                         column: x => x.BranchId,
                         principalTable: "Branches",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Semesters_Branches_SubBranchId",
                         column: x => x.SubBranchId,
                         principalTable: "Branches",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Semesters_Departments_DepartmentId",
                         column: x => x.DepartmentId,
                         principalTable: "Departments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -348,16 +345,19 @@ namespace StudentManagementSystem.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     CourseCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     CourseName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 5000, nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", maxLength: 5000, nullable: true),
                     Credits = table.Column<int>(type: "int", nullable: false, defaultValue: 3),
                     Department = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Semester = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
+                    GradeLevel = table.Column<int>(type: "int", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
                     MaxStudents = table.Column<int>(type: "int", nullable: false, defaultValue: 1000),
                     MinGPA = table.Column<decimal>(type: "decimal(4,2)", nullable: false, defaultValue: 2.0m),
                     MinPassedHours = table.Column<int>(type: "int", nullable: false),
+                    PrerequisitesString = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    CourseSpecification = table.Column<string>(type: "nvarchar(max)", maxLength: 20000, nullable: true),
+                    Icon = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     DepartmentId = table.Column<int>(type: "int", nullable: true),
-                    SemesterId = table.Column<int>(type: "int", nullable: true),
+                    SemesterId = table.Column<int>(type: "int", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ModifiedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
@@ -368,12 +368,14 @@ namespace StudentManagementSystem.Migrations
                         name: "FK_Courses_Departments_DepartmentId",
                         column: x => x.DepartmentId,
                         principalTable: "Departments",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Courses_Semesters_SemesterId",
                         column: x => x.SemesterId,
                         principalTable: "Semesters",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -402,6 +404,7 @@ namespace StudentManagementSystem.Migrations
                     DepartmentId = table.Column<int>(type: "int", nullable: true),
                     BranchId = table.Column<int>(type: "int", nullable: true),
                     SemesterId = table.Column<int>(type: "int", nullable: true),
+                    GradeLevel = table.Column<int>(type: "int", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ModifiedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
@@ -484,8 +487,7 @@ namespace StudentManagementSystem.Migrations
                         name: "FK_QRCodeSessions_Courses_CourseId",
                         column: x => x.CourseId,
                         principalTable: "Courses",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -496,6 +498,7 @@ namespace StudentManagementSystem.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     CourseId = table.Column<int>(type: "int", nullable: false),
                     StudentId = table.Column<int>(type: "int", nullable: false),
+                    SemesterId = table.Column<int>(type: "int", nullable: false),
                     Grade = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
                     GradeLetter = table.Column<string>(type: "nvarchar(2)", maxLength: 2, nullable: true),
                     EnrollmentDate = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
@@ -510,12 +513,19 @@ namespace StudentManagementSystem.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CourseEnrollments", x => x.Id);
+                    table.CheckConstraint("CK_CourseEnrollment_Grade", "[Grade] IS NULL OR ([Grade] >= 0 AND [Grade] <= 100)");
                     table.ForeignKey(
                         name: "FK_CourseEnrollments_Courses_CourseId",
                         column: x => x.CourseId,
                         principalTable: "Courses",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_CourseEnrollments_Semesters_SemesterId",
+                        column: x => x.SemesterId,
+                        principalTable: "Semesters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_CourseEnrollments_Students_StudentId",
                         column: x => x.StudentId,
@@ -612,6 +622,49 @@ namespace StudentManagementSystem.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "StudentEnrollment",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CourseId = table.Column<int>(type: "int", nullable: false),
+                    StudentId = table.Column<int>(type: "int", nullable: false),
+                    SemesterId = table.Column<int>(type: "int", nullable: false),
+                    Grade = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    GradeLetter = table.Column<string>(type: "nvarchar(2)", maxLength: 2, nullable: true),
+                    EnrollmentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    GradePoints = table.Column<decimal>(type: "decimal(4,2)", nullable: true),
+                    GradeStatus = table.Column<int>(type: "int", nullable: false),
+                    CompletionDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Remarks = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModifiedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StudentEnrollment", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StudentEnrollment_Courses_CourseId",
+                        column: x => x.CourseId,
+                        principalTable: "Courses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_StudentEnrollment_Semesters_SemesterId",
+                        column: x => x.SemesterId,
+                        principalTable: "Semesters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_StudentEnrollment_Students_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "Students",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "QRAttendances",
                 columns: table => new
                 {
@@ -637,8 +690,7 @@ namespace StudentManagementSystem.Migrations
                         name: "FK_QRAttendances_Students_StudentId",
                         column: x => x.StudentId,
                         principalTable: "Students",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -707,8 +759,14 @@ namespace StudentManagementSystem.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_CourseEnrollment_UniqueActive",
                 table: "CourseEnrollments",
-                columns: new[] { "CourseId", "StudentId" },
+                columns: new[] { "CourseId", "StudentId", "SemesterId" },
+                unique: true,
                 filter: "[IsActive] = 1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CourseEnrollments_SemesterId",
+                table: "CourseEnrollments",
+                column: "SemesterId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CourseEnrollments_StudentId",
@@ -819,6 +877,21 @@ namespace StudentManagementSystem.Migrations
                 column: "StudentId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_StudentEnrollment_CourseId",
+                table: "StudentEnrollment",
+                column: "CourseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StudentEnrollment_SemesterId",
+                table: "StudentEnrollment",
+                column: "SemesterId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StudentEnrollment_StudentId",
+                table: "StudentEnrollment",
+                column: "StudentId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Students_BranchId",
                 table: "Students",
                 column: "BranchId");
@@ -902,6 +975,9 @@ namespace StudentManagementSystem.Migrations
 
             migrationBuilder.DropTable(
                 name: "StudentCourse");
+
+            migrationBuilder.DropTable(
+                name: "StudentEnrollment");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

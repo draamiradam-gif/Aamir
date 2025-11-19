@@ -92,55 +92,105 @@ namespace StudentManagementSystem.Data
                 entity.Property(c => c.Department).IsRequired().HasMaxLength(50);
 
                 entity.Property(c => c.Credits).HasDefaultValue(3);
-                entity.Property(c => c.Semester).HasDefaultValue(1);
                 entity.Property(c => c.IsActive).HasDefaultValue(true);
                 entity.Property(c => c.MaxStudents).HasDefaultValue(1000);
                 entity.Property(c => c.MinGPA).HasColumnType("decimal(4,2)").HasDefaultValue(2.0m);
-                entity.Property(c => c.CourseSpecification)
-                    .HasMaxLength(20000);
+                entity.Property(c => c.CourseSpecification).HasMaxLength(20000);
+                entity.Property(c => c.Icon).HasMaxLength(100);
 
-                entity.Property(c => c.Icon)
-                    .HasMaxLength(100);
+                // ✅ FIXED: Use consistent delete behavior
+                entity.HasOne(c => c.CourseSemester)
+                      .WithMany()
+                      .HasForeignKey(c => c.SemesterId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(c => c.CourseDepartment)
+                      .WithMany(d => d.Courses)
+                      .HasForeignKey(c => c.DepartmentId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // ✅ ADD: Configure cascade delete for Course -> Prerequisites
+                entity.HasMany(c => c.Prerequisites)
+                      .WithOne(cp => cp.Course)
+                      .HasForeignKey(cp => cp.CourseId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // ✅ ADD: Configure cascade delete for Course -> Enrollments
+                entity.HasMany(c => c.CourseEnrollments)
+                      .WithOne(ce => ce.Course)
+                      .HasForeignKey(ce => ce.CourseId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Configure CourseEnrollment entity - USE CASCADE HERE
+            // Configure CourseEnrollment entity
             builder.Entity<CourseEnrollment>(entity =>
             {
                 entity.HasIndex(e => new { e.CourseId, e.StudentId, e.SemesterId })
-          .HasDatabaseName("IX_CourseEnrollment_UniqueActive")
-          .HasFilter("[IsActive] = 1")
-          .IsUnique();
+                    .HasDatabaseName("IX_CourseEnrollment_UniqueActive")
+                    .HasFilter("[IsActive] = 1")
+                    .IsUnique();
 
                 entity.Property(e => e.Grade).HasColumnType("decimal(5,2)");
                 entity.Property(e => e.GradeLetter).HasMaxLength(2);
-
                 entity.Property(e => e.EnrollmentDate).HasDefaultValueSql("GETDATE()");
                 entity.Property(e => e.IsActive).HasDefaultValue(true);
 
+                // ✅ FIX: Use ClientCascade for all relationships
                 entity.HasOne(e => e.Course)
                       .WithMany(c => c.CourseEnrollments)
                       .HasForeignKey(e => e.CourseId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                      .OnDelete(DeleteBehavior.Restrict); // EF Core handles cascade
 
                 entity.HasOne(e => e.Student)
                       .WithMany(s => s.CourseEnrollments)
                       .HasForeignKey(e => e.StudentId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // ADD THIS: Semester relationship
                 entity.HasOne(e => e.Semester)
-                      .WithMany() // Semester doesn't need CourseEnrollments navigation
+                      .WithMany()
                       .HasForeignKey(e => e.SemesterId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // FIX: Use the new HasCheckConstraint syntax
                 entity.ToTable(tb => tb.HasCheckConstraint(
                     "CK_CourseEnrollment_Grade",
                     "[Grade] IS NULL OR ([Grade] >= 0 AND [Grade] <= 100)"
                 ));
             });
 
-            // Configure CoursePrerequisite entity - USE CLIENT CASCADE
+            // Configure Semester entity
+            builder.Entity<Semester>(entity =>
+            {
+                entity.HasIndex(s => new { s.DepartmentId, s.BranchId, s.SubBranchId, s.Name }).IsUnique();
+
+                // ✅ FIX: Use ClientSetNull for all Semester relationships
+                entity.HasOne(s => s.Department)
+                      .WithMany(d => d.Semesters)
+                      .HasForeignKey(s => s.DepartmentId)
+                      .OnDelete(DeleteBehavior.ClientSetNull)
+                      .IsRequired(false);
+
+                entity.HasOne(s => s.Branch)
+                      .WithMany(b => b.BranchSemesters)
+                      .HasForeignKey(s => s.BranchId)
+                      .OnDelete(DeleteBehavior.ClientSetNull)
+                      .IsRequired(false);
+
+                entity.HasOne(s => s.SubBranch)
+                      .WithMany(b => b.SubBranchSemesters)
+                      .HasForeignKey(s => s.SubBranchId)
+                      .OnDelete(DeleteBehavior.ClientSetNull)
+                      .IsRequired(false);
+
+                entity.ToTable(tb => tb.HasCheckConstraint(
+                    "CK_Semester_Parent",
+                    "([DepartmentId] IS NOT NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL) OR " +
+                    "([DepartmentId] IS NULL AND [BranchId] IS NOT NULL AND [SubBranchId] IS NULL) OR " +
+                    "([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NOT NULL) OR " +
+                    "([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL)"
+                ));
+            });
+
+            // Configure CoursePrerequisite entity
             builder.Entity<CoursePrerequisite>(entity =>
             {
                 entity.ToTable(tb => tb.HasCheckConstraint(
@@ -153,18 +203,18 @@ namespace StudentManagementSystem.Data
 
                 entity.Property(cp => cp.MinGrade).HasColumnType("decimal(5,2)");
 
+                // ✅ FIXED: Consistent delete behaviors
                 entity.HasOne(cp => cp.Course)
                       .WithMany(c => c.Prerequisites)
                       .HasForeignKey(cp => cp.CourseId)
-                      .OnDelete(DeleteBehavior.Cascade); // CLIENT CASCADE for course side
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(cp => cp.PrerequisiteCourse)
                       .WithMany(c => c.RequiredFor)
                       .HasForeignKey(cp => cp.PrerequisiteCourseId)
-                      .OnDelete(DeleteBehavior.Restrict); // RESTRICT for prerequisite side
+                      .OnDelete(DeleteBehavior.Restrict); // Prevent deleting courses that are prerequisites
             });
 
-            // Institution Configuration
             // University Configuration
             builder.Entity<University>(entity =>
             {
@@ -214,44 +264,6 @@ namespace StudentManagementSystem.Data
                       .IsRequired(false);
             });
 
-            // Semester Configuration
-            builder.Entity<Semester>(entity =>
-            {
-                entity.HasIndex(s => new { s.DepartmentId, s.BranchId, s.SubBranchId, s.Name }).IsUnique();
-
-                entity.HasOne(s => s.Department)
-                      .WithMany(d => d.Semesters)
-                      .HasForeignKey(s => s.DepartmentId)
-                      .OnDelete(DeleteBehavior.Restrict)
-                      .IsRequired(false);
-
-                entity.HasOne(s => s.Branch)
-                      .WithMany(b => b.BranchSemesters)
-                      .HasForeignKey(s => s.BranchId)
-                      .OnDelete(DeleteBehavior.Restrict)
-                      .IsRequired(false);
-
-                entity.HasOne(s => s.SubBranch)
-                      .WithMany(b => b.SubBranchSemesters) // Updated this line
-                      .HasForeignKey(s => s.SubBranchId)
-                      .OnDelete(DeleteBehavior.Restrict)
-                      .IsRequired(false);
-
-                entity.ToTable(tb => tb.HasCheckConstraint(
-                    "CK_Semester_Parent",
-                    "([DepartmentId] IS NOT NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL) OR " +
-                    "([DepartmentId] IS NULL AND [BranchId] IS NOT NULL AND [SubBranchId] IS NULL) OR " +
-                    "([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NOT NULL) OR " +
-                    "([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL)" // Allow no parent
-                ));
-
-                entity.ToTable(tb => tb.HasCheckConstraint(
-                    "CK_Semester_Dates",
-                    "[StartDate] < [EndDate] AND [RegistrationStartDate] < [RegistrationEndDate]"
-                ));
-            });
-
-
             // Existing configurations for other entities...
             builder.Entity<GradeScale>(entity =>
             {
@@ -287,6 +299,7 @@ namespace StudentManagementSystem.Data
                       .HasForeignKey(e => e.StudentId)
                       .OnDelete(DeleteBehavior.NoAction);
             });
+
         }
     }
 }

@@ -34,10 +34,8 @@ namespace StudentManagementSystem.Models
         public string Department { get; set; } = string.Empty;
 
         // ORIGINAL int property for semester number
-        [Required]
-        [Range(1, 8)]
-        [Display(Name = "Semester Number")]
-        public int Semester { get; set; } = 1;
+        
+        
 
         [Display(Name = "Grade Level")]
         [Range(1, 12)]
@@ -101,9 +99,23 @@ namespace StudentManagementSystem.Models
         [ForeignKey("DepartmentId")]
         public virtual Department? CourseDepartment { get; set; }
 
-        public int? SemesterId { get; set; }
+        [NotMapped]
+        public int Semester
+        {
+            get => SemesterId;
+            set => SemesterId = value;
+        }
+
+        [Required]
+        [Display(Name = "Semester")]
+        public int SemesterId { get; set; }  // Remove nullable
+
         [ForeignKey("SemesterId")]
+        [Display(Name = "Semester")]
         public virtual Semester? CourseSemester { get; set; }
+
+        [NotMapped]
+        public string SemesterDisplay => CourseSemester?.Name ?? $"Semester {SemesterId}";
 
         // Computed properties
         [NotMapped]

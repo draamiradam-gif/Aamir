@@ -83,32 +83,65 @@ namespace StudentManagementSystem.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteCourseAsync(int id)
+        //public async Task DeleteCourseAsync(int id)
+        //{
+        //    using var transaction = await _context.Database.BeginTransactionAsync();
+
+        //    try
+        //    {
+        //        // 1. Delete course enrollments
+        //        var enrollments = await _context.CourseEnrollments
+        //            .Where(ce => ce.CourseId == id)
+        //            .ToListAsync();
+        //        _context.CourseEnrollments.RemoveRange(enrollments);
+
+        //        // 2. Delete prerequisites where this course is the main course
+        //        var prerequisitesAsCourse = await _context.CoursePrerequisites
+        //            .Where(cp => cp.CourseId == id)
+        //            .ToListAsync();
+        //        _context.CoursePrerequisites.RemoveRange(prerequisitesAsCourse);
+
+        //        // 3. Delete prerequisites where this course is the prerequisite
+        //        var prerequisitesAsPrereq = await _context.CoursePrerequisites
+        //            .Where(cp => cp.PrerequisiteCourseId == id)
+        //            .ToListAsync();
+        //        _context.CoursePrerequisites.RemoveRange(prerequisitesAsPrereq);
+
+        //        // 4. Delete the course itself
+        //        var course = await _context.Courses.FindAsync(id);
+        //        if (course != null)
+        //        {
+        //            _context.Courses.Remove(course);
+        //        }
+
+        //        await _context.SaveChangesAsync();
+        //        await transaction.CommitAsync();
+        //    }
+        //    catch
+        //    {
+        //        await transaction.RollbackAsync();
+        //        throw;
+        //    }
+        //}
+
+        public async Task DeleteCourseAsync(int courseId)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                // 1. Delete course enrollments
-                var enrollments = await _context.CourseEnrollments
-                    .Where(ce => ce.CourseId == id)
+                // 1. First, handle prerequisites where this course is used as a prerequisite for other courses
+                var dependentPrerequisites = await _context.CoursePrerequisites
+                    .Where(cp => cp.PrerequisiteCourseId == courseId)
                     .ToListAsync();
-                _context.CourseEnrollments.RemoveRange(enrollments);
+                _context.CoursePrerequisites.RemoveRange(dependentPrerequisites);
 
-                // 2. Delete prerequisites where this course is the main course
-                var prerequisitesAsCourse = await _context.CoursePrerequisites
-                    .Where(cp => cp.CourseId == id)
-                    .ToListAsync();
-                _context.CoursePrerequisites.RemoveRange(prerequisitesAsCourse);
+                // 2. Let EF Core handle the cascade delete for:
+                //    - This course's prerequisites (via cascade)
+                //    - This course's enrollments (via cascade)
 
-                // 3. Delete prerequisites where this course is the prerequisite
-                var prerequisitesAsPrereq = await _context.CoursePrerequisites
-                    .Where(cp => cp.PrerequisiteCourseId == id)
-                    .ToListAsync();
-                _context.CoursePrerequisites.RemoveRange(prerequisitesAsPrereq);
-
-                // 4. Delete the course itself
-                var course = await _context.Courses.FindAsync(id);
+                // 3. Now delete the course itself
+                var course = await _context.Courses.FindAsync(courseId);
                 if (course != null)
                 {
                     _context.Courses.Remove(course);
@@ -117,13 +150,12 @@ namespace StudentManagementSystem.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw;
+                throw new Exception($"Failed to delete course: {ex.Message}", ex);
             }
         }
-
 
         // ENROLLMENT MANAGEMENT
         public async Task<List<CourseEnrollment>> GetCourseEnrollmentsAsync(int courseId)
@@ -1380,7 +1412,7 @@ namespace StudentManagementSystem.Services
 
         public async Task<ImportResult> AnalyzeExcelImportAsync(Stream stream, ImportSettings? settings = null)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 var result = new ImportResult();
 
@@ -1418,6 +1450,9 @@ namespace StudentManagementSystem.Services
                     var invalidCourses = new List<InvalidCourse>();
                     var errors = new List<string>();
                     var previewData = new List<Dictionary<string, object>>();
+
+                    // Get default semester ID
+                    var defaultSemesterId = await GetDefaultSemesterId();
 
                     // Process ALL rows from 2 to rowCount
                     for (int row = 2; row <= rowCount; row++)
@@ -1469,10 +1504,24 @@ namespace StudentManagementSystem.Services
                                         break;
                                     case "semester":
                                     case "الفصل الدراسي":
-                                        if (int.TryParse(value, out int semester))
-                                            course.Semester = semester;
+                                        // ✅ FIXED: Use SemesterId instead of Semester
+                                        if (int.TryParse(value, out int semesterId))
+                                        {
+                                            // Check if this semester ID exists
+                                            var semesterExists = await _context.Semesters.AnyAsync(s => s.Id == semesterId);
+                                            if (semesterExists)
+                                            {
+                                                course.SemesterId = semesterId;
+                                            }
+                                            else
+                                            {
+                                                course.SemesterId = defaultSemesterId;
+                                            }
+                                        }
                                         else if (string.IsNullOrEmpty(value))
-                                            course.Semester = 1; // Default value
+                                        {
+                                            course.SemesterId = defaultSemesterId; // Default semester
+                                        }
                                         break;
                                     case "maxstudents":
                                     case "الحد الأقصى للطلاب":
@@ -1521,10 +1570,9 @@ namespace StudentManagementSystem.Services
                             }
 
                             // ✅ STORE NEW FIELDS
-                            // ✅ STORE NEW FIELDS
                             if (!string.IsNullOrEmpty(prerequisitesValue))
                             {
-                                course.PrerequisitesString = prerequisitesValue;  // Use the new property
+                                course.PrerequisitesString = prerequisitesValue;
                             }
                             if (!string.IsNullOrEmpty(courseSpecValue))
                             {
@@ -1537,7 +1585,7 @@ namespace StudentManagementSystem.Services
 
                             string? validationError = null;
 
-                            // ✅ FIXED VALIDATION: More flexible validation
+                            // ✅ FIXED VALIDATION: Updated for SemesterId
                             if (string.IsNullOrEmpty(course.CourseCode))
                             {
                                 validationError = "Course Code is required";
@@ -1550,9 +1598,10 @@ namespace StudentManagementSystem.Services
                             {
                                 validationError = "Credits must be between 1 and 6";
                             }
-                            else if (course.Semester < 1 || course.Semester > 8)
+                            else if (course.SemesterId < 1) // ✅ Changed from Semester to SemesterId
                             {
-                                validationError = "Semester must be between 1 and 8";
+                                course.SemesterId = await GetDefaultSemesterId();
+                                //validationError = "Semester ID must be a valid semester";
                             }
                             else if (course.MaxStudents < 1 || course.MaxStudents > 1000)
                             {
@@ -1587,7 +1636,7 @@ namespace StudentManagementSystem.Services
                                     ["Description"] = course.Description ?? "N/A",
                                     ["Credits"] = course.Credits,
                                     ["Department"] = course.Department ?? "N/A",
-                                    ["Semester"] = course.Semester,
+                                    ["SemesterId"] = course.SemesterId, // ✅ Changed from Semester
                                     ["MaxStudents"] = course.MaxStudents,
                                     ["MinGPA"] = course.MinGPA,
                                     ["MinPassedHours"] = course.MinPassedHours,
@@ -2067,54 +2116,94 @@ namespace StudentManagementSystem.Services
                 .OrderBy(c => c.CourseCode)
                 .ToListAsync();
         }
-/*
-        private async Task<Course?> GetCourseByCodeAsync(string courseCode)
+        /*
+                private async Task<Course?> GetCourseByCodeAsync(string courseCode)
+                {
+                    return await _context.Courses
+                        .FirstOrDefaultAsync(c => c.CourseCode == courseCode);
+                }
+
+                private async Task AddPrerequisiteAsync(int courseId, int prerequisiteCourseId, decimal? minGrade)
+                {
+                    var existing = await _context.CoursePrerequisites
+                        .FirstOrDefaultAsync(cp => cp.CourseId == courseId && cp.PrerequisiteCourseId == prerequisiteCourseId);
+
+                    if (existing == null)
+                    {
+                        var prerequisite = new CoursePrerequisite
+                        {
+                            CourseId = courseId,
+                            PrerequisiteCourseId = prerequisiteCourseId,
+                            MinGrade = minGrade,
+                            IsRequired = true
+                        };
+                        _context.CoursePrerequisites.Add(prerequisite);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                private int TryParseInt(string? value, int defaultValue)
+                {
+                    return int.TryParse(value, out int result) ? result : defaultValue;
+                }
+
+                private decimal TryParseDecimal(string? value, decimal defaultValue)
+                {
+                    return decimal.TryParse(value, out decimal result) ? result : defaultValue;
+                }
+
+                private bool IsActive(string? value)
+                {
+                    return value?.ToLower() switch
+                    {
+                        "yes" => true,
+                        "نعم" => true,
+                        "true" => true,
+                        "1" => true,
+                        "y" => true,
+                        _ => false
+                    };
+                }
+        */
+
+        private async Task<int> GetDefaultSemesterId()
         {
-            return await _context.Courses
-                .FirstOrDefaultAsync(c => c.CourseCode == courseCode);
+            await EnsureDefaultSemesterExists();
+            // Try to get the current semester, or the first active semester
+            var defaultSemester = await _context.Semesters
+                .Where(s => s.IsCurrent || s.IsActive)
+                .OrderByDescending(s => s.IsCurrent)
+                .ThenByDescending(s => s.AcademicYear)
+                .FirstOrDefaultAsync();
+
+                 defaultSemester ??= await _context.Semesters
+                .OrderBy(s => s.Id)
+                .FirstOrDefaultAsync();
+
+                 return defaultSemester?.Id ?? 1;
         }
 
-        private async Task AddPrerequisiteAsync(int courseId, int prerequisiteCourseId, decimal? minGrade)
+        public async Task EnsureDefaultSemesterExists()
         {
-            var existing = await _context.CoursePrerequisites
-                .FirstOrDefaultAsync(cp => cp.CourseId == courseId && cp.PrerequisiteCourseId == prerequisiteCourseId);
-
-            if (existing == null)
+            if (!await _context.Semesters.AnyAsync())
             {
-                var prerequisite = new CoursePrerequisite
+                var defaultSemester = new Semester
                 {
-                    CourseId = courseId,
-                    PrerequisiteCourseId = prerequisiteCourseId,
-                    MinGrade = minGrade,
-                    IsRequired = true
+                    Name = "Default Semester",
+                    SemesterType = "Fall",
+                    AcademicYear = DateTime.Now.Year,
+                    StartDate = new DateTime(DateTime.Now.Year, 9, 1),
+                    EndDate = new DateTime(DateTime.Now.Year, 12, 31),
+                    RegistrationStartDate = new DateTime(DateTime.Now.Year, 8, 1),
+                    RegistrationEndDate = new DateTime(DateTime.Now.Year, 9, 15),
+                    IsActive = true,
+                    IsCurrent = true,
+                    IsRegistrationOpen = true
                 };
-                _context.CoursePrerequisites.Add(prerequisite);
+
+                _context.Semesters.Add(defaultSemester);
                 await _context.SaveChangesAsync();
             }
         }
-
-        private int TryParseInt(string? value, int defaultValue)
-        {
-            return int.TryParse(value, out int result) ? result : defaultValue;
-        }
-
-        private decimal TryParseDecimal(string? value, decimal defaultValue)
-        {
-            return decimal.TryParse(value, out decimal result) ? result : defaultValue;
-        }
-
-        private bool IsActive(string? value)
-        {
-            return value?.ToLower() switch
-            {
-                "yes" => true,
-                "نعم" => true,
-                "true" => true,
-                "1" => true,
-                "y" => true,
-                _ => false
-            };
-        }
-*/
     }
 }

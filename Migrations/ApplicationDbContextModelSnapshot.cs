@@ -385,12 +385,7 @@ namespace StudentManagementSystem.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int>("Semester")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<int?>("SemesterId")
+                    b.Property<int>("SemesterId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -840,8 +835,6 @@ namespace StudentManagementSystem.Migrations
 
                     b.ToTable("Semesters", t =>
                         {
-                            t.HasCheckConstraint("CK_Semester_Dates", "[StartDate] < [EndDate] AND [RegistrationStartDate] < [RegistrationEndDate]");
-
                             t.HasCheckConstraint("CK_Semester_Parent", "([DepartmentId] IS NOT NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL) OR ([DepartmentId] IS NULL AND [BranchId] IS NOT NULL AND [SubBranchId] IS NULL) OR ([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NOT NULL) OR ([DepartmentId] IS NULL AND [BranchId] IS NULL AND [SubBranchId] IS NULL)");
                         });
                 });
@@ -1261,11 +1254,14 @@ namespace StudentManagementSystem.Migrations
                 {
                     b.HasOne("StudentManagementSystem.Models.Department", "CourseDepartment")
                         .WithMany("Courses")
-                        .HasForeignKey("DepartmentId");
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("StudentManagementSystem.Models.Semester", "CourseSemester")
                         .WithMany()
-                        .HasForeignKey("SemesterId");
+                        .HasForeignKey("SemesterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("CourseDepartment");
 
@@ -1277,7 +1273,7 @@ namespace StudentManagementSystem.Migrations
                     b.HasOne("StudentManagementSystem.Models.Course", "Course")
                         .WithMany("CourseEnrollments")
                         .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("StudentManagementSystem.Models.Semester", "Semester")
@@ -1379,18 +1375,15 @@ namespace StudentManagementSystem.Migrations
                 {
                     b.HasOne("StudentManagementSystem.Models.Branch", "Branch")
                         .WithMany("BranchSemesters")
-                        .HasForeignKey("BranchId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("BranchId");
 
                     b.HasOne("StudentManagementSystem.Models.Department", "Department")
                         .WithMany("Semesters")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("DepartmentId");
 
                     b.HasOne("StudentManagementSystem.Models.Branch", "SubBranch")
                         .WithMany("SubBranchSemesters")
-                        .HasForeignKey("SubBranchId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("SubBranchId");
 
                     b.Navigation("Branch");
 

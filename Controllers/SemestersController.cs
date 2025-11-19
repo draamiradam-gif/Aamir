@@ -294,7 +294,7 @@ namespace StudentManagementSystem.Controllers
                         Name = model.NewName,
                         SemesterType = sourceSemester.SemesterType,
                         AcademicYear = sourceSemester.AcademicYear + model.AcademicYearOffset,
-                        DepartmentId = model.TargetParentId ?? sourceSemester.DepartmentId,
+                        DepartmentId = model.TargetParentId ?? sourceSemester.DepartmentId ?? 0,
                         BranchId = sourceSemester.BranchId,
                         SubBranchId = sourceSemester.SubBranchId,
                         StartDate = sourceSemester.StartDate.AddYears(model.AcademicYearOffset),
@@ -324,7 +324,7 @@ namespace StudentManagementSystem.Controllers
                                 CourseName = course.CourseName,
                                 Description = course.Description,
                                 Credits = course.Credits,
-                                DepartmentId = course.DepartmentId,
+                                DepartmentId = course.DepartmentId ?? 0,
                                 SemesterId = newSemester.Id,
                                 IsActive = course.IsActive,
                                 MaxStudents = course.MaxStudents,
@@ -690,7 +690,7 @@ namespace StudentManagementSystem.Controllers
                 }
 
                 // Remove the semester association
-                course.SemesterId = null;
+                course.SemesterId = 0;
 
                 await _context.SaveChangesAsync();
 
@@ -775,7 +775,7 @@ namespace StudentManagementSystem.Controllers
         public async Task<IActionResult> GetAvailableCoursesForReplacement(int semesterId, int currentCourseId)
         {
             var availableCourses = await _context.Courses
-                .Where(c => c.SemesterId == null || c.SemesterId == semesterId) // Courses not assigned or in same semester
+                .Where(c => c.SemesterId == semesterId) // Courses not assigned or in same semester
                 .Where(c => c.Id != currentCourseId) // Exclude current course
                 .Where(c => c.IsActive)
                 .Select(c => new
@@ -812,7 +812,7 @@ namespace StudentManagementSystem.Controllers
                 if (!keepOriginalCourse)
                 {
                     // Remove original course from semester (keep in system)
-                    currentCourse.SemesterId = null;
+                    currentCourse.SemesterId = 0;
                 }
 
                 await _context.SaveChangesAsync();

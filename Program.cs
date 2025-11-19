@@ -132,5 +132,41 @@ app.Use(async (context, next) =>
     }
 });
 
+/*
+ using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    context.Database.EnsureCreated();
+    
+    if (!context.Semesters.Any())
+    {
+        context.Semesters.AddRange(
+            new Semester { 
+                Name = "Fall 2024", 
+                SemesterType = "Fall", 
+                AcademicYear = 2024,
+                StartDate = new DateTime(2024, 9, 1),
+                EndDate = new DateTime(2024, 12, 31),
+                IsActive = true,
+                IsCurrent = true,
+                IsRegistrationOpen = true
+            },
+            new Semester { 
+                Name = "Spring 2024", 
+                SemesterType = "Spring", 
+                AcademicYear = 2024,
+                StartDate = new DateTime(2024, 1, 15),
+                EndDate = new DateTime(2024, 5, 15),
+                IsActive = true,
+                IsCurrent = false,
+                IsRegistrationOpen = false
+            }
+        );
+        context.SaveChanges();
+    }
+} 
+ */
+
+
 // Remove duplicate route registration
 app.Run();
