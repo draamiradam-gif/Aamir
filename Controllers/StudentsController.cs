@@ -767,12 +767,18 @@ namespace StudentManagementSystem.Controllers
         {
             try
             {
+                Console.WriteLine($"DeleteMultiple called with {selectedStudents?.Length ?? 0} students");
+
                 if (selectedStudents == null || selectedStudents.Length == 0)
                 {
+                    Console.WriteLine("No students selected");
                     TempData["Error"] = "No students selected for deletion.";
                     return RedirectToAction(nameof(Index));
                 }
 
+                Console.WriteLine($"Deleting students: {string.Join(", ", selectedStudents)}");
+
+                // Rest of your existing DeleteMultiple code...
                 int deletedCount = 0;
                 foreach (var id in selectedStudents)
                 {
@@ -781,19 +787,21 @@ namespace StudentManagementSystem.Controllers
                     {
                         await _studentService.DeleteStudentAsync(id);
                         deletedCount++;
+                        Console.WriteLine($"Deleted student ID: {id}");
                     }
                 }
 
                 TempData["Success"] = $"Successfully deleted {deletedCount} students.";
-                _logger.LogInformation($"Deleted {deletedCount} students via bulk delete");
+                Console.WriteLine($"DeleteMultiple completed: {deletedCount} students deleted");
+
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"DeleteMultiple error: {ex.Message}");
                 TempData["Error"] = $"Failed to delete students: {ex.Message}";
-                _logger.LogError(ex, "Error during bulk student deletion");
+                return RedirectToAction(nameof(Index));
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         // POST: Students/DeleteAll

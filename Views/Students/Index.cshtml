@@ -383,7 +383,7 @@
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">
@@ -392,37 +392,57 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <!-- Single Delete Content -->
                 <div id="deleteSingleContent">
-                    <p>Are you sure you want to delete student <strong id="deleteStudentName"></strong>?</p>
-                    <p class="text-muted small">This action cannot be undone.</p>
-                </div>
-                <div id="deleteMultipleContent" style="display: none;">
-                    <p>Are you sure you want to delete <strong id="deleteCount">0</strong> selected students?</p>
-                    <div id="deleteStudentList" class="small text-muted mt-2" style="max-height: 100px; overflow-y: auto;"></div>
-                    <p class="text-danger mt-2"><i class="fas fa-exclamation-circle me-1"></i>This action cannot be undone!</p>
-                </div>
-                <div id="deleteAllContent" style="display: none;">
                     <div class="alert alert-warning">
-                        <h6><i class="fas fa-radiation me-2"></i>Danger Zone</h6>
-                        <p class="mb-0">You are about to delete <strong>ALL @Model.TotalCount students</strong> from the system!</p>
+                        <h6><i class="fas fa-user-graduate me-2"></i>Delete Student</h6>
                     </div>
-                    <p class="text-danger">
-                        <i class="fas fa-exclamation-triangle me-1"></i>
-                        <strong>Warning:</strong> This action is irreversible and will permanently remove all student records.
-                    </p>
-                    <div class="form-check">
+                    <p>Are you sure you want to delete student <strong id="deleteStudentName" class="text-danger"></strong>?</p>
+                    <p class="text-danger mt-3"><i class="fas fa-exclamation-circle me-1"></i>This action cannot be undone.</p>
+                </div>
+
+                <!-- Multiple Delete Content -->
+                <div id="deleteMultipleContent" style="display: none;">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-users me-2"></i>Bulk Delete Students</h6>
+                    </div>
+                    <p>You are about to delete <strong id="deleteCount" class="text-danger">0</strong> selected students.</p>
+
+                    <div class="selected-students-list mt-3">
+                        <h6>Students to be deleted:</h6>
+                        <div id="deleteStudentList" class="border rounded p-2 bg-light" style="max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+
+                    <p class="text-danger mt-3"><i class="fas fa-exclamation-circle me-1"></i>This action cannot be undone!</p>
+                </div>
+
+                <!-- Delete All Content -->
+                <div id="deleteAllContent" style="display: none;">
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-radiation me-2"></i>Danger Zone - Mass Deletion</h6>
+                    </div>
+                    <div class="mass-delete-warning p-3 bg-light rounded border border-danger">
+                        <p class="mb-2"><strong>You are about to delete ALL students from the system!</strong></p>
+                        <p class="mb-2">Total students to be deleted: <strong class="text-danger">@Model.TotalCount</strong></p>
+                        <p class="mb-0 text-danger">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            <strong>Warning:</strong> This will permanently remove all student records and cannot be undone.
+                        </p>
+                    </div>
+                    <div class="form-check mt-3">
                         <input class="form-check-input" type="checkbox" id="confirmDeleteAll">
                         <label class="form-check-label text-danger" for="confirmDeleteAll">
-                            I understand this action cannot be undone
+                            I understand this action will delete ALL students and cannot be undone
                         </label>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="deleteForm" method="post" style="display: inline;">
-                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn" disabled>Delete</button>
-                </form>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <!-- Form will be populated dynamically -->
+                <form id="deleteForm" method="post" style="display: inline;"></form>
             </div>
         </div>
     </div>
@@ -546,398 +566,196 @@
         .badge {
             transition: all 0.3s ease;
         }
+
+        .selected-students-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .student-details, .delete-summary {
+            background-color: #f8f9fa;
+            border-left: 4px solid #ffc107;
+        }
+
+        .mass-delete-warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #dc3545;
+        }
+
+        /* Smooth scrolling for student list */
+        #deleteStudentList::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #deleteStudentList::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #deleteStudentList::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+            #deleteStudentList::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
+
     </style>
 }
 
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Selection functionality
+            console.log('Script loaded - delete functionality initializing');
+
+            // Basic selection functionality
             const selectAll = document.getElementById('selectAll');
             const studentCheckboxes = document.querySelectorAll('.student-checkbox');
             const selectedCountBadge = document.getElementById('selectedCountBadge');
-            const bulkSelectedCount = document.getElementById('bulkSelectedCount');
             const bulkActionsToolbar = document.getElementById('bulkActionsToolbar');
-            const selectAllBtn = document.getElementById('selectAllBtn');
-            const deselectAllBtn = document.getElementById('deselectAllBtn');
             const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
             const deleteAllBtn = document.getElementById('deleteAllBtn');
-            const cancelBulkBtn = document.getElementById('cancelBulkBtn');
-            const exportSelectedBtn = document.getElementById('exportSelectedBtn');
-            const bulkEditBtn = document.getElementById('bulkEditBtn');
 
             // Modal elements
             const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            const deleteStudentName = document.getElementById('deleteStudentName');
-            const deleteCount = document.getElementById('deleteCount');
-            const deleteStudentList = document.getElementById('deleteStudentList');
-            const confirmDeleteAll = document.getElementById('confirmDeleteAll');
-            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
             const deleteForm = document.getElementById('deleteForm');
-            const deleteSingleContent = document.getElementById('deleteSingleContent');
-            const deleteMultipleContent = document.getElementById('deleteMultipleContent');
-            const deleteAllContent = document.getElementById('deleteAllContent');
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            const confirmDeleteAll = document.getElementById('confirmDeleteAll');
 
-
-                    // Add to students index JavaScript
-
-        // Bulk Enrollment Functionality
-        const bulkEnrollBtn = document.getElementById('bulkEnrollBtn') || createBulkEnrollButton();
-        const bulkEnrollModal = new bootstrap.Modal(document.getElementById('bulkEnrollModal'));
-        const semesterSelect = document.getElementById('semesterSelect');
-        const confirmBulkEnroll = document.getElementById('confirmBulkEnroll');
-        const selectedStudentsCount = document.getElementById('selectedStudentsCount');
-        const semesterInfo = document.getElementById('semesterInfo');
-        const semesterDetails = document.getElementById('semesterDetails');
-
-        // Create bulk enroll button if it doesn't exist
-        function createBulkEnrollButton() {
-            const button = document.createElement('button');
-            button.className = 'btn btn-success btn-sm me-2';
-            button.innerHTML = '<i class="fas fa-user-plus me-1"></i> Bulk Enroll';
-            button.id = 'bulkEnrollBtn';
-            button.style.display = 'none';
-
-            document.querySelector('.btn-group').prepend(button);
-            return button;
-        }
-
-        // Update bulk enroll button visibility
-        function updateBulkEnrollButton() {
-            const selected = document.querySelectorAll('.student-checkbox:checked').length;
-            bulkEnrollBtn.style.display = selected > 0 ? 'inline-block' : 'none';
-        }
-
-        // Load available semesters
-        async function loadSemesters() {
-            try {
-                const response = await fetch('@Url.Action("GetAvailableSemesters", "Enrollment")');
-                const semesters = await response.json();
-
-                semesterSelect.innerHTML = '<option value="">Select a semester...</option>';
-                semesters.forEach(semester => {
-                    const option = document.createElement('option');
-                    option.value = semester.id;
-                    option.textContent = `${semester.name} - ${semester.academicYear} (${semester.semesterType})`;
-                    option.dataset.semester = JSON.stringify(semester);
-                    semesterSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Failed to load semesters:', error);
-                semesterSelect.innerHTML = '<option value="">Error loading semesters</option>';
-            }
-        }
-
-        // Show semester details when selected
-        semesterSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value) {
-                const semester = JSON.parse(selectedOption.dataset.semester);
-                showSemesterDetails(semester);
-                confirmBulkEnroll.disabled = false;
-            } else {
-                semesterInfo.style.display = 'none';
-                confirmBulkEnroll.disabled = true;
-            }
-        });
-
-        function showSemesterDetails(semester) {
-            const startDate = new Date(semester.startDate).toLocaleDateString();
-            const endDate = new Date(semester.endDate).toLocaleDateString();
-            const regEndDate = new Date(semester.registrationEndDate).toLocaleDateString();
-
-            semesterDetails.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Period:</strong> ${startDate} to ${endDate}<br>
-                        <strong>Registration Ends:</strong> ${regEndDate}
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Status:</strong>
-                        <span class="badge ${semester.isRegistrationOpen ? 'bg-success' : 'bg-warning'}">
-                            ${semester.isRegistrationOpen ? 'Open' : 'Closed'}
-                        </span><br>
-                        <strong>Active:</strong>
-                        <span class="badge ${semester.isActive ? 'bg-success' : 'bg-secondary'}">
-                            ${semester.isActive ? 'Yes' : 'No'}
-                        </span>
-                    </div>
-                </div>
-            `;
-            semesterInfo.style.display = 'block';
-        }
-
-        // Bulk enroll button click
-        bulkEnrollBtn.addEventListener('click', function() {
-            const selected = getSelectedStudents();
-            if (selected.length === 0) {
-                alert('Please select at least one student.');
-                return;
-            }
-
-            selectedStudentsCount.textContent = selected.length;
-            loadSemesters();
-            bulkEnrollModal.show();
-        });
-
-        // Confirm bulk enrollment
-        confirmBulkEnroll.addEventListener('click', function() {
-            const selectedStudents = getSelectedStudentIds();
-            const semesterId = semesterSelect.value;
-
-            if (!semesterId) {
-                alert('Please select a semester.');
-                return;
-            }
-
-            // Show loading state
-            confirmBulkEnroll.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
-            confirmBulkEnroll.disabled = true;
-
-            // Submit bulk enrollment
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '@Url.Action("BulkEnrollSemester", "Enrollment")';
-
-            // Add anti-forgery token
-            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-            const tokenInput = document.createElement('input');
-            tokenInput.type = 'hidden';
-            tokenInput.name = '__RequestVerificationToken';
-            tokenInput.value = token;
-            form.appendChild(tokenInput);
-
-            // Add semester ID
-            const semesterInput = document.createElement('input');
-            semesterInput.type = 'hidden';
-            semesterInput.name = 'semesterId';
-            semesterInput.value = semesterId;
-            form.appendChild(semesterInput);
-
-            // Add selected students
-            const studentsInput = document.createElement('input');
-            studentsInput.type = 'hidden';
-            studentsInput.name = 'selectedStudents';
-            studentsInput.value = selectedStudents.join(',');
-            form.appendChild(studentsInput);
-
-            document.body.appendChild(form);
-            form.submit();
-        });
-
-        // Helper function to get selected student IDs
-        function getSelectedStudentIds() {
-            const selectedIds = [];
-            document.querySelectorAll('.student-checkbox:checked').forEach(checkbox => {
-                selectedIds.push(checkbox.value);
-            });
-            return selectedIds;
-        }
-
-        // Update bulk enroll button when selection changes
-        document.addEventListener('change', function() {
-            updateBulkEnrollButton();
-        });
-
-        // Initialize
-        updateBulkEnrollButton();
-
-
-            let currentDeleteAction = '';
-
+            // Simple selection functions
             function updateSelectedCount() {
                 const selected = document.querySelectorAll('.student-checkbox:checked').length;
-                selectedCountBadge.textContent = selected;
-                bulkSelectedCount.textContent = selected;
+                console.log('Selected count:', selected);
 
-                // Show/hide bulk actions toolbar
-                if (selected > 0) {
-                    bulkActionsToolbar.style.display = 'block';
-                } else {
-                    bulkActionsToolbar.style.display = 'none';
+                if (selectedCountBadge) {
+                    selectedCountBadge.textContent = selected;
                 }
 
-                // Enable/disable export button
-                exportSelectedBtn.disabled = selected === 0;
-                bulkEditBtn.disabled = selected === 0;
-            }
-
-            function selectAllStudents(select) {
-                studentCheckboxes.forEach(checkbox => {
-                    checkbox.checked = select;
-                });
-                selectAll.checked = select;
-                updateSelectedCount();
-            }
-
-            function getSelectedStudents() {
-                const selected = [];
-                studentCheckboxes.forEach(checkbox => {
-                    if (checkbox.checked) {
-                        selected.push({
-                            id: checkbox.value,
-                            name: checkbox.dataset.studentName
-                        });
-                    }
-                });
-                return selected;
-            }
-
-            function showDeleteConfirmation(action, studentId = null, studentName = null) {
-                currentDeleteAction = action;
-
-                // Reset modal state
-                deleteSingleContent.style.display = 'none';
-                deleteMultipleContent.style.display = 'none';
-                deleteAllContent.style.display = 'none';
-                confirmDeleteAll.checked = false;
-                confirmDeleteBtn.disabled = true;
-
-                if (action === 'single') {
-                    deleteSingleContent.style.display = 'block';
-                    deleteStudentName.textContent = studentName;
-                    deleteForm.action = `@Url.Action("Delete")/${studentId}`;
-                    confirmDeleteBtn.disabled = false;
+                if (bulkActionsToolbar) {
+                    bulkActionsToolbar.style.display = selected > 0 ? 'block' : 'none';
                 }
-                else if (action === 'multiple') {
-                    const selected = getSelectedStudents();
-                    deleteMultipleContent.style.display = 'block';
-                    deleteCount.textContent = selected.length;
 
-                    // Show student names
-                    deleteStudentList.innerHTML = '';
-                    selected.forEach(student => {
-                        const div = document.createElement('div');
-                        div.className = 'border-bottom pb-1 mb-1';
-                        div.textContent = student.name;
-                        deleteStudentList.appendChild(div);
+                if (deleteSelectedBtn) {
+                    deleteSelectedBtn.disabled = selected === 0;
+                }
+            }
+
+            // Select all functionality
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    studentCheckboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
                     });
-
-                    deleteForm.action = '@Url.Action("DeleteMultiple")';
-                    confirmDeleteBtn.disabled = false;
-                }
-                else if (action === 'all') {
-                    deleteAllContent.style.display = 'block';
-                    deleteForm.action = '@Url.Action("DeleteAll")';
-                    confirmDeleteBtn.disabled = true;
-                }
-
-                deleteModal.show();
-            }
-
-            // Event listeners
-            selectAll.addEventListener('change', function () {
-                selectAllStudents(this.checked);
-            });
-
-            studentCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function () {
-                    // Update select all checkbox state
-                    const allChecked = document.querySelectorAll('.student-checkbox:checked').length === studentCheckboxes.length;
-                    selectAll.checked = allChecked;
                     updateSelectedCount();
                 });
+            }
+
+            // Individual checkbox changes
+            studentCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedCount);
             });
 
-            selectAllBtn.addEventListener('click', function () {
-                selectAllStudents(true);
-            });
+            // Delete Selected - SIMPLE VERSION
+            if (deleteSelectedBtn) {
+                deleteSelectedBtn.addEventListener('click', function () {
+                    const selectedIds = getSelectedStudentIds();
+                    console.log('Delete selected clicked, IDs:', selectedIds);
 
-            deselectAllBtn.addEventListener('click', function () {
-                selectAllStudents(false);
-            });
+                    if (selectedIds.length === 0) {
+                        alert('Please select at least one student to delete.');
+                        return;
+                    }
 
-            deleteSelectedBtn.addEventListener('click', function () {
-                const selected = getSelectedStudents();
-                if (selected.length > 0) {
-                    showDeleteConfirmation('multiple');
-                }
-            });
+                    // Show simple confirmation
+                    if (confirm(`Are you sure you want to delete ${selectedIds.length} selected students?`)) {
+                        // Submit the form directly
+                        submitBulkDelete(selectedIds);
+                    }
+                });
+            }
 
-            deleteAllBtn.addEventListener('click', function () {
-                showDeleteConfirmation('all');
-            });
+            // Delete All - SIMPLE VERSION
+            if (deleteAllBtn) {
+                deleteAllBtn.addEventListener('click', function () {
+                    if (confirm('⚠️ DANGER ZONE: Are you sure you want to delete ALL students? This cannot be undone!')) {
+                        // Submit delete all form
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '@Url.Action("DeleteAll")';
 
-            cancelBulkBtn.addEventListener('click', function () {
-                selectAllStudents(false);
-            });
+                        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                        const tokenInput = document.createElement('input');
+                        tokenInput.type = 'hidden';
+                        tokenInput.name = '__RequestVerificationToken';
+                        tokenInput.value = token;
+                        form.appendChild(tokenInput);
+
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            }
 
             // Individual delete buttons
             document.querySelectorAll('a[href*="Delete"]').forEach(link => {
-                link.addEventListener('click', function (e) {
-                    if (this.getAttribute('href').includes('Delete')) {
+                if (link.getAttribute('href').includes('/Delete/')) {
+                    link.addEventListener('click', function (e) {
                         e.preventDefault();
                         const studentId = this.getAttribute('href').split('/').pop();
-                        const studentName = this.closest('tr').querySelector('td:nth-child(4)').textContent;
-                        showDeleteConfirmation('single', studentId, studentName);
-                    }
-                });
-            });
+                        const studentName = this.closest('tr').querySelector('td:nth-child(4)').textContent.trim();
 
-            // Delete all confirmation checkbox
-            confirmDeleteAll.addEventListener('change', function () {
-                confirmDeleteBtn.disabled = !this.checked;
-            });
-
-            // Export form submission
-            document.getElementById('exportForm').addEventListener('submit', function (e) {
-                const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
-                if (selectedCount === 0) {
-                    e.preventDefault();
-                    alert('Please select at least one student to export.');
-                    return false;
-                }
-                return confirm(`Export ${selectedCount} selected students?`);
-            });
-
-            // Auto-resize columns
-            function autoResizeColumns() {
-                $('#studentsTable th').each(function () {
-                    var header = $(this);
-                    var maxWidth = 0;
-
-                    $('#studentsTable td:nth-child(' + (header.index() + 1) + ')').each(function () {
-                        var cell = $(this);
-                        var content = cell.text().trim();
-                        var width = content.length * 8 + 20;
-
-                        if (header.index() === 0 || header.index() === 8) {
-                            width = header.index() === 0 ? 50 : 150;
-                        }
-
-                        if (width > maxWidth) {
-                            maxWidth = width;
+                        if (confirm(`Are you sure you want to delete student "${studentName}"?`)) {
+                            // Redirect to delete page
+                            window.location.href = this.getAttribute('href');
                         }
                     });
+                }
+            });
 
-                    if (header.index() === 1) {
-                        maxWidth = Math.min(maxWidth, 70);
-                    } else if (header.index() === 6) {
-                        maxWidth = Math.min(maxWidth, 100);
-                    } else if (header.index() === 7) {
-                        maxWidth = Math.min(maxWidth, 120);
-                    } else {
-                        maxWidth = Math.min(maxWidth, 300);
+            // Helper functions
+            function getSelectedStudentIds() {
+                const selectedIds = [];
+                studentCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        selectedIds.push(parseInt(checkbox.value));
                     }
-
-                    header.css('min-width', maxWidth + 'px');
                 });
+                return selectedIds;
+            }
+
+            function submitBulkDelete(selectedIds) {
+                console.log('Submitting bulk delete for IDs:', selectedIds);
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("DeleteMultiple")';
+
+                // Add anti-forgery token
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = token;
+                form.appendChild(tokenInput);
+
+                // Add selected student IDs
+                selectedIds.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'selectedStudents';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                console.log('Form created, submitting...');
+                form.submit();
             }
 
             // Initialize
-            autoResizeColumns();
             updateSelectedCount();
-
-            // Add tooltips
-            $('[title]').tooltip({
-                trigger: 'hover',
-                placement: 'top'
-            });
-
-            // Auto-hide import alert after 10 seconds
-            setTimeout(() => {
-                $('.alert').fadeOut('slow');
-            }, 10000);
+            console.log('Delete functionality initialized');
         });
     </script>
+}
 }
