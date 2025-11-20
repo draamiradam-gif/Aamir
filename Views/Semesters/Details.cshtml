@@ -1,210 +1,357 @@
-﻿@model Semester
+﻿@model StudentManagementSystem.Models.Semester
 @{
     ViewData["Title"] = "Semester Details";
+    var courses = ViewBag.Courses as List<StudentManagementSystem.Models.Course> ?? new List<StudentManagementSystem.Models.Course>();
 }
 
-<div class="page-header">
-    <div class="d-flex justify-content-between align-items-center">
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-calendar-alt me-2"></i>@Model.Name - Details
+        </h2>
         <div>
-            <h1 class="h2 fw-bold text-primary mb-2">
-                <i class="fas fa-calendar-alt me-2"></i>@Model.Name
-            </h1>
-            <p class="text-muted mb-0">Semester details and schedule information</p>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to List
+            </a>
+            <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
+                <i class="fas fa-edit me-1"></i>Edit Semester
+            </a>
         </div>
-        <div class="d-flex gap-2">
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
-                <i class="fas fa-edit me-2"></i>Edit
-            </a>
-            <a asp-action="Index" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Back to List
-            </a>
+    </div>
+
+    <!-- Semester Information Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-info-circle me-2"></i>Semester Information
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Name:</strong></td>
+                            <td>@Model.Name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Type:</strong></td>
+                            <td>@Model.SemesterType</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Academic Year:</strong></td>
+                            <td>@Model.AcademicYear</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Start Date:</strong></td>
+                            <td>@Model.StartDate.ToString("MMM dd, yyyy")</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>End Date:</strong></td>
+                            <td>@Model.EndDate.ToString("MMM dd, yyyy")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Registration Period:</strong></td>
+                            <td>@Model.RegistrationStartDate.ToString("MMM dd") - @Model.RegistrationEndDate.ToString("MMM dd, yyyy")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                                @if (Model.IsCurrent)
+                                {
+                                    <span class="badge bg-primary ms-1">Current</span>
+                                }
+                                @if (Model.IsRegistrationOpen)
+                                {
+                                    <span class="badge bg-warning ms-1">Registration Open</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Full Path:</strong></td>
+                            <td>@Model.FullPath</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Management Card -->
+    <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-book me-2"></i>Course Management
+                <span class="badge bg-primary ms-2">@courses.Count Courses</span>
+            </h5>
+            <div class="btn-group">
+                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addCoursesModal">
+                    <i class="fas fa-plus me-1"></i>Add Courses
+                </button>
+                <button class="btn btn-danger btn-sm" id="removeSelectedCoursesBtn" style="display: none;">
+                    <i class="fas fa-trash me-1"></i>Remove Selected
+                </button>
+                <button class="btn btn-outline-danger btn-sm" id="removeAllCoursesBtn" @(courses.Count == 0 ? "disabled" : "")>
+                    <i class="fas fa-broom me-1"></i>Remove All
+                </button>
+                <button class="btn btn-primary btn-sm" id="bulkEnrollBtn" @(courses.Count == 0 ? "disabled" : "")>
+                    <i class="fas fa-user-plus me-1"></i>Bulk Enroll
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            @if (courses.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0" id="coursesTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="50">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="selectAllCourses">
+                                    </div>
+                                </th>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Credits</th>
+                                <th>Department</th>
+                                <th>Available Seats</th>
+                                <th>Prerequisites</th>
+                                <th>Status</th>
+                                <th width="200" class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var course in courses)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input course-checkbox" type="checkbox" value="@course.Id" data-course-name="@course.CourseName">
+                                        </div>
+                                    </td>
+                                    <td class="fw-bold">@course.CourseCode</td>
+                                    <td>@course.CourseName</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info">@course.Credits</span>
+                                    </td>
+                                    <td>@course.Department</td>
+                                    <td class="text-center">
+                                        @{
+                                            var availableSeats = course.MaxStudents - course.CurrentEnrollment;
+                                            var percentage = course.MaxStudents > 0 ? (course.CurrentEnrollment * 100.0) / course.MaxStudents : 0;
+                                        }
+                                        <div class="progress mb-1" style="height: 6px;">
+                                            <div class="progress-bar @(percentage >= 90 ? "bg-danger" : percentage >= 70 ? "bg-warning" : "bg-success")"
+                                                 style="width: @percentage%" title="@percentage% Full">
+                                            </div>
+                                        </div>
+                                        <small>@availableSeats/@course.MaxStudents available</small>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(course.PrerequisitesString))
+                                        {
+                                            <span class="badge bg-secondary" data-bs-toggle="tooltip" title="@course.PrerequisitesString">
+                                                @(course.PrerequisitesString.Length > 20 ? course.PrerequisitesString.Substring(0, 20) + "..." : course.PrerequisitesString)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">None</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (course.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-outline-primary enroll-single-btn"
+                                                    data-course-id="@course.Id"
+                                                    data-course-name="@course.CourseName"
+                                                    title="Enroll Students">
+                                                <i class="fas fa-user-plus"></i>
+                                            </button>
+                                            <a href="@Url.Action("Edit", "Courses", new { id = course.Id })"
+                                               class="btn btn-outline-warning" title="Edit Course">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-outline-danger remove-course-btn"
+                                                    data-course-id="@course.Id"
+                                                    data-course-name="@course.CourseName"
+                                                    title="Remove from Semester">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Courses Assigned</h4>
+                    <p class="text-muted">This semester doesn't have any courses assigned yet.</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCoursesModal">
+                        <i class="fas fa-plus me-1"></i>Add Courses to Semester
+                    </button>
+                </div>
+            }
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <!-- Course Management Panel - MOVED TO TOP -->
-        <div class="card-university card mb-4">
-            <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0 text-dark">
-                    <i class="fas fa-cogs me-2"></i>Course Management
+<!-- Add Courses Modal -->
+<div class="modal fade" id="addCoursesModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Add Courses to Semester
                 </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="card-body">
-                <div class="row g-2">
-                    <div class="col-auto">
-                        <a asp-controller="Courses" asp-action="SelectFromExisting" asp-route-semesterId="@Model.Id"
-                           class="btn btn-info btn-sm">
-                            <i class="fas fa-list me-2"></i>Select Existing Course
-                        </a>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="courseSearch" placeholder="Search courses...">
                     </div>
-                    <div class="col-auto">
-                        <a asp-controller="Courses" asp-action="Create" asp-route-semesterId="@Model.Id"
-                           class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus me-2"></i>Create New Course
-                        </a>
-                    </div>
-                    <div class="col-auto">
-                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-edit me-2"></i>Edit Semester
-                        </a>
-                    </div>
-                    <div class="col-auto">
-                        <a asp-action="Duplicate" asp-route-id="@Model.Id" class="btn btn-outline-warning btn-sm">
-                            <i class="fas fa-copy me-2"></i>Duplicate Semester
-                        </a>
-                    </div>
-                    @if (Model.IsCurrent)
-                    {
-                        <div class="col-auto">
-                            <button id="closeRegistrationBtn" class="btn btn-outline-info btn-sm">
-                                <i class="fas fa-lock me-2"></i>Close Registration
-                            </button>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAllAvailable">
+                            <label class="form-check-label" for="selectAllAvailable">Select All</label>
                         </div>
-                    }
-                    else if (Model.IsRegistrationOpen)
-                    {
-                        <div class="col-auto">
-                            <button id="setCurrentBtn" class="btn btn-outline-success btn-sm">
-                                <i class="fas fa-star me-2"></i>Set as Current
-                            </button>
-                        </div>
-                    }
-                    <div class="col-auto">
-                        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger btn-sm">
-                            <i class="fas fa-trash me-2"></i>Delete Semester
-                        </a>
                     </div>
                 </div>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm table-hover" id="availableCoursesTable">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th width="50">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="selectAllAvailableCourses">
+                                    </div>
+                                </th>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Credits</th>
+                                <th>Department</th>
+                                <th>Current Semester</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmAddCourses">Add Selected Courses</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <!-- Associated Courses Section -->
-        <div class="card-university card">
-            <div class="card-header bg-white py-3">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-title mb-0 text-dark">
-                        <i class="fas fa-book me-2"></i>Courses
-                        <span class="badge bg-primary ms-2" id="courseCount">0</span>
-                    </h5>
-                    <div class="d-flex gap-2">
-                        <!-- Quick Actions Dropdown -->
-                        <div class="dropdown">
-                            <button class="btn btn-outline-primary dropdown-toggle" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-plus me-2"></i>Add Courses
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Courses" asp-action="Create" asp-route-semesterId="@Model.Id">
-                                        <i class="fas fa-plus-circle me-2 text-success"></i>Create New Course
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Courses" asp-action="SelectFromExisting" asp-route-semesterId="@Model.Id">
-                                        <i class="fas fa-list me-2 text-info"></i>Select Existing Course
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="showBulkAddModal()">
-                                        <i class="fas fa-layer-group me-2 text-warning"></i>Bulk Add Courses
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+<!-- Bulk Enrollment Modal -->
+<div class="modal fade" id="bulkEnrollModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-users me-2"></i>Bulk Student Enrollment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="bulkEnrollContent">
+                    <p>Enroll students in <strong id="selectedCoursesCount">0</strong> selected courses from semester <strong>@Model.Name</strong>.</p>
 
-                        <!-- Course Management Actions -->
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-cog me-2"></i>Manage
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="showCourseStatistics()">
-                                        <i class="fas fa-chart-bar me-2"></i>View Statistics
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="exportCoursesToCSV()">
-                                        <i class="fas fa-download me-2"></i>Export to CSV
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item text-warning" href="#" onclick="showBulkMoveModal()">
-                                        <i class="fas fa-share me-2"></i>Bulk Move Courses
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Students:</label>
+                        <select class="form-select" id="studentGroupSelect" multiple size="6">
+                            <option value="all">All Students in Department</option>
+                            <option value="eligible">Only Eligible Students</option>
+                            <!-- Will be populated by JavaScript -->
+                        </select>
                     </div>
-                </div>
 
-                <!-- Quick Stats Row -->
-                <div class="row g-3" id="courseStats" style="display: none;">
-                    <div class="col-auto">
-                        <span class="badge bg-success">
-                            <i class="fas fa-check me-1"></i>
-                            <span id="activeCoursesCount">0</span> Active
-                        </span>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Students will be enrolled only in courses where they meet all requirements (prerequisites, GPA, passed hours, capacity).
                     </div>
-                    <div class="col-auto">
-                        <span class="badge bg-primary">
-                            <i class="fas fa-graduation-cap me-1"></i>
-                            <span id="totalCredits">0</span> Total Credits
-                        </span>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge bg-info">
-                            <i class="fas fa-book me-1"></i>
-                            <span id="coursesWithDescription">0</span> With Description
-                        </span>
+
+                    <div id="enrollmentPreview" style="display: none;">
+                        <h6>Enrollment Preview:</h6>
+                        <div id="previewContent" class="small text-muted"></div>
                     </div>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmBulkEnroll">Start Bulk Enrollment</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-            <div class="card-body">
-                <div class="text-center py-5" id="noCoursesMessage">
-                    <i class="fas fa-book fa-3x text-muted mb-3"></i>
-                    <h4 class="text-muted">No Courses Found</h4>
-                    <p class="text-muted">This semester doesn't have any courses yet.</p>
-                    <div class="d-flex justify-content-center gap-2 mt-3">
-                        <a asp-controller="Courses" asp-action="Create" asp-route-semesterId="@Model.Id"
-                           class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Create First Course
-                        </a>
-                        <a asp-controller="Courses" asp-action="SelectFromExisting" asp-route-semesterId="@Model.Id"
-                           class="btn btn-outline-primary">
-                            <i class="fas fa-list me-2"></i>Select Existing
-                        </a>
+<!-- Remove Confirmation Modal -->
+<div class="modal fade" id="removeConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Removal
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="removeSingleContent">
+                    <p>Are you sure you want to remove <strong id="removeCourseName"></strong> from this semester?</p>
+                    <p class="text-muted small">The course will remain in the system but will no longer be associated with this semester.</p>
+                </div>
+                <div id="removeMultipleContent" style="display: none;">
+                    <p>Are you sure you want to remove <strong id="removeCount">0</strong> selected courses from this semester?</p>
+                    <div id="removeCourseList" class="small text-muted mt-2"></div>
+                </div>
+                <div id="removeAllContent" style="display: none;">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-radiation me-2"></i>Warning</h6>
+                        <p class="mb-0">You are about to remove <strong>ALL @courses.Count courses</strong> from this semester!</p>
                     </div>
+                    <p class="text-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        This will disassociate all courses from the semester. Courses will remain in the system.
+                    </p>
                 </div>
-                <div id="coursesTable" style="display: none;">
-                    <!-- Courses will be loaded here via AJAX -->
-                </div>
-
-                <!-- Add New Course Button - ALWAYS VISIBLE -->
-                <div class="text-center mt-4" id="addCourseSection">
-                    <div class="border-top pt-3">
-                        <p class="text-muted mb-2">Need to add more courses?</p>
-                        <div class="d-flex justify-content-center gap-2">
-                            <a asp-controller="Courses" asp-action="Create" asp-route-semesterId="@Model.Id"
-                               class="btn btn-success btn-sm">
-                                <i class="fas fa-plus-circle me-2"></i>Add New Course
-                            </a>
-                            <a asp-controller="Courses" asp-action="SelectFromExisting" asp-route-semesterId="@Model.Id"
-                               class="btn btn-outline-success btn-sm">
-                                <i class="fas fa-list me-2"></i>Select Existing Course
-                            </a>
-                        </div>
-                    </div>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRemoveBtn">Remove</button>
             </div>
         </div>
     </div>
@@ -212,981 +359,486 @@
 
 @section Scripts {
     <script>
-        $(document).ready(function () {
-            // Load courses for this semester
-            loadCourses();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
 
-            // Set as current semester
-            $('#setCurrentBtn').click(function (e) {
-                e.preventDefault();
-                if (confirm('Are you sure you want to set this as the current semester?')) {
-                    $.post('@Url.Action("SetCurrent", "Semesters")', { id: '@Model.Id' }, function () {
-                        location.reload();
-                    }).fail(function () {
-                        alert('Error setting current semester.');
-                    });
+            // Course selection functionality
+            const selectAllCourses = document.getElementById('selectAllCourses');
+            const courseCheckboxes = document.querySelectorAll('.course-checkbox');
+            const removeSelectedBtn = document.getElementById('removeSelectedCoursesBtn');
+            const removeAllBtn = document.getElementById('removeAllCoursesBtn');
+            const bulkEnrollBtn = document.getElementById('bulkEnrollBtn');
+
+            const removeModal = new bootstrap.Modal(document.getElementById('removeConfirmModal'));
+            const bulkEnrollModal = new bootstrap.Modal(document.getElementById('bulkEnrollModal'));
+            const addCoursesModal = new bootstrap.Modal(document.getElementById('addCoursesModal'));
+
+            let currentRemoveAction = '';
+            let selectedCourseIds = [];
+            let selectedStudentIds = [];
+
+            function updateCourseSelectionUI() {
+                const selectedCount = document.querySelectorAll('.course-checkbox:checked').length;
+
+                if (selectedCount > 0) {
+                    removeSelectedBtn.style.display = 'inline-block';
+                    removeSelectedBtn.innerHTML = `<i class="fas fa-trash me-1"></i>Remove Selected (${selectedCount})`;
+                    bulkEnrollBtn.disabled = false;
+                } else {
+                    removeSelectedBtn.style.display = 'none';
+                    bulkEnrollBtn.disabled = true;
+                }
+
+                selectedCourseIds = Array.from(document.querySelectorAll('.course-checkbox:checked'))
+                    .map(cb => parseInt(cb.value));
+            }
+
+            // Select all courses
+            selectAllCourses?.addEventListener('change', function() {
+                courseCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateCourseSelectionUI();
+            });
+
+            courseCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateCourseSelectionUI);
+            });
+
+            // Remove selected courses
+            removeSelectedBtn?.addEventListener('click', function() {
+                if (selectedCourseIds.length > 0) {
+                    showRemoveConfirmation('multiple', selectedCourseIds);
                 }
             });
 
-            // Close registration
-            $('#closeRegistrationBtn').click(function (e) {
-                e.preventDefault();
-                if (confirm('Are you sure you want to close registration for this semester?')) {
-                    $.post('@Url.Action("CloseRegistration", "Semesters")', { id: '@Model.Id' }, function () {
-                        location.reload();
-                    }).fail(function () {
-                        alert('Error closing registration.');
-                    });
-                }
-            });
-        });
-
-                        function loadCourses() {
-            console.log('Loading courses for semester:', '@Model.Id');
-
-            // Use the direct route consistently
-            $.get('/Courses/GetCoursesBySemester?semesterId=' + '@Model.Id')
-                .done(function (data) {
-                    console.log('Courses loaded:', data);
-
-                    if (data && data.length > 0) {
-                        $('#noCoursesMessage').hide();
-                        $('#coursesTable').show();
-                        $('#courseCount').text(data.length);
-
-                        // Calculate and show statistics
-                        showCourseStatistics(data);
-
-                                var tableHtml = `
-            <div class="table-responsive">
-                <table class="table table-hover table-sm">
-                    <thead>
-                        <tr>
-                            <th style="width: 20%">Course Code</th>
-                            <th style="width: 20%">Course Name</th>
-                            <th style="width: 10%">Credits</th>
-                            <th style="width: 15%">Prerequisites</th>
-                            <th style="width: 10%">Status</th>
-                            <th style="width: 20%" class="text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-
-        data.forEach(function(course) {
-            // Create safe course object with proper escaping
-            const safeCourse = {
-                id: course.id || 0,
-                courseName: course.courseName || 'Unknown Course',
-                courseCode: course.courseCode || 'N/A',
-                credits: course.credits || 0,
-                description: course.description || '',
-                isActive: course.isActive !== undefined ? course.isActive : true,
-                prerequisites: course.prerequisites || '' // Add prerequisites if available
-            };
-
-            // Escape quotes and special characters for JavaScript
-            const escapedCourseName = safeCourse.courseName
-                .replace(/'/g, "\\'")
-                .replace(/"/g, '\\"')
-                .replace(/\n/g, ' ')
-                .replace(/\r/g, ' ');
-
-            const escapedDescription = safeCourse.description
-                .replace(/'/g, "\\'")
-                .replace(/"/g, '\\"')
-                .replace(/\n/g, ' ')
-                .replace(/\r/g, ' ');
-
-            tableHtml += `
-                <tr>
-                    <td class="align-middle">
-                        <code class="fw-bold">${safeCourse.courseCode}</code>
-                    </td>
-                    <td class="align-middle">
-                        <h6 class="mb-0 fw-semibold">${safeCourse.courseName}</h6>
-                    </td>
-                    <td class="align-middle">
-                        <span class="badge bg-primary">${safeCourse.credits}</span>
-                    </td>
-                            // In the table row generation, replace the prerequisites cell with this:
-                    <td class="align-middle">
-                        ${safeCourse.prerequisites && safeCourse.prerequisites.trim() !== '' ?
-                            `<span class="badge bg-warning text-dark" title="Prerequisites: ${safeCourse.prerequisites}">
-                                <i class="fas fa-list me-1"></i>${safeCourse.prerequisites.split(',').length} Req
-                            </span>` :
-                            `<span class="badge bg-secondary">None</span>`
-                        }
-                    </td>
-                    <td class="align-middle">
-                        <span class="badge ${safeCourse.isActive ? 'bg-success' : 'bg-secondary'}">
-                            ${safeCourse.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                    </td>
-                    <td class="align-middle text-center">
-                        <div class="btn-group btn-group-sm" role="group">
-                            <!-- View Button - Blue -->
-                            <button type="button" class="btn btn-outline-primary"
-                                    onclick="return showCourseDescription(${safeCourse.id}, '${escapedCourseName}', '${escapedDescription}')"
-                                    title="View Course Description">
-                                <i class="fas fa-eye"></i>
-                            </button>
-
-                            <!-- Replace Button - Orange -->
-                            <button type="button" class="btn btn-outline-warning"
-                                    onclick="return replaceCourseInSemester(${safeCourse.id}, '${escapedCourseName}')"
-                                    title="Replace with Another Course">
-                                <i class="fas fa-exchange-alt"></i>
-                            </button>
-
-                            <!-- Move Button - Teal -->
-                            <button type="button" class="btn btn-outline-info"
-                                    onclick="return moveCourseToAnotherSemester(${safeCourse.id}, '${escapedCourseName}')"
-                                    title="Move to Another Semester">
-                                <i class="fas fa-share"></i>
-                            </button>
-
-                            <!-- Remove Button - Red -->
-                            <button type="button" class="btn btn-outline-danger"
-                                    onclick="return removeCourseFromSemester(${safeCourse.id}, '${escapedCourseName}')"
-                                    title="Remove from Semester">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        });
-
-        tableHtml += `
-                    </tbody>
-                </table>
-            </div>
-        `;
-
-                        $('#coursesTable').html(tableHtml);
-                    } else {
-                        // Show the no courses message
-                        $('#noCoursesMessage').show();
-                        $('#coursesTable').hide();
-                        $('#courseCount').text('0');
-                        $('#courseStats').hide();
-                    }
-                })
-                .fail(function (xhr, status, error) {
-                    console.error('Error loading courses:', error);
-                    console.log('Status:', status);
-                    console.log('Response:', xhr.responseText);
-
-                    $('#noCoursesMessage').html(`
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Error loading courses:</strong> ${error}
-                            <br><small>URL: /Courses/GetCoursesBySemester?semesterId=@Model.Id</small>
-                            <br><small>Check browser network tab for details</small>
-                        </div>
-                    `);
-                });
-        }
-
-                // Function to show course description in modal
-        function showCourseDescription(courseId, courseName, courseDescription) {
-            const modalContent = `
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-book me-2"></i>${courseName}
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <h6 class="text-primary">
-                            <i class="fas fa-info-circle me-2"></i>Course Description
-                        </h6>
-                        ${courseDescription && courseDescription.trim() !== '' ?
-                            `<p class="p-3 bg-light rounded">${courseDescription}</p>` :
-                            `<div class="alert alert-info">
-                                <i class="fas fa-exclamation-circle me-2"></i>
-                                No description available for this course.
-                            </div>`
-                        }
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <i class="fas fa-hashtag me-1"></i>Course ID: ${courseId}
-                            </small>
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <small class="text-muted">
-                                <i class="fas fa-eye me-1"></i>Quick View
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Close
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="viewFullCourseDetails(${courseId})">
-                        <i class="fas fa-external-link-alt me-2"></i>View Full Details
-                    </button>
-                </div>
-            `;
-
-            const modalHtml = `
-                <div class="modal fade" id="courseDescriptionModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            ${modalContent}
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // Remove existing modal if any
-            $('#courseDescriptionModal').remove();
-
-            // Add and show modal
-            $('body').append(modalHtml);
-            $('#courseDescriptionModal').modal('show');
-        }
-
-        // Function to view full course details (redirect to course details page)
-                // Function to view full course details (redirect to course details page)
-                // Function to view full course details (redirect to course details page)
-        function viewFullCourseDetails(courseId) {
-            // Close the modal first
-            $('#courseDescriptionModal').modal('hide');
-
-            // Check if course exists first using the direct route
-            $.get('/Courses/VerifyExists/' + courseId)
-                .done(function(exists) {
-                    if (exists) {
-                        // Try to open course details
-                        const detailsUrl = '/Courses/Details/' + courseId;
-                        const newWindow = window.open(detailsUrl, '_blank');
-
-                        // Check if the page loaded successfully after a short delay
-                        setTimeout(function() {
-                            if (newWindow.closed || newWindow.location.href === 'about:blank') {
-                                // Fallback: show course info in modal
-                                alert('Course details page is not available yet. Please use the course management section for full details.');
-                            }
-                        }, 1000);
-                    } else {
-                        alert('Course not found in the system.');
-                    }
-                })
-                .fail(function() {
-                    alert('Course details page is currently unavailable. Please try the main Courses section.');
-                });
-        }
-
-        // Function to show course statistics
-        function showCourseStatistics(courses) {
-            if (!courses || courses.length === 0) return;
-
-            const activeCourses = courses.filter(c => c.isActive).length;
-            const totalCredits = courses.reduce((sum, course) => sum + course.credits, 0);
-            const coursesWithDescription = courses.filter(c => c.description && c.description.trim().length > 0).length;
-
-            $('#activeCoursesCount').text(activeCourses);
-            $('#totalCredits').text(totalCredits);
-            $('#coursesWithDescription').text(coursesWithDescription);
-            $('#courseStats').show();
-        }
-
-                // Function to show bulk add modal
-        function showBulkAddModal() {
-            const modalHtml = `
-                <div class="modal fade" id="bulkAddModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Bulk Add Courses</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Bulk course addition feature will be implemented here.
-                                </div>
-                                <p>This feature will allow you to add multiple courses at once using:</p>
-                                <ul>
-                                    <li>CSV file upload</li>
-                                    <li>Template-based entry</li>
-                                    <li>Copy-paste from spreadsheet</li>
-                                </ul>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                <button type="button" class="btn btn-primary" disabled>Coming Soon</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            $('#bulkAddModal').remove();
-            $('body').append(modalHtml);
-            $('#bulkAddModal').modal('show');
-        }
-
-        // Function to show course statistics modal
-        // Function to show course statistics (WORKING)
-function showCourseStatistics() {
-    // Get the current course data
-            $.get('/Courses/GetCoursesBySemester?semesterId=' + '@Model.Id')
-        .done(function(courses) {
-            if (courses && courses.length > 0) {
-                const activeCourses = courses.filter(c => c.isActive).length;
-                const totalCredits = courses.reduce((sum, course) => sum + course.credits, 0);
-                const coursesWithDescription = courses.filter(c => c.description && c.description.trim().length > 0).length;
-                const averageCredits = (totalCredits / courses.length).toFixed(1);
-                
-                const statsHtml = `
-                    <div class="modal fade" id="statsModal" tabindex="-1">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Course Statistics</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="row text-center">
-                                        <div class="col-6 mb-3">
-                                            <div class="card bg-light">
-                                                <div class="card-body">
-                                                    <h3 class="text-primary">${courses.length}</h3>
-                                                    <small>Total Courses</small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6 mb-3">
-                                            <div class="card bg-light">
-                                                <div class="card-body">
-                                                    <h3 class="text-success">${activeCourses}</h3>
-                                                    <small>Active Courses</small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6 mb-3">
-                                            <div class="card bg-light">
-                                                <div class="card-body">
-                                                    <h3 class="text-info">${totalCredits}</h3>
-                                                    <small>Total Credits</small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6 mb-3">
-                                            <div class="card bg-light">
-                                                <div class="card-body">
-                                                    <h3 class="text-warning">${averageCredits}</h3>
-                                                    <small>Avg Credits/Course</small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        ${coursesWithDescription} courses have descriptions
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                $('#statsModal').remove();
-                $('body').append(statsHtml);
-                $('#statsModal').modal('show');
-            } else {
-                alert('No courses found to show statistics.');
-            }
-        })
-        .fail(function() {
-            alert('Error loading course statistics.');
-        });
-}
-
-// Function to export courses to CSV (WORKING)
-function exportCoursesToCSV() {
-    const semesterId = @Model.Id;
-
-            $.get('/Courses/GetCoursesBySemester?semesterId=' + '@Model.Id')
-        .done(function(courses) {
-            if (courses && courses.length > 0) {
-                let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "Course Code,Course Name,Credits,Status,Description\n";
-                
-                courses.forEach(function(course) {
-                    const row = [
-                        `"${course.courseCode}"`,
-                        `"${course.courseName}"`,
-                        course.credits,
-                        course.isActive ? 'Active' : 'Inactive',
-                        `"${(course.description || '').replace(/"/g, '""')}"`
-                    ].join(',');
-                    csvContent += row + "\n";
-                });
-                
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", "courses_semester_" + semesterId + ".csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } else {
-                alert('No courses available to export.');
-            }
-        })
-        .fail(function() {
-            alert('Error loading courses for export.');
-        });
-}
-
-// Function to select existing course (WORKING - shows available courses)
-function selectExistingCourse() {
-            $.get('/Courses/GetAvailableCoursesForSemester', { semesterId: '@Model.Id' })
-        .done(function(availableCourses) {
-            if (availableCourses && availableCourses.length > 0) {
-                showSelectCourseModal(availableCourses);
-            } else {
-                alert('No available courses found to add to this semester.');
-            }
-        })
-        .fail(function() {
-            alert('Error loading available courses.');
-        });
-}
-
-// Function to show course selection modal
-function showSelectCourseModal(availableCourses) {
-    let coursesHtml = '';
-    availableCourses.forEach(function(course) {
-        coursesHtml += `
-            <div class="card mb-2">
-                <div class="card-body">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="${course.id}" id="course${course.id}">
-                        <label class="form-check-label" for="course${course.id}">
-                            <strong>${course.courseCode}</strong> - ${course.courseName}
-                            <br><small class="text-muted">${course.credits} credits</small>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-
-    const modalHtml = `
-        <div class="modal fade" id="selectCourseModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Select Courses to Add</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Select one or more courses to add to this semester:</p>
-                        <div id="availableCoursesList">
-                            ${coursesHtml}
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="addSelectedCourses()">
-                            <i class="fas fa-plus me-2"></i>Add Selected Courses
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    $('#selectCourseModal').remove();
-    $('body').append(modalHtml);
-    $('#selectCourseModal').modal('show');
-}
-
-        // Function to add selected courses
-        function addSelectedCourses() {
-            const selectedCourses = [];
-            $('input[type="checkbox"]:checked').each(function() {
-                selectedCourses.push($(this).val());
+            // Remove all courses
+            removeAllBtn?.addEventListener('click', function() {
+                showRemoveConfirmation('all');
             });
 
-            if (selectedCourses.length === 0) {
+            // Single course remove
+            document.querySelectorAll('.remove-course-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const courseId = parseInt(this.dataset.courseId);
+                    const courseName = this.dataset.courseName;
+                    showRemoveConfirmation('single', [courseId], courseName);
+                });
+            });
+
+            // Bulk enrollment
+                    // In Semester Details JavaScript - REPLACE THE BULK ENROLLMENT SECTION
+
+        // Bulk enrollment
+        bulkEnrollBtn?.addEventListener('click', function() {
+            if (selectedCourseIds.length > 0) {
+                showBulkEnrollmentModal();
+            } else {
+                alert('Please select at least one course to enroll students in.');
+            }
+        });
+
+        function showBulkEnrollmentModal() {
+            console.log('Showing bulk enrollment modal for courses:', selectedCourseIds);
+            document.getElementById('selectedCoursesCount').textContent = selectedCourseIds.length;
+
+            // Clear previous students
+            const select = document.getElementById('studentGroupSelect');
+            select.innerHTML = '<option value="">Loading students...</option>';
+
+            // Load student options
+            loadStudentsForBulkEnrollment();
+            bulkEnrollModal.show();
+        }
+
+        function loadStudentsForBulkEnrollment() {
+            console.log('Loading students for semester:', @Model.Id);
+
+            fetch('@Url.Action("GetStudentEnrollmentOptions", "Semesters")?semesterId=@Model.Id')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(students => {
+                    console.log('Loaded students:', students);
+                    const select = document.getElementById('studentGroupSelect');
+                    select.innerHTML = '';
+
+                    if (students && students.length > 0) {
+                        students.forEach(student => {
+                            const option = document.createElement('option');
+                            option.value = student.id;
+                            option.textContent = `${student.name} (${student.code}) - GPA: ${student.gpa}`;
+                            select.appendChild(option);
+                        });
+
+                        // Enable multi-select
+                        select.multiple = true;
+                        select.size = Math.min(8, students.length + 2);
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = "";
+                        option.textContent = "No students found for this semester";
+                        option.disabled = true;
+                        select.appendChild(option);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading students:', error);
+                    const select = document.getElementById('studentGroupSelect');
+                    select.innerHTML = '<option value="">Error loading students</option>';
+                });
+        }
+
+        // Bulk enrollment confirmation
+        document.getElementById('confirmBulkEnroll')?.addEventListener('click', function() {
+            const select = document.getElementById('studentGroupSelect');
+            const selectedOptions = Array.from(select.selectedOptions);
+            const selectedStudentIds = selectedOptions
+                .map(option => parseInt(option.value))
+                .filter(id => !isNaN(id) && id > 0);
+
+            console.log('Selected student IDs:', selectedStudentIds);
+            console.log('Selected course IDs:', selectedCourseIds);
+
+            if (selectedStudentIds.length === 0) {
+                alert('Please select at least one student.');
+                return;
+            }
+
+            if (selectedCourseIds.length === 0) {
                 alert('Please select at least one course.');
                 return;
             }
 
-            // Add each selected course to the semester
-            let successCount = 0;
-            let errorCount = 0;
-    
-            selectedCourses.forEach(function(courseId) {
-                        $.post('/Courses/AddCourseToSemester', {
-                    semesterId: '@Model.Id',
-                    courseId: courseId
-                })
-                .done(function(response) {
-                    if (response.success) {
-                        successCount++;
-                    } else {
-                        errorCount++;
-                    }
-            
-                    // If this is the last request, show results
-                    if (successCount + errorCount === selectedCourses.length) {
-                        $('#selectCourseModal').modal('hide');
-                        if (errorCount === 0) {
-                            alert(`Successfully added ${successCount} course(s) to the semester!`);
-                            location.reload();
-                        } else {
-                            alert(`Added ${successCount} course(s), ${errorCount} failed.`);
-                            location.reload();
+            // Show loading state
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+            this.disabled = true;
+
+            // Create request data
+            const requestData = {
+                semesterId: @Model.Id,
+                courseIds: selectedCourseIds,
+                studentIds: selectedStudentIds
+            };
+
+            console.log('Sending bulk enrollment request:', requestData);
+
+            fetch('@Url.Action("BulkEnrollStudents", "Semesters")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Bulk enrollment response:', data);
+                if (data.success) {
+                    showToast('Success!', data.message, 'success');
+                    bulkEnrollModal.hide();
+                    // Optional: Refresh the page after success
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showToast('Error', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error during bulk enrollment:', error);
+                showToast('Error', 'An error occurred during bulk enrollment: ' + error.message, 'error');
+            })
+            .finally(() => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+            });
+        });
+
+            function showRemoveConfirmation(action, courseIds = [], courseName = '') {
+                currentRemoveAction = action;
+
+                // Reset modal content
+                document.getElementById('removeSingleContent').style.display = 'none';
+                document.getElementById('removeMultipleContent').style.display = 'none';
+                document.getElementById('removeAllContent').style.display = 'none';
+
+                if (action === 'single') {
+                    document.getElementById('removeSingleContent').style.display = 'block';
+                    document.getElementById('removeCourseName').textContent = courseName;
+                } else if (action === 'multiple') {
+                    document.getElementById('removeMultipleContent').style.display = 'block';
+                    document.getElementById('removeCount').textContent = courseIds.length;
+
+                    const courseList = document.getElementById('removeCourseList');
+                    courseList.innerHTML = '';
+                    courseIds.forEach(id => {
+                        const checkbox = document.querySelector(`.course-checkbox[value="${id}"]`);
+                        if (checkbox) {
+                            const courseName = checkbox.dataset.courseName;
+                            const div = document.createElement('div');
+                            div.className = 'border-bottom pb-1 mb-1';
+                            div.textContent = courseName;
+                            courseList.appendChild(div);
                         }
+                    });
+                } else if (action === 'all') {
+                    document.getElementById('removeAllContent').style.display = 'block';
+                }
+
+                removeModal.show();
+            }
+
+            // Confirm remove action
+            document.getElementById('confirmRemoveBtn')?.addEventListener('click', function() {
+                if (currentRemoveAction === 'single' || currentRemoveAction === 'multiple') {
+                    removeCoursesFromSemester(selectedCourseIds);
+                } else if (currentRemoveAction === 'all') {
+                    removeAllCoursesFromSemester();
+                }
+            });
+
+            function removeCoursesFromSemester(courseIds) {
+                fetch('@Url.Action("RemoveCoursesFromSemester", "Semesters")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        semesterId: @Model.Id,
+                        courseIds: courseIds
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Success!', data.message, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showToast('Error', data.message, 'error');
+                    }
+                    removeModal.hide();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error', 'An error occurred while removing courses.', 'error');
+                    removeModal.hide();
+                });
+            }
+
+            function removeAllCoursesFromSemester() {
+                fetch('@Url.Action("RemoveAllCoursesFromSemester", "Semesters")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(@Model.Id)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Success!', data.message, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showToast('Error', data.message, 'error');
+                    }
+                    removeModal.hide();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error', 'An error occurred while removing all courses.', 'error');
+                    removeModal.hide();
+                });
+            }
+
+            // Load available courses for adding
+            function loadAvailableCourses() {
+                fetch('@Url.Action("GetAvailableCourses", "Semesters")?semesterId=@Model.Id')
+                    .then(response => response.json())
+                    .then(courses => {
+                        const tbody = document.getElementById('availableCoursesTable').querySelector('tbody');
+                        tbody.innerHTML = '';
+
+                        courses.forEach(course => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input available-course-checkbox" type="checkbox" value="${course.id}">
+                                    </div>
+                                </td>
+                                <td>${course.courseCode}</td>
+                                <td>${course.courseName}</td>
+                                <td>${course.credits}</td>
+                                <td>${course.department}</td>
+                                <td>${course.currentSemester}</td>
+                                <td>
+                                    <span class="badge ${course.isActive ? 'bg-success' : 'bg-secondary'}">
+                                        ${course.isActive ? 'Active' : 'Inactive'}
+                                    </span>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error loading available courses:', error);
+                    });
+            }
+
+            // Initialize when add courses modal is shown
+            document.getElementById('addCoursesModal')?.addEventListener('show.bs.modal', loadAvailableCourses);
+
+            // Add selected courses to semester
+            document.getElementById('confirmAddCourses')?.addEventListener('click', function() {
+                const selectedCourseIds = Array.from(document.querySelectorAll('.available-course-checkbox:checked'))
+                    .map(cb => parseInt(cb.value));
+
+                if (selectedCourseIds.length === 0) {
+                    alert('Please select at least one course to add.');
+                    return;
+                }
+
+                fetch('@Url.Action("AddCoursesToSemester", "Semesters")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        semesterId: @Model.Id,
+                        courseIds: selectedCourseIds
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Success!', data.message, 'success');
+                        addCoursesModal.hide();
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showToast('Error', data.message, 'error');
                     }
                 })
-                .fail(function() {
-                    errorCount++;
-                    if (successCount + errorCount === selectedCourses.length) {
-                        $('#selectCourseModal').modal('hide');
-                        alert(`Added ${successCount} course(s), ${errorCount} failed.`);
-                        location.reload();
-                    }
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error', 'An error occurred while adding courses.', 'error');
                 });
             });
-        }
 
-        // Function to export courses to CSV
-                // Function to export courses to CSV
-        function exportCoursesToCSV() {
-            // Get the current semester ID from Razor
-            const semesterId = @Model.Id;
+            // Bulk enrollment functionality
+            function showBulkEnrollmentModal() {
+                document.getElementById('selectedCoursesCount').textContent = selectedCourseIds.length;
 
-            // Simple CSV export implementation
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Course Code,Course Name,Credits,Status,Description\n";
+                // Load student options
+                fetch('@Url.Action("GetStudentEnrollmentOptions", "Semesters")?semesterId=@Model.Id')
+                    .then(response => response.json())
+                    .then(students => {
+                        const select = document.getElementById('studentGroupSelect');
+                        select.innerHTML = '';
 
-            // Get course data from the current table or make an API call
-            $.get('@Url.Action("GetCoursesBySemester", "Courses")', { semesterId: '@Model.Id' })
-                .done(function(courses) {
-                    if (courses && courses.length > 0) {
-                        // Add course data rows
-                        courses.forEach(function(course) {
-                            const row = [
-                                `"${course.courseCode}"`,
-                                `"${course.courseName}"`,
-                                course.credits,
-                                course.isActive ? 'Active' : 'Inactive',
-                                `"${(course.description || '').replace(/"/g, '""')}"`
-                            ].join(',');
-                            csvContent += row + "\n";
+                        students.forEach(student => {
+                            const option = document.createElement('option');
+                            option.value = student.id;
+                            option.textContent = `${student.name} (${student.code}) - GPA: ${student.gpa}`;
+                            select.appendChild(option);
                         });
 
-                        // Create and trigger download
-                        const encodedUri = encodeURI(csvContent);
-                        const link = document.createElement("a");
-                        link.setAttribute("href", encodedUri);
-                        link.setAttribute("download", "courses_semester_" + semesterId + ".csv");
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    } else {
-                        alert('No courses available to export.');
-                    }
-                })
-                .fail(function() {
-                    alert('Error loading courses for export.');
-                });
-        }
+                        // Enable multi-select
+                        select.multiple = true;
+                        select.size = 6;
+                    })
+                    .catch(error => {
+                        console.error('Error loading students:', error);
+                    });
 
-        // Function to show bulk move modal
-        function showBulkMoveModal() {
-            const modalHtml = `
-                <div class="modal fade" id="bulkMoveModal" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Bulk Move Courses</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Bulk move feature will allow you to move multiple courses to another semester at once.
-                                </div>
-                                <p>Select target semester and choose which courses to move.</p>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                <button type="button" class="btn btn-primary" disabled>Coming Soon</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+                bulkEnrollModal.show();
+            }
 
-            $('#bulkMoveModal').remove();
-            $('body').append(modalHtml);
-            $('#bulkMoveModal').modal('show');
-        }
+            // Bulk enrollment confirmation
+            document.getElementById('confirmBulkEnroll')?.addEventListener('click', function() {
+                const select = document.getElementById('studentGroupSelect');
+                const selectedStudentIds = Array.from(select.selectedOptions)
+                    .map(option => parseInt(option.value))
+                    .filter(id => !isNaN(id));
 
-        // Function to view course details with fallback
-                // Function to view course details with fallback
-        function viewCourseDetails(courseId, courseName, courseData = null) {
-            // Check if course exists first
-                    $.get('/Courses/VerifyExists/' + courseId)
-                .done(function(exists) {
-                    if (exists) {
-                        window.open('/Courses/Details/' + courseId, '_blank');
-                    } else {
-                        // Show course info in a modal with the data we have
-                        showCourseInfoModal(courseId, courseName, courseData);
-                    }
-                })
-                .fail(function() {
-                    // Fallback: show course info in modal with available data
-                    showCourseInfoModal(courseId, courseName, courseData);
-                });
-            return false;
-        }
-
-        // Function to edit course with existence check
-        // function editCourse(courseId, courseName) {
-        //     $.get('/Courses/VerifyExists/' + courseId)
-        //         .done(function(exists) {
-        //             if (exists) {
-        //                 window.open('/Courses/Edit/' + courseId, '_blank');
-        //             } else {
-        //                 alert('Course not found: ' + courseName);
-        //             }
-        //         })
-        //         .fail(function() {
-        //             alert('Cannot edit course: ' + courseName);
-        //         });
-        //     return false;
-        // }
-
-                // Function to replace course in semester
-        function replaceCourseInSemester(courseId, courseName) {
-            // Close the modal first
-            $('#courseModal').modal('hide');
-
-            // Get available courses for replacement
-            $.get('@Url.Action("GetAvailableCoursesForReplacement", "Semesters")', {
-                semesterId: '@Model.Id',
-                currentCourseId: courseId
-            })
-            .done(function(availableCourses) {
-                if (availableCourses && availableCourses.length > 0) {
-                    showReplaceCourseModal(courseId, courseName, availableCourses);
-                } else {
-                    alert('No available courses found to replace with.');
+                if (selectedStudentIds.length === 0) {
+                    alert('Please select at least one student.');
+                    return;
                 }
-            })
-            .fail(function() {
-                alert('Error loading available courses for replacement.');
-            });
-        }
 
-        // Function to show replace course modal
-        function showReplaceCourseModal(currentCourseId, currentCourseName, availableCourses) {
-            let optionsHtml = '';
-            availableCourses.forEach(function(course) {
-                optionsHtml += `<option value="${course.id}">${course.courseCode} - ${course.courseName}</option>`;
-            });
+                // Show loading state
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+                this.disabled = true;
 
-            const modalHtml = `
-                <div class="modal fade" id="replaceCourseModal" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Replace Course</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p>Replacing: <strong>${currentCourseName}</strong></p>
-                                <div class="mb-3">
-                                    <label class="form-label">Select Replacement Course:</label>
-                                    <select class="form-select" id="replacementCourseSelect">
-                                        <option value="">-- Select a course --</option>
-                                        ${optionsHtml}
-                                    </select>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="keepOriginalCourse">
-                                    <label class="form-check-label" for="keepOriginalCourse">
-                                        Keep original course in system (just remove from this semester)
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" class="btn btn-primary" onclick="confirmReplaceCourse(${currentCourseId})">
-                                    Replace Course
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            $('#replaceCourseModal').remove();
-            $('body').append(modalHtml);
-            $('#replaceCourseModal').modal('show');
-        }
-
-        // Function to confirm course replacement
-        function confirmReplaceCourse(currentCourseId) {
-            const replacementCourseId = $('#replacementCourseSelect').val();
-            const keepOriginal = $('#keepOriginalCourse').is(':checked');
-
-            if (!replacementCourseId) {
-                alert('Please select a replacement course.');
-                return;
-            }
-
-            if (confirm('Are you sure you want to replace this course?')) {
-                $.post('@Url.Action("ReplaceCourseInSemester", "Semesters")', {
-                    semesterId: '@Model.Id',
-                    currentCourseId: currentCourseId,
-                    replacementCourseId: replacementCourseId,
-                    keepOriginalCourse: keepOriginal
+                fetch('@Url.Action("BulkEnrollStudents", "Semesters")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        semesterId: @Model.Id,
+                        courseIds: selectedCourseIds,
+                        studentIds: selectedStudentIds
+                    })
                 })
-                .done(function(response) {
-                    if (response.success) {
-                        alert('Course replaced successfully!');
-                        location.reload();
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Success!', data.message, 'success');
+                        bulkEnrollModal.hide();
                     } else {
-                        alert('Error: ' + response.message);
+                        showToast('Error', data.message, 'error');
                     }
                 })
-                .fail(function() {
-                    alert('Error replacing course.');
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error', 'An error occurred during bulk enrollment', 'error');
+                })
+                .finally(() => {
+                    this.innerHTML = '<i class="fas fa-user-plus me-1"></i>Start Bulk Enrollment';
+                    this.disabled = false;
                 });
-            }
-        }
+            });
 
-        // Function to show course info in modal
-                // Enhanced function to show course info in modal with actual course data
-        function showCourseInfoModal(courseId, courseName, courseData = null) {
-            // If we have course data from the initial load, use it
-            let modalContent = '';
+            function showToast(title, message, type) {
+                // Remove existing toasts
+                document.querySelectorAll('.alert-toast').forEach(toast => toast.remove());
 
-            if (courseData) {
-                // We have the course data from the initial API call
-                modalContent = `
-                    <div class="modal-header">
-                        <h5 class="modal-title">${courseData.courseName}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>Course Information</h6>
-                                <p><strong>Code:</strong> ${courseData.courseCode}</p>
-                                <p><strong>Credits:</strong> ${courseData.credits}</p>
-                                <p><strong>Status:</strong>
-                                    <span class="badge ${courseData.isActive ? 'bg-success' : 'bg-secondary'}">
-                                        ${courseData.isActive ? 'Active' : 'Inactive'}
-                                    </span>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Description</h6>
-                                <p class="text-muted">${courseData.description || 'No description available.'}</p>
-                            </div>
-                        </div>
-                        ${courseData.description && courseData.description.length > 200 ? `
-                        <div class="mt-3">
-                            <h6>Full Description</h6>
-                            <div class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
-                                <small>${courseData.description}</small>
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" onclick="replaceCourseInSemester(${courseId}, '${courseData.courseName}')">
-                            <i class="fas fa-exchange-alt me-2"></i>Replace Course
-                        </button>
-                    </div>
+                const toast = document.createElement('div');
+                toast.className = `alert alert-${type} alert-dismissible fade show alert-toast`;
+                toast.style.position = 'fixed';
+                toast.style.top = '20px';
+                toast.style.right = '20px';
+                toast.style.zIndex = '1060';
+                toast.style.minWidth = '300px';
+                toast.innerHTML = `
+                    <strong>${title}</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
-            } else {
-                // Fallback if we don't have course data
-                modalContent = `
-                    <div class="modal-header">
-                        <h5 class="modal-title">${courseName}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p><strong>Course ID:</strong> ${courseId}</p>
-                        <p>Course details are not available. The course management page may not be implemented yet.</p>
-                        <p><em>You can still manage this course within the semester using the other actions.</em></p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                `;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 5000);
             }
 
-            var modalHtml = `
-                <div class="modal fade" id="courseModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            ${modalContent}
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // Remove existing modal if any
-            $('#courseModal').remove();
-
-            // Add and show modal
-            $('body').append(modalHtml);
-            $('#courseModal').modal('show');
-        }
-
-        // Function to remove course from semester
-        function removeCourseFromSemester(courseId, courseName) {
-            if (confirm(`Are you sure you want to remove "${courseName}" from this semester?`)) {
-                $.post('@Url.Action("RemoveCourseFromSemester", "Semesters")', {
-                    semesterId: '@Model.Id',
-                    courseId: courseId
-                })
-                .done(function(response) {
-                    if (response.success) {
-                        alert(`Course "${courseName}" removed from semester successfully.`);
-                        location.reload(); // Reload to update the list
-                    } else {
-                        alert('Error: ' + response.message);
-                    }
-                })
-                .fail(function() {
-                    alert('Error removing course from semester.');
-                });
-            }
-            return false; // Prevent default action
-        }
-
-        // Function to move course to another semester
-                // Enhanced function to move course to another semester
-                // Enhanced function to move course to another semester
-        function moveCourseToAnotherSemester(courseId, courseName) {
-            // First get available semesters
-            $.get('@Url.Action("GetAvailableSemesters", "Semesters")', {
-                currentSemesterId: '@Model.Id'
-            })
-            .done(function(availableSemesters) {
-                if (availableSemesters && availableSemesters.length > 0) {
-                    showMoveCourseModal(courseId, courseName, availableSemesters);
-                } else {
-                    alert('No other semesters available for moving this course.');
-                }
-            })
-            .fail(function() {
-                // Fallback to simple prompt
-                var newSemesterId = prompt(`Enter the target semester ID for "${courseName}":`);
-                if (newSemesterId) {
-                    confirmMoveCourse(courseId, courseName, newSemesterId);
-                }
-            });
-        }
-
-        // Function to show move course modal with semester selection
-        function showMoveCourseModal(courseId, courseName, availableSemesters) {
-            let optionsHtml = '';
-            availableSemesters.forEach(function(semester) {
-                optionsHtml += `<option value="${semester.id}">${semester.name} (${semester.academicYear})</option>`;
-            });
-
-            const modalHtml = `
-                <div class="modal fade" id="moveCourseModal" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Move Course to Another Semester</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p>Moving: <strong>${courseName}</strong></p>
-                                <p>From: <strong>@Model.Name</strong></p>
-                                <div class="mb-3">
-                                    <label class="form-label">Select Target Semester:</label>
-                                    <select class="form-select" id="targetSemesterSelect">
-                                        <option value="">-- Select a semester --</option>
-                                        ${optionsHtml}
-                                    </select>
-                                </div>
-                                <div class="alert alert-info">
-                                    <small>
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        This will move the course to the selected semester and remove it from the current semester.
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" class="btn btn-primary" onclick="confirmMoveCourseFromModal(${courseId}, '${courseName}')">
-                                    Move Course
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            $('#moveCourseModal').remove();
-            $('body').append(modalHtml);
-            $('#moveCourseModal').modal('show');
-        }
-
-        // Function to confirm move from modal
-        function confirmMoveCourseFromModal(courseId, courseName) {
-            const targetSemesterId = $('#targetSemesterSelect').val();
-
-            if (!targetSemesterId) {
-                alert('Please select a target semester.');
-                return;
-            }
-
-            confirmMoveCourse(courseId, courseName, targetSemesterId);
-        }
-
-        // Function to confirm and execute move
-        function confirmMoveCourse(courseId, courseName, targetSemesterId) {
-            if (confirm(`Are you sure you want to move "${courseName}" to semester ID ${targetSemesterId}?`)) {
-                $.post('@Url.Action("MoveCourseToSemester", "Semesters")', {
-                    courseId: courseId,
-                    fromSemesterId: '@Model.Id',
-                    toSemesterId: targetSemesterId
-                })
-                .done(function(response) {
-                    if (response.success) {
-                        alert(`Course "${courseName}" moved to new semester successfully!`);
-                        location.reload();
-                    } else {
-                        alert('Error: ' + response.message);
-                    }
-                })
-                .fail(function() {
-                    alert('Error moving course.');
-                });
-            }
-        }
-    </script>
-    <script>
-        console.log('URL being called:', '@Url.Action("GetCoursesBySemester", "Courses")');
-        console.log('Semester ID:', '@Model.Id');
+            // Initialize
+            updateCourseSelectionUI();
+        });
     </script>
 }

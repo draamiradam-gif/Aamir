@@ -56,7 +56,7 @@ namespace StudentManagementSystem.Services
         Task<StudentTranscript> GenerateStudentTranscriptAsync(int studentId);
 
         Task<byte[]> ExportSelectedCoursesToExcelAsync(int[] courseIds);
-
+        Task<(bool CanDelete, string Message)> CanDeleteCourseAsync(int courseId);
 
         //Task<List<Course>> GetAllCoursesAsync();
         //Task<Course?> GetCourseByIdAsync(int id);

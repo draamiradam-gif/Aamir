@@ -2,16 +2,8 @@
 using StudentManagementSystem.Data;
 using StudentManagementSystem.Models;
 
-namespace StudentManagementSystem.Services
-{
-    public interface IEnrollmentService
-    {
-        Task<List<Course>> GetAvailableCoursesAsync(int studentId, int semesterId);
-        Task<List<CourseEnrollment>> GetStudentEnrollmentsAsync(int studentId, int semesterId);
-        Task<bool> EnrollStudentInCourseAsync(int studentId, int courseId, int semesterId);
-        Task<bool> CanStudentEnrollInCourseAsync(int studentId, int courseId, int semesterId);
-    }
-
+namespace StudentManagementSystem.Services{
+    
     public class EnrollmentService : IEnrollmentService
     {
         private readonly ApplicationDbContext _context;
@@ -126,6 +118,181 @@ namespace StudentManagementSystem.Services
             return true;
         }
 
+        
+
+        public async Task<BulkEnrollmentResult> BulkEnrollInSemesterAsync(int semesterId, List<int> studentIds)
+        {
+            var result = new BulkEnrollmentResult();
+            var semester = await _context.Semesters.FindAsync(semesterId);
+            result.SemesterName = semester?.Name ?? "Unknown Semester";
+
+            // Get all active courses for the semester
+            var semesterCourses = await _context.Courses
+                .Where(c => c.SemesterId == semesterId && c.IsActive)
+                .Include(c => c.Prerequisites)
+                .ToListAsync();
+
+            foreach (var studentId in studentIds)
+            {
+                var student = await _context.Students
+                    .Include(s => s.CourseEnrollments)
+                    .FirstOrDefaultAsync(s => s.Id == studentId);
+
+                if (student == null) continue;
+
+                var studentResult = new StudentEnrollmentResult
+                {
+                    StudentId = studentId,
+                    StudentName = student.Name,
+                    StudentCode = student.StudentId
+                };
+
+                int successfullyEnrolled = 0;
+
+                foreach (var course in semesterCourses)
+                {
+                    var courseResult = new CourseEnrollmentResult
+                    {
+                        CourseId = course.Id,
+                        CourseCode = course.CourseCode,
+                        CourseName = course.CourseName
+                    };
+
+                    try
+                    {
+                        // Check if already enrolled
+                        if (student.CourseEnrollments.Any(ce => ce.CourseId == course.Id && ce.SemesterId == semesterId && ce.IsActive))
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = "Already enrolled";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        // Validate prerequisites
+                        var missingPrereqs = await GetMissingPrerequisitesAsync(studentId, course.Id);
+                        if (missingPrereqs.Any())
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = $"Missing prerequisites: {string.Join(", ", missingPrereqs)}";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        // Check course capacity
+                        var currentEnrollment = await _context.CourseEnrollments
+                            .CountAsync(ce => ce.CourseId == course.Id && ce.SemesterId == semesterId && ce.IsActive);
+
+                        if (currentEnrollment >= course.MaxStudents)
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = "Course is full";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        // Check student requirements
+                        if (student.GPA < course.MinGPA)
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = $"GPA requirement not met (required: {course.MinGPA})";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        if (student.PassedHours < course.MinPassedHours)
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = $"Passed hours requirement not met (required: {course.MinPassedHours})";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        // Create enrollment
+                        var enrollment = new CourseEnrollment
+                        {
+                            StudentId = studentId,
+                            CourseId = course.Id,
+                            SemesterId = semesterId,
+                            EnrollmentDate = DateTime.Now,
+                            IsActive = true,
+                            GradeStatus = GradeStatus.InProgress
+                        };
+
+                        _context.CourseEnrollments.Add(enrollment);
+                        courseResult.Success = true;
+                        courseResult.Message = "Successfully enrolled";
+                        successfullyEnrolled++;
+                    }
+                    catch (Exception ex)
+                    {
+                        courseResult.Success = false;
+                        courseResult.Message = $"Error: {ex.Message}";
+                    }
+
+                    studentResult.CourseResults.Add(courseResult);
+                }
+
+                // Determine student status
+                studentResult.Status = successfullyEnrolled == semesterCourses.Count ? "Success" :
+                                      successfullyEnrolled > 0 ? "Partial" : "Failed";
+
+                result.Results.Add(studentResult);
+            }
+
+            await _context.SaveChangesAsync();
+
+            result.TotalStudents = studentIds.Count;
+            result.SuccessfullyEnrolled = result.Results.Count(r => r.Status != "Failed");
+            result.FailedEnrollments = result.Results.Count(r => r.Status == "Failed");
+
+            return result;
+        }
+
+        public async Task<CourseEnrollmentResult> QuickEnrollInCourseAsync(int studentId, int courseId, int semesterId)
+        {
+            var course = await _context.Courses.FindAsync(courseId);
+            var result = new CourseEnrollmentResult
+            {
+                CourseId = courseId,
+                CourseCode = course?.CourseCode ?? "Unknown",
+                CourseName = course?.CourseName ?? "Unknown"
+            };
+
+            try
+            {
+                if (!await CanStudentEnrollInCourseAsync(studentId, courseId, semesterId))
+                {
+                    result.Success = false;
+                    result.Message = "Cannot enroll - requirements not met";
+                    return result;
+                }
+
+                var enrollment = new CourseEnrollment
+                {
+                    StudentId = studentId,
+                    CourseId = courseId,
+                    SemesterId = semesterId,
+                    EnrollmentDate = DateTime.Now,
+                    IsActive = true,
+                    GradeStatus = GradeStatus.InProgress
+                };
+
+                _context.CourseEnrollments.Add(enrollment);
+                await _context.SaveChangesAsync();
+
+                result.Success = true;
+                result.Message = "Successfully enrolled in course";
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Message = $"Enrollment failed: {ex.Message}";
+            }
+
+            return result;
+        }
+
         private async Task<List<string>> GetMissingPrerequisitesAsync(int studentId, int courseId)
         {
             var prerequisites = await _context.CoursePrerequisites
@@ -149,5 +316,144 @@ namespace StudentManagementSystem.Services
 
             return missing;
         }
+
+        // Add to Services/EnrollmentService.cs
+        public async Task<BulkEnrollmentResult> BulkEnrollInCoursesAsync(int semesterId, List<int> courseIds, List<int> studentIds)
+        {
+            var result = new BulkEnrollmentResult();
+            var semester = await _context.Semesters.FindAsync(semesterId);
+            result.SemesterName = semester?.Name ?? "Unknown Semester";
+
+            // Get the specific courses to enroll in
+            var courses = await _context.Courses
+                .Where(c => courseIds.Contains(c.Id) && c.SemesterId == semesterId && c.IsActive)
+                .Include(c => c.Prerequisites)
+                .ToListAsync();
+
+            foreach (var studentId in studentIds)
+            {
+                var student = await _context.Students
+                    .Include(s => s.CourseEnrollments)
+                    .FirstOrDefaultAsync(s => s.Id == studentId);
+
+                if (student == null) continue;
+
+                var studentResult = new StudentEnrollmentResult
+                {
+                    StudentId = studentId,
+                    StudentName = student.Name,
+                    StudentCode = student.StudentId
+                };
+
+                int successfullyEnrolled = 0;
+
+                foreach (var course in courses)
+                {
+                    var courseResult = new CourseEnrollmentResult
+                    {
+                        CourseId = course.Id,
+                        CourseCode = course.CourseCode,
+                        CourseName = course.CourseName
+                    };
+
+                    try
+                    {
+                        // Check if already enrolled - SemesterId is int so no nullable check needed
+                        if (student.CourseEnrollments.Any(ce => ce.CourseId == course.Id && ce.SemesterId == semesterId && ce.IsActive))
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = "Already enrolled";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        // Validate prerequisites
+                        var missingPrereqs = await GetMissingPrerequisitesAsync(studentId, course.Id);
+                        if (missingPrereqs.Any())
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = $"Missing prerequisites: {string.Join(", ", missingPrereqs)}";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        // Check course capacity
+                        var currentEnrollment = await _context.CourseEnrollments
+                            .CountAsync(ce => ce.CourseId == course.Id && ce.SemesterId == semesterId && ce.IsActive);
+
+                        if (currentEnrollment >= course.MaxStudents)
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = "Course is full";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        // Check student requirements
+                        if (student.GPA < course.MinGPA)
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = $"GPA requirement not met (required: {course.MinGPA})";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        if (student.PassedHours < course.MinPassedHours)
+                        {
+                            courseResult.Success = false;
+                            courseResult.Message = $"Passed hours requirement not met (required: {course.MinPassedHours})";
+                            studentResult.CourseResults.Add(courseResult);
+                            continue;
+                        }
+
+                        // Create enrollment
+                        var enrollment = new CourseEnrollment
+                        {
+                            StudentId = studentId,
+                            CourseId = course.Id,
+                            SemesterId = semesterId, // Direct assignment since it's int
+                            EnrollmentDate = DateTime.Now,
+                            IsActive = true,
+                            GradeStatus = GradeStatus.InProgress
+                        };
+
+                        _context.CourseEnrollments.Add(enrollment);
+                        courseResult.Success = true;
+                        courseResult.Message = "Successfully enrolled";
+                        successfullyEnrolled++;
+                    }
+                    catch (Exception ex)
+                    {
+                        courseResult.Success = false;
+                        courseResult.Message = $"Error: {ex.Message}";
+                    }
+
+                    studentResult.CourseResults.Add(courseResult);
+                }
+
+                // Determine student status
+                studentResult.Status = successfullyEnrolled == courses.Count ? "Success" :
+                                      successfullyEnrolled > 0 ? "Partial" : "Failed";
+
+                result.Results.Add(studentResult);
+            }
+
+            await _context.SaveChangesAsync();
+
+            result.TotalStudents = studentIds.Count;
+            result.SuccessfullyEnrolled = result.Results.Count(r => r.Status != "Failed");
+            result.FailedEnrollments = result.Results.Count(r => r.Status == "Failed");
+
+            return result;
+        }
+
     }
+
 }
+
+    
+    
+
+
+
+

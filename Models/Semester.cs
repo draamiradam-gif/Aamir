@@ -1,4 +1,6 @@
 ﻿// Models/Semester.cs
+using Humanizer;
+using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -62,25 +64,7 @@ namespace StudentManagementSystem.Models
         [ForeignKey("SubBranchId")]
         public virtual Branch? SubBranch { get; set; }
 
-        // Remove this line since we're using Courses directly
-        // public virtual ICollection<CourseOffering> CourseOfferings { get; set; } = new List<CourseOffering>();
-        /*
-                [NotMapped]
-
-                public string FullPath
-                {
-                    get
-                    {
-                        if (SubBranchId.HasValue)
-                            return $"{SubBranch?.FullPath} → {Name}";
-                        if (BranchId.HasValue)
-                            return $"{Branch?.FullPath} → {Name}";
-                        if (DepartmentId.HasValue)
-                            return $"{Department?.FullPath} → {Name}";
-                        return Name;
-                    }
-                }
-        */
+        
 
         [NotMapped]
         public string FullPath
@@ -135,4 +119,5 @@ namespace StudentManagementSystem.Models
 
 
     }
+        
 }

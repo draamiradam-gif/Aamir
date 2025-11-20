@@ -130,17 +130,25 @@ namespace StudentManagementSystem.Services
 
             try
             {
-                // 1. First, handle prerequisites where this course is used as a prerequisite for other courses
+                // 1. First delete prerequisites where this course is used as prerequisite
                 var dependentPrerequisites = await _context.CoursePrerequisites
                     .Where(cp => cp.PrerequisiteCourseId == courseId)
                     .ToListAsync();
                 _context.CoursePrerequisites.RemoveRange(dependentPrerequisites);
 
-                // 2. Let EF Core handle the cascade delete for:
-                //    - This course's prerequisites (via cascade)
-                //    - This course's enrollments (via cascade)
+                // 2. Delete prerequisites for this course
+                var coursePrerequisites = await _context.CoursePrerequisites
+                    .Where(cp => cp.CourseId == courseId)
+                    .ToListAsync();
+                _context.CoursePrerequisites.RemoveRange(coursePrerequisites);
 
-                // 3. Now delete the course itself
+                // 3. Delete enrollments
+                var enrollments = await _context.CourseEnrollments
+                    .Where(ce => ce.CourseId == courseId)
+                    .ToListAsync();
+                _context.CourseEnrollments.RemoveRange(enrollments);
+
+                // 4. Delete the course
                 var course = await _context.Courses.FindAsync(courseId);
                 if (course != null)
                 {
@@ -1065,18 +1073,22 @@ namespace StudentManagementSystem.Services
         {
             try
             {
-                var hasEnrollments = await _context.CourseEnrollments
-                    .AnyAsync(ce => ce.CourseId == courseId);
+                // Check if course has active enrollments
+                var hasActiveEnrollments = await _context.CourseEnrollments
+                    .AnyAsync(ce => ce.CourseId == courseId && ce.IsActive);
 
-                if (hasEnrollments)
+                if (hasActiveEnrollments)
                 {
-                    return (false, "Cannot delete course because it has student enrollments.");
+                    var enrollmentCount = await _context.CourseEnrollments
+                        .CountAsync(ce => ce.CourseId == courseId && ce.IsActive);
+                    return (false, $"Cannot delete course because it has {enrollmentCount} active enrollment(s).");
                 }
 
-                var isPrerequisite = await _context.CoursePrerequisites
+                // Check if course is used as prerequisite for other courses
+                var isPrerequisiteForOtherCourses = await _context.CoursePrerequisites
                     .AnyAsync(cp => cp.PrerequisiteCourseId == courseId);
 
-                if (isPrerequisite)
+                if (isPrerequisiteForOtherCourses)
                 {
                     return (false, "Cannot delete course because it is used as a prerequisite for other courses.");
                 }
@@ -1638,8 +1650,8 @@ namespace StudentManagementSystem.Services
                                     ["Department"] = course.Department ?? "N/A",
                                     ["SemesterId"] = course.SemesterId, // ✅ Changed from Semester
                                     ["MaxStudents"] = course.MaxStudents,
-                                    ["MinGPA"] = course.MinGPA,
-                                    ["MinPassedHours"] = course.MinPassedHours,
+                                    ["MinGPA"] = course.MinGPA??0,
+                                    ["MinPassedHours"] = course.MinPassedHours?? 0,
                                     ["Prerequisites"] = prerequisitesValue ?? "None",
                                     ["CourseSpecification"] = courseSpecValue ?? "None",
                                     ["Icon"] = iconValue ?? "None",
@@ -1843,7 +1855,7 @@ namespace StudentManagementSystem.Services
                     worksheet.Cells[row, 5].Value = course.Department;
                     worksheet.Cells[row, 6].Value = course.Semester;
                     worksheet.Cells[row, 7].Value = course.MaxStudents;
-                    worksheet.Cells[row, 8].Value = Math.Round(course.MinGPA, 2);
+                    worksheet.Cells[row, 8].Value = Math.Round(course.MinGPA?? 0, 2);
                     worksheet.Cells[row, 9].Value = course.MinPassedHours;
                     worksheet.Cells[row, 10].Value = course.IsActive ? "Yes" : "No";
                     row++;
@@ -2116,56 +2128,9 @@ namespace StudentManagementSystem.Services
                 .OrderBy(c => c.CourseCode)
                 .ToListAsync();
         }
-        /*
-                private async Task<Course?> GetCourseByCodeAsync(string courseCode)
-                {
-                    return await _context.Courses
-                        .FirstOrDefaultAsync(c => c.CourseCode == courseCode);
-                }
 
-                private async Task AddPrerequisiteAsync(int courseId, int prerequisiteCourseId, decimal? minGrade)
-                {
-                    var existing = await _context.CoursePrerequisites
-                        .FirstOrDefaultAsync(cp => cp.CourseId == courseId && cp.PrerequisiteCourseId == prerequisiteCourseId);
 
-                    if (existing == null)
-                    {
-                        var prerequisite = new CoursePrerequisite
-                        {
-                            CourseId = courseId,
-                            PrerequisiteCourseId = prerequisiteCourseId,
-                            MinGrade = minGrade,
-                            IsRequired = true
-                        };
-                        _context.CoursePrerequisites.Add(prerequisite);
-                        await _context.SaveChangesAsync();
-                    }
-                }
-
-                private int TryParseInt(string? value, int defaultValue)
-                {
-                    return int.TryParse(value, out int result) ? result : defaultValue;
-                }
-
-                private decimal TryParseDecimal(string? value, decimal defaultValue)
-                {
-                    return decimal.TryParse(value, out decimal result) ? result : defaultValue;
-                }
-
-                private bool IsActive(string? value)
-                {
-                    return value?.ToLower() switch
-                    {
-                        "yes" => true,
-                        "نعم" => true,
-                        "true" => true,
-                        "1" => true,
-                        "y" => true,
-                        _ => false
-                    };
-                }
-        */
-
+        
         private async Task<int> GetDefaultSemesterId()
         {
             await EnsureDefaultSemesterExists();

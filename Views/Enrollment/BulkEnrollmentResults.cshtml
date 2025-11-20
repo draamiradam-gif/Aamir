@@ -1,0 +1,174 @@
+﻿@model StudentManagementSystem.Models.BulkEnrollmentResult
+@{
+    ViewData["Title"] = "Bulk Enrollment Results";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-tasks me-2"></i>Bulk Enrollment Results
+        </h2>
+        <a href="@Url.Action("Index", "Students")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back to Students
+        </a>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-chart-bar me-2"></i>Enrollment Summary - @Model.SemesterName
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="border rounded p-3">
+                        <h3 class="text-primary">@Model.TotalStudents</h3>
+                        <p class="mb-0 text-muted">Total Students</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3">
+                        <h3 class="text-success">@Model.SuccessfullyEnrolled</h3>
+                        <p class="mb-0 text-muted">Successfully Enrolled</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3">
+                        <h3 class="text-warning">@(Model.TotalStudents - Model.SuccessfullyEnrolled - Model.FailedEnrollments)</h3>
+                        <p class="mb-0 text-muted">Partially Enrolled</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3">
+                        <h3 class="text-danger">@Model.FailedEnrollments</h3>
+                        <p class="mb-0 text-muted">Failed Enrollments</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Results -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Detailed Enrollment Results
+                <small class="text-muted">Processed on @Model.ProcessedAt.ToString("f")</small>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student</th>
+                            <th>Status</th>
+                            <th>Summary</th>
+                            <th>Course Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var student in Model.Results)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@student.StudentName</strong><br>
+                                    <small class="text-muted">@student.StudentCode</small>
+                                </td>
+                                <td>
+                                    @if (student.Status == "Success")
+                                    {
+                                        <span class="badge bg-success">Fully Enrolled</span>
+                                    }
+                                    else if (student.Status == "Partial")
+                                    {
+                                        <span class="badge bg-warning">Partially Enrolled</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Failed</span>
+                                    }
+                                </td>
+                                <td>@student.Summary</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#details-@student.StudentId">
+                                        <i class="fas fa-eye me-1"></i>View Details
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="collapse" id="details-@student.StudentId">
+                                <td colspan="4">
+                                    <div class="p-3 bg-light">
+                                        <h6>Course Enrollment Details:</h6>
+                                        <div class="row">
+                                            @foreach (var course in student.CourseResults)
+                                            {
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="card @(course.Success ? "border-success" : "border-danger")">
+                                                        <div class="card-body py-2">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <strong>@course.CourseCode</strong><br>
+                                                                    <small>@course.CourseName</small>
+                                                                </div>
+                                                                <div class="text-end">
+                                                                    @if (course.Success)
+                                                                    {
+                                                                        <span class="badge bg-success">Enrolled</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge bg-danger">Failed</span>
+                                                                    }
+                                                                    <br>
+                                                                    <small class="text-muted">@course.Message</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="mt-4 text-center">
+        <a href="@Url.Action("Index", "Students")" class="btn btn-primary me-2">
+            <i class="fas fa-users me-1"></i>Back to Students
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-print me-1"></i>Print Report
+        </button>
+        <a href="@Url.Action("ExportResults")" class="btn btn-success">
+            <i class="fas fa-file-excel me-1"></i>Export to Excel
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-expand failed enrollments for quick review
+        document.addEventListener('DOMContentLoaded', function() {
+            const failedRows = document.querySelectorAll('tr:has(.bg-danger)');
+            failedRows.forEach(row => {
+                const collapseId = row.nextElementSibling?.id;
+                if (collapseId) {
+                    const collapse = new bootstrap.Collapse(document.getElementById(collapseId));
+                    collapse.show();
+                }
+            });
+        });
+    </script>
+}

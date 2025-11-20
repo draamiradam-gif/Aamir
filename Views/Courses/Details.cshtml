@@ -1,53 +1,47 @@
 ﻿@model StudentManagementSystem.Models.Course
 @{
     ViewData["Title"] = "Course Details";
-    var enrollments = ViewBag.Enrollments as List<CourseEnrollment> ?? new List<CourseEnrollment>();
 }
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
-            <i class="fas fa-book"></i> Course Details: @Model.CourseCode
+            <i class="fas fa-book me-2"></i>Course Details
         </h2>
         <div>
-            <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
-                <i class="fas fa-edit"></i> Edit
-            </a>
             <a href="@Url.Action("Index")" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to List
+                <i class="fas fa-arrow-left me-1"></i>Back to List
+            </a>
+            <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
+                <i class="fas fa-edit me-1"></i>Edit Course
             </a>
         </div>
     </div>
 
-    <!-- Course Information -->
     <div class="row">
         <div class="col-md-8">
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-info-circle"></i> Course Information
-                    </h5>
+                    <h5 class="mb-0">Course Information</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <table class="table table-borderless">
                                 <tr>
-                                    <th width="150">Course Code:</th>
+                                    <td><strong>Course Code:</strong></td>
                                     <td>@Model.CourseCode</td>
                                 </tr>
                                 <tr>
-                                    <th>Course Name:</th>
+                                    <td><strong>Course Name:</strong></td>
                                     <td>@Model.CourseName</td>
                                 </tr>
                                 <tr>
-                                    <th>Credits:</th>
-                                    <td>
-                                        <span class="badge bg-info">@Model.Credits credits</span>
-                                    </td>
+                                    <td><strong>Credits:</strong></td>
+                                    <td><span class="badge bg-info">@Model.Credits</span></td>
                                 </tr>
                                 <tr>
-                                    <th>Department:</th>
+                                    <td><strong>Department:</strong></td>
                                     <td>@Model.Department</td>
                                 </tr>
                             </table>
@@ -55,19 +49,19 @@
                         <div class="col-md-6">
                             <table class="table table-borderless">
                                 <tr>
-                                    <th width="150">Semester:</th>
-                                    <td>Semester @Model.Semester</td>
+                                    <td><strong>Semester:</strong></td>
+                                    <td>@Model.SemesterDisplay</td>
                                 </tr>
                                 <tr>
-                                    <th>Max Students:</th>
+                                    <td><strong>Grade Level:</strong></td>
+                                    <td>Grade @Model.GradeLevel</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Max Students:</strong></td>
                                     <td>@Model.MaxStudents</td>
                                 </tr>
                                 <tr>
-                                    <th>Min GPA:</th>
-                                    <td>@Model.MinGPA</td>
-                                </tr>
-                                <tr>
-                                    <th>Status:</th>
+                                    <td><strong>Status:</strong></td>
                                     <td>
                                         @if (Model.IsActive)
                                         {
@@ -76,6 +70,10 @@
                                         else
                                         {
                                             <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                        @if (!Model.HasAvailableSeats)
+                                        {
+                                            <span class="badge bg-warning ms-1">Full</span>
                                         }
                                     </td>
                                 </tr>
@@ -87,259 +85,124 @@
                     {
                         <div class="mt-3">
                             <strong>Description:</strong>
-                            <p class="mb-0">@Model.Description</p>
+                            <p class="mt-1">@Model.Description</p>
                         </div>
                     }
-                </div>
-            </div>
 
-            <!-- Prerequisites Section -->
-            @if (Model.Prerequisites.Any())
-            {
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-list-ol"></i> Prerequisites
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Course Code</th>
-                                        <th>Course Name</th>
-                                        <th>Department</th>
-                                        <th>Semester</th>
-                                        <th>Min Grade</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var prereq in Model.Prerequisites)
-                                    {
-                                        <tr>
-                                            <td>
-                                                <a href="@Url.Action("Details", new { id = prereq.PrerequisiteCourseId })" class="text-decoration-none">
-                                                    @prereq.PrerequisiteCourse?.CourseCode
-                                                </a>
-                                            </td>
-                                            <td>@prereq.PrerequisiteCourse?.CourseName</td>
-                                            <td>@prereq.PrerequisiteCourse?.Department</td>
-                                            <td>@prereq.PrerequisiteCourse?.Semester</td>
-                                            <td>
-                                                @if (prereq.MinGrade.HasValue)
-                                                {
-                                                    <span class="badge bg-info">@prereq.MinGrade.Value</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-muted">Not specified</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                    @if (!string.IsNullOrEmpty(Model.PrerequisitesString))
+                    {
+                        <div class="mt-3">
+                            <strong>Prerequisites:</strong>
+                            <div class="mt-1">
+                                @foreach (var prereq in Model.PrerequisitesString.Split(',').Select(p => p.Trim()).Where(p => !string.IsNullOrEmpty(p)))
+                                {
+                                    <span class="badge bg-secondary me-1">@prereq</span>
+                                }
+                            </div>
                         </div>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">
-                            <i class="fas fa-list-ol"></i> Prerequisites
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted mb-0">No prerequisites required for this course.</p>
-                    </div>
-                </div>
-            }
+                    }
 
-            <!-- Enrollments Section -->
-            <div class="card">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-users"></i> Student Enrollments (@enrollments.Count(e => e.IsActive) enrolled)
-                    </h5>
-                    <div>
-                        <a href="@Url.Action("Enroll", new { id = Model.Id })" class="btn btn-light btn-sm">
-                            <i class="fas fa-user-plus"></i> Enroll Students
-                        </a>
-                        <a href="@Url.Action("ExportEnrollments", new { id = Model.Id })" class="btn btn-light btn-sm">
-                            <i class="fas fa-download"></i> Export
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    @if (enrollments.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Student ID</th>
-                                        <th>Name</th>
-                                        <th>Enrollment Date</th>
-                                        <th>Grade</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var enrollment in enrollments)
-                                    {
-                                        <tr>
-                                            <td>@enrollment.Student?.StudentId</td>
-                                            <td>
-                                                <a href="@Url.Action("Details", "Students", new { id = enrollment.StudentId })" class="text-decoration-none">
-                                                    @enrollment.Student?.Name
-                                                </a>
-                                            </td>
-                                            <td>@enrollment.EnrollmentDate.ToString("yyyy-MM-dd")</td>
-                                            <td>
-                                                @if (enrollment.Grade.HasValue)
-                                                {
-                                                    <span class="badge @(enrollment.Grade >= 60 ? "bg-success" : "bg-danger")">
-                                                        @enrollment.Grade.Value / @enrollment.GradeLetter
-                                                    </span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-muted">Not graded</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                @if (enrollment.IsActive)
-                                                {
-                                                    <span class="badge bg-success">Active</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-secondary">Inactive</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    @if (enrollment.IsActive)
-                                                    {
-                                                        <a href="@Url.Action("UpdateGrade", new { id = enrollment.Id })" class="btn btn-warning" title="Update Grade">
-                                                            <i class="fas fa-edit"></i>
-                                                        </a>
-                                                        <form asp-action="UnenrollStudent" method="post" class="d-inline">
-                                                            <input type="hidden" name="enrollmentId" value="@enrollment.Id" />
-                                                            <input type="hidden" name="courseId" value="@Model.Id" />
-                                                            <button type="submit" class="btn btn-danger" title="Unenroll"
-                                                                    onclick="return confirm('Are you sure you want to unenroll this student?')">
-                                                                <i class="fas fa-user-times"></i>
-                                                            </button>
-                                                        </form>
-                                                    }
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <strong>Requirements:</strong>
+                            <ul class="mt-1">
+                                <li>Minimum GPA: @(string.Format("{0:0.00}", Model.MinGPA))</li>
+                                <li>Minimum Passed Hours: @Model.MinPassedHours</li>
+                            </ul>
                         </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted mb-0">No students enrolled in this course yet.</p>
-                    }
+                        <div class="col-md-6">
+                            <strong>Enrollment:</strong>
+                            <ul class="mt-1">
+                                <li>Current Enrollment: @Model.CurrentEnrollment</li>
+                                <li>Available Seats: @(Model.MaxStudents - Model.CurrentEnrollment)</li>
+                                <li>Capacity: @Model.MaxStudents students</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar with Quick Actions -->
         <div class="col-md-4">
-            <!-- Enrollment Progress -->
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-header bg-info text-white">
-                    <h6 class="mb-0">Enrollment Progress</h6>
-                </div>
-                <div class="card-body text-center">
-                    @{
-                        var enrollmentPercentage = Model.MaxStudents > 0 ?
-                        (Model.CurrentEnrollment * 100) / Model.MaxStudents : 0;
-                        var progressColor = enrollmentPercentage >= 90 ? "danger" :
-                        enrollmentPercentage >= 70 ? "warning" : "success";
-                    }
-                    <div class="mb-3">
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar bg-@progressColor"
-                                 role="progressbar"
-                                 style="width: @enrollmentPercentage%;"
-                                 aria-valuenow="@enrollmentPercentage"
-                                 aria-valuemin="0"
-                                 aria-valuemax="100">
-                                @enrollmentPercentage%
-                            </div>
-                        </div>
-                    </div>
-                    <h4>@Model.CurrentEnrollment / @Model.MaxStudents</h4>
-                    <p class="text-muted mb-0">Students Enrolled</p>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0">Quick Actions</h6>
+                    <h5 class="mb-0">Quick Actions</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a href="@Url.Action("Enroll", new { id = Model.Id })" class="btn btn-success">
-                            <i class="fas fa-user-plus"></i> Enroll Students
+                            <i class="fas fa-user-plus me-1"></i>Manage Enrollment
                         </a>
-                        <a href="@Url.Action("Prerequisites", new { id = Model.Id })" class="btn btn-warning">
-                            <i class="fas fa-list-ol"></i> Manage Prerequisites
+                        <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
+                            <i class="fas fa-edit me-1"></i>Edit Course
                         </a>
-                        <a href="@Url.Action("ExportEnrollments", new { id = Model.Id })" class="btn btn-info">
-                            <i class="fas fa-download"></i> Export Enrollments
-                        </a>
-                        <a href="@Url.Action("ExportCoursePdf", new { id = Model.Id })" class="btn btn-danger">
-                            <i class="fas fa-file-pdf"></i> Export to PDF
-                        </a>
+                        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="fas fa-trash me-1"></i>Delete Course
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Course Statistics -->
-            <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0">Course Statistics</h6>
+            <!-- Enrollment Progress -->
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Enrollment Progress</h6>
                 </div>
                 <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-6 mb-3">
-                            <div class="border rounded p-2">
-                                <h5 class="mb-1 text-primary">@Model.CurrentEnrollment</h5>
-                                <small class="text-muted">Enrolled</small>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="border rounded p-2">
-                                <h5 class="mb-1 text-success">@Model.Prerequisites.Count</h5>
-                                <small class="text-muted">Prerequisites</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2">
-                                <h5 class="mb-1 text-info">@Model.Credits</h5>
-                                <small class="text-muted">Credits</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2">
-                                <h5 class="mb-1 text-warning">@Model.Semester</h5>
-                                <small class="text-muted">Semester</small>
-                            </div>
+                    @{
+                        var enrollmentPercentage = Model.MaxStudents > 0 ?
+                        (int)((Model.CurrentEnrollment * 100.0) / Model.MaxStudents) : 0;
+                    }
+                    <div class="progress mb-2" style="height: 20px;">
+                        <div class="progress-bar @(enrollmentPercentage >= 90 ? "bg-danger" : enrollmentPercentage >= 70 ? "bg-warning" : "bg-success")"
+                             style="width: @enrollmentPercentage%"
+                             role="progressbar"
+                             aria-valuenow="@enrollmentPercentage"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            @enrollmentPercentage%
                         </div>
                     </div>
+                    <small class="text-muted">
+                        @Model.CurrentEnrollment out of @Model.MaxStudents students enrolled
+                        (@(Model.MaxStudents - Model.CurrentEnrollment) seats available)
+                    </small>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the course <strong>@Model.CourseName</strong>?</p>
+                <p class="text-danger">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    This action cannot be undone. All course data will be permanently deleted.
+                </p>
+                @if (Model.CurrentEnrollment > 0)
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-warning me-2"></i>
+                        This course has @Model.CurrentEnrollment active enrollment(s). Deleting it will remove all enrollment records.
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-danger">Delete Course</button>
+                </form>
             </div>
         </div>
     </div>
@@ -361,10 +224,11 @@
         }
     </style>
 }
-
 @section Scripts {
     <script>
-        $(document).ready(function () {
+        document.addEventListener('DOMContentLoaded', function() {
+
+            $(document).ready(function () {
             // Auto-hide alerts after 5 seconds
             setTimeout(function () {
                 $('.alert').fadeOut('slow');
@@ -376,6 +240,9 @@
                     e.preventDefault();
                 }
             });
+        });
+
+
         });
     </script>
 }

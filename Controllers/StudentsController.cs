@@ -193,26 +193,6 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        // GET: Students/Delete/5
-        public async Task<IActionResult> Delete(int id)
-        {
-            var student = await _studentService.GetStudentByIdAsync(id);
-            if (student == null)
-            {
-                return NotFound();
-            }
-            return View(student);
-        }
-
-        // POST: Students/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            await _studentService.DeleteStudentAsync(id);
-            return RedirectToAction(nameof(Index));
-        }
-
         // GET: Students/Import
         public IActionResult Import()
         {
@@ -432,33 +412,7 @@ namespace StudentManagementSystem.Controllers
             return View();
         }
 
-        //// POST: Students/DeleteMultiple
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> DeleteMultiple(int[] selectedStudents)
-        //{
-        //    try
-        //    {
-        //        if (selectedStudents == null || selectedStudents.Length == 0)
-        //        {
-        //            TempData["Error"] = "No students selected for deletion.";
-        //            return RedirectToAction(nameof(Index));
-        //        }
-
-        //        foreach (var id in selectedStudents)
-        //        {
-        //            await _studentService.DeleteStudentAsync(id);
-        //        }
-
-        //        TempData["Success"] = $"Successfully deleted {selectedStudents.Length} students.";
-        //        return RedirectToAction(nameof(Index));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        TempData["Error"] = $"Failed to delete students: {ex.Message}";
-        //        return RedirectToAction(nameof(Index));
-        //    }
-        //}
+        
 
         // POST: Students/ExportSelected
         [HttpPost]
@@ -784,6 +738,26 @@ namespace StudentManagementSystem.Controllers
             worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
             return package.GetAsByteArray();
+        }
+
+        // GET: Students/Delete/5
+        public async Task<IActionResult> Delete(int id)
+        {
+            var student = await _studentService.GetStudentByIdAsync(id);
+            if (student == null)
+            {
+                return NotFound();
+            }
+            return View(student);
+        }
+
+        // POST: Students/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            await _studentService.DeleteStudentAsync(id);
+            return RedirectToAction(nameof(Index));
         }
 
         // POST: Students/DeleteMultiple

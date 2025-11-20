@@ -120,11 +120,17 @@ namespace StudentManagementSystem.Controllers
         {
             if (id == null) return NotFound();
 
-            var course = await _context.Courses.FindAsync(id);
-            if (course == null) return NotFound();
+            // FIX: Get Semester instead of Course
+            var semester = await _context.Semesters
+                .Include(s => s.Department)
+                .Include(s => s.Branch)
+                .Include(s => s.SubBranch)
+                .FirstOrDefaultAsync(s => s.Id == id);
 
-            await PopulateDropdowns(); // You may need to create this method
-            return View(course);
+            if (semester == null) return NotFound();
+
+            await PopulateDropdowns();
+            return View(semester);
         }
 
         [HttpGet]
@@ -682,14 +688,14 @@ namespace StudentManagementSystem.Controllers
             try
             {
                 var course = await _context.Courses
-                    .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
+                    .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId); // Direct comparison
 
                 if (course == null)
                 {
                     return Json(new { success = false, message = "Course not found in this semester." });
                 }
 
-                // Remove the semester association
+                // Remove the semester association - set to 0 instead of null
                 course.SemesterId = 0;
 
                 await _context.SaveChangesAsync();
@@ -703,7 +709,7 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        
+
         // GET: Semesters/ManageCourse/5?semesterId=4
         public async Task<IActionResult> ManageCourse(int? id, int semesterId)
         {
@@ -894,14 +900,14 @@ namespace StudentManagementSystem.Controllers
                     return Json(new { success = false, message = "Course not found." });
                 }
 
-                // Check if course is already in this semester
+                // Check if course is already in this semester - direct comparison
                 if (course.SemesterId == semesterId)
                 {
                     return Json(new { success = false, message = "Course is already in this semester." });
                 }
 
                 // Add course to semester
-                course.SemesterId = semesterId;
+                course.SemesterId = semesterId; // Direct assignment
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true, message = "Course added to semester successfully." });
@@ -912,5 +918,293 @@ namespace StudentManagementSystem.Controllers
                 return Json(new { success = false, message = "An error occurred while adding the course." });
             }
         }
+
+        /////////////
+        ///
+
+        // Add to SemestersController.cs
+
+        [HttpPost]
+        public async Task<IActionResult> RemoveCoursesFromSemester([FromBody] RemoveCoursesRequest request)
+        {
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => request.CourseIds.Contains(c.Id) && c.SemesterId == request.SemesterId)
+                    .ToListAsync();
+
+                foreach (var course in courses)
+                {
+                    course.SemesterId = 0; // Set to 0 instead of null
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"{courses.Count} course(s) removed from semester successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing courses from semester {SemesterId}", request.SemesterId);
+                return Json(new { success = false, message = "An error occurred while removing courses." });
+            }
+        }
+
+
+        // In SemestersController.cs - Fix the GetAvailableCourses method
+        [HttpGet]
+        public async Task<IActionResult> GetAvailableCourses(int semesterId)
+        {
+            try
+            {
+                var courses = await _context.Courses
+                    .Include(c => c.CourseSemester)
+                    .Where(c => c.IsActive && (c.SemesterId == 0 || c.SemesterId == semesterId))
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        courseCode = c.CourseCode,
+                        courseName = c.CourseName,
+                        credits = c.Credits,
+                        department = c.Department ?? "No Department",
+                        currentSemester = c.SemesterId == semesterId ? "Current" :
+                                        (c.CourseSemester != null ? c.CourseSemester.Name : "Not assigned"),
+                        isActive = c.IsActive
+                    })
+                    .ToListAsync();
+
+                return Json(courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting available courses for semester {SemesterId}", semesterId);
+                return Json(new List<object>());
+            }
+        }
+
+
+        // ADD THIS HELPER METHOD TO THE SEMESTERSCONTROLLER CLASS
+        private string GetCurrentSemesterStatus(Course course, int targetSemesterId)
+        {
+            if (course.SemesterId == targetSemesterId)
+                return "Current";
+
+            if (course.SemesterId > 0)
+                return course.CourseSemester?.Name ?? $"Semester {course.SemesterId}";
+
+            return "Not assigned";
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddCoursesToSemester([FromBody] AddCoursesRequest request)
+        {
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => request.CourseIds.Contains(c.Id))
+                    .ToListAsync();
+
+                foreach (var course in courses)
+                {
+                    course.SemesterId = request.SemesterId;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"{courses.Count} course(s) added to semester successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding courses to semester {SemesterId}", request.SemesterId);
+                return Json(new { success = false, message = "An error occurred while adding courses." });
+            }
+        }
+
+
+        // In SemestersController.cs - Fix the BulkEnrollStudents method
+        [HttpPost]
+        public async Task<IActionResult> BulkEnrollStudents([FromBody] BulkEnrollRequest request)
+        {
+            try
+            {
+                var enrollmentService = new EnrollmentService(_context);
+                var result = await enrollmentService.BulkEnrollInCoursesAsync(
+                    request.SemesterId,
+                    request.CourseIds,
+                    request.StudentIds
+                );
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Bulk enrollment completed. {result.SuccessfullyEnrolled} students enrolled.",
+                    details = result
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in bulk enrollment for semester {SemesterId}", request.SemesterId);
+                return Json(new { success = false, message = "An error occurred during bulk enrollment." });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RemoveAllCoursesFromSemester([FromBody] int semesterId)
+        {
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => c.SemesterId == semesterId)
+                    .ToListAsync();
+
+                foreach (var course in courses)
+                {
+                    course.SemesterId = 0;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"All {courses.Count} courses removed from semester successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing all courses from semester {SemesterId}", semesterId);
+                return Json(new { success = false, message = "An error occurred while removing all courses." });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EnrollStudentInCourse(int semesterId, int courseId, int studentId)
+        {
+            try
+            {
+                var enrollmentService = new EnrollmentService(_context);
+                var result = await enrollmentService.QuickEnrollInCourseAsync(studentId, courseId, semesterId);
+
+                if (result.Success)
+                {
+                    return Json(new { success = true, message = result.Message });
+                }
+                else
+                {
+                    return Json(new { success = false, message = result.Message });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error enrolling student {StudentId} in course {CourseId}", studentId, courseId);
+                return Json(new { success = false, message = "An error occurred during enrollment." });
+            }
+        }
+
+        // In SemestersController.cs - Add this method
+        [HttpGet]
+        public async Task<IActionResult> GetStudentEnrollmentOptions(int semesterId)
+        {
+            try
+            {
+                var semester = await _context.Semesters.FindAsync(semesterId);
+                IQueryable<Student> query = _context.Students.Where(s => s.IsActive);
+
+                if (semester != null && semester.DepartmentId.HasValue)
+                {
+                    query = query.Where(s => s.DepartmentId == semester.DepartmentId.Value);
+                }
+
+                var students = await query
+                    .Select(s => new
+                    {
+                        id = s.Id,
+                        name = s.Name,
+                        code = s.StudentId,
+                        gpa = s.GPA.ToString("0.00"),
+                        department = s.Department
+                    })
+                    .ToListAsync();
+
+                return Json(students);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting student enrollment options for semester {SemesterId}", semesterId);
+                return Json(new List<object>());
+            }
+        }
+
+
+        //private async Task<List<Student>> GetStudentsForEnrollment(int semesterId, string selectionCriteria)
+        //{
+        //    var semester = await _context.Semesters.FindAsync(semesterId);
+
+        //    IQueryable<Student> query = _context.Students.Where(s => s.IsActive);
+
+        //    // FIX: Add null check for semester.DepartmentId
+        //    if (semester?.DepartmentId.HasValue == true)
+        //    {
+        //        query = query.Where(s => s.DepartmentId == semester.DepartmentId.Value);
+        //    }
+
+        //    if (selectionCriteria == "eligible")
+        //    {
+        //        // Additional filtering for eligible students only
+        //        // This would check GPA, passed hours, etc.
+        //        query = query.Where(s => s.GPA >= 2.0m); // Example: Minimum GPA requirement
+        //    }
+
+        //    return await query.ToListAsync();
+        //}
+
+        private async Task<List<Student>> GetStudentsForEnrollment(int semesterId, string selectionCriteria)
+        {
+            var semester = await _context.Semesters.FindAsync(semesterId);
+
+            IQueryable<Student> query = _context.Students.Where(s => s.IsActive);
+
+            // FIX: Proper null checking
+            if (semester != null && semester.DepartmentId.HasValue)
+            {
+                query = query.Where(s => s.DepartmentId == semester.DepartmentId.Value);
+            }
+
+            if (selectionCriteria == "eligible")
+            {
+                // Additional filtering for eligible students only
+                query = query.Where(s => s.GPA >= 2.0m); // Example: Minimum GPA requirement
+            }
+
+            return await query.ToListAsync();
+        }
+
+       
     }
+    
+}
+public class RemoveCoursesRequest
+{
+    public int SemesterId { get; set; }
+    public List<int> CourseIds { get; set; } = new List<int>();
+}
+
+public class AddCoursesRequest
+{
+    public int SemesterId { get; set; }
+    public List<int> CourseIds { get; set; } = new List<int>();
+}
+
+public class BulkEnrollRequest
+{
+    public int SemesterId { get; set; }
+    public List<int> CourseIds { get; set; } = new List<int>();
+    public List<int> StudentIds { get; set; } = new List<int>();
 }

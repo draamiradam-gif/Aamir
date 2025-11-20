@@ -1,0 +1,96 @@
+﻿@model List<StudentManagementSystem.Models.Course>
+@{
+    ViewData["Title"] = "Confirm Bulk Delete";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-exclamation-triangle text-warning me-2"></i>Confirm Bulk Delete
+        </h2>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back to List
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trash me-2"></i>Delete @Model.Count Courses
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.CoursesWithEnrollments is List<Course> coursesWithEnrollments && coursesWithEnrollments.Any())
+                    {
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-exclamation-circle me-2"></i>Cannot Delete Courses with Active Enrollments</h6>
+                            <p class="mb-2">The following courses have active enrollments and cannot be deleted:</p>
+                            <ul>
+                                @foreach (var course in coursesWithEnrollments)
+                                {
+                                    <li><strong>@course.CourseCode</strong> - @course.CourseName</li>
+                                }
+                            </ul>
+                            <p class="mb-0">Please remove all enrollments before deleting these courses.</p>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <p class="mb-0">You can still delete the remaining @(Model.Count - coursesWithEnrollments.Count) courses that don't have enrollments.</p>
+                        </div>
+                    }
+
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-radiation me-2"></i>Warning</h6>
+                        <p class="mb-2">You are about to delete <strong>@Model.Count courses</strong>. This action cannot be undone!</p>
+                        <p class="mb-0">All course data, including prerequisites, will be permanently deleted.</p>
+                    </div>
+
+                    <h6>Courses to be deleted:</h6>
+                    <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Department</th>
+                                    <th>Credits</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var course in Model)
+                                {
+                                    <tr>
+                                        <td>@course.CourseCode</td>
+                                        <td>@course.CourseName</td>
+                                        <td>@course.Department</td>
+                                        <td>@course.Credits</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <form asp-action="BulkDeleteConfirmed" method="post" class="mt-4">
+                        @Html.AntiForgeryToken()
+
+                        @foreach (var courseId in ViewBag.SelectedCourseIds)
+                        {
+                            <input type="hidden" name="selectedCourses" value="@courseId" />
+                        }
+
+                        <div class="d-flex justify-content-between">
+                            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-1"></i>Confirm Delete @Model.Count Courses
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

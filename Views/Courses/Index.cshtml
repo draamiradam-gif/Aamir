@@ -18,9 +18,41 @@
     }
 
     int serialNumber = 1;
+
+    // Pre-calculate values to avoid lambda expressions in HTML
+    var totalCourses = Model.Count;
+    
+    // Calculate active courses without lambda
+    int activeCoursesCount = 0;
+    foreach (var course in Model)
+    {
+        if (course.IsActive) activeCoursesCount++;
+    }
+
+    // Get departments without lambda
+    var departmentSet = new HashSet<string>();
+    foreach (var course in Model)
+    {
+        if (!string.IsNullOrEmpty(course.Department))
+            departmentSet.Add(course.Department);
+    }
+    var departments = new List<string>(departmentSet);
+    departments.Sort();
+
+    // Get semesters without lambda
+    var semesterSet = new HashSet<int>();
+    foreach (var course in Model)
+    {
+        semesterSet.Add(course.Semester);
+    }
+    var semesters = new List<int>(semesterSet);
+    semesters.Sort();
 }
 
 <div class="container-fluid">
+    <!-- Toast Container for notifications -->
+    <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
             <i class="fas fa-book me-2"></i>Course Management
@@ -75,7 +107,7 @@
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
                             <div class="text-muted small">Total Courses</div>
-                            <div class="h4 mb-0 text-primary">@Model.Count</div>
+                            <div class="h4 mb-0 text-primary">@totalCourses</div>
                         </div>
                         <div class="flex-shrink-0">
                             <i class="fas fa-book fa-2x text-primary"></i>
@@ -90,7 +122,7 @@
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
                             <div class="text-muted small">Active Courses</div>
-                            <div class="h4 mb-0 text-success">@Model.Count(c => c.IsActive)</div>
+                            <div class="h4 mb-0 text-success">@activeCoursesCount</div>
                         </div>
                         <div class="flex-shrink-0">
                             <i class="fas fa-check-circle fa-2x text-success"></i>
@@ -169,154 +201,136 @@
     </div>
 
     <!-- Search and Filters Card -->
-    <!-- Search and Filters Card -->
-<div class="card mb-4">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">
-            <i class="fas fa-filter"></i> Filters & Search
-        </h5>
-    </div>
-    <div class="card-body">
-        <form method="get" asp-action="Index" class="row g-3" id="filterForm">
-            <!-- Search Input -->
-            <div class="col-md-4">
-                <label for="searchString" class="form-label">Search Courses</label>
-                <div class="input-group">
-                    <input type="text" 
-                           name="searchString" 
-                           class="form-control" 
-                           placeholder="Search by code, name, description..."
-                           value="@currentFilter" />
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i>
-                    </button>
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-filter"></i> Filters & Search
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-3" id="filterForm">
+                <!-- Search Input -->
+                <div class="col-md-4">
+                    <label for="searchString" class="form-label">Search Courses</label>
+                    <div class="input-group">
+                        <input type="text" 
+                               name="searchString" 
+                               class="form-control" 
+                               placeholder="Search by code, name, description..."
+                               value="@currentFilter" />
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Department Filter -->
-            <div class="col-md-3">
-                <label for="department" class="form-label">Department</label>
-                <select name="department" class="form-select" id="departmentSelect">
-                    <option value="">All Departments</option>
-                    @foreach (var dept in Model.Select(c => c.Department).Distinct().OrderBy(d => d))
-                    {
-                        <option value="@dept" selected="@(currentDepartment == dept)">@dept</option>
-                    }
-                </select>
-            </div>
-            
-            <!-- Semester Filter -->
-            <div class="col-md-3">
-                <label for="semester" class="form-label">Semester</label>
-                <select name="semester" class="form-select" id="semesterSelect">
-                    <option value="">All Semesters</option>
-                    @foreach (var sem in Model.Select(c => c.Semester).Distinct().OrderBy(s => s))
-                    {
-                        <option value="@sem" selected="@(currentSemester?.ToString() == sem.ToString())">Semester @sem</option>
-                    }
-                </select>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="col-md-2">
-                <label class="form-label">&nbsp;</label>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary flex-fill">
-                        <i class="fas fa-filter"></i> Apply
-                    </button>
-                    @if (!string.IsNullOrEmpty(currentFilter) || !string.IsNullOrEmpty(currentDepartment) || currentSemester.HasValue)
-                    {
-                        <a href="@Url.Action("Index")" class="btn btn-outline-danger">
-                            <i class="fas fa-times"></i>
-                        </a>
-                    }
+                
+                <!-- Department Filter -->
+                <div class="col-md-3">
+                    <label for="department" class="form-label">Department</label>
+                    <select name="department" class="form-select" id="departmentSelect">
+                        <option value="">All Departments</option>
+                        @foreach (var dept in departments)
+                        {
+                            var isSelected = currentDepartment == dept;
+                            <option value="@dept" selected="@isSelected">@dept</option>
+                        }
+                    </select>
                 </div>
-            </div>
-            
-            <!-- Hidden fields to preserve sorting -->
-            <input type="hidden" name="sortBy" value="@currentSort" />
-            <input type="hidden" name="sortOrder" value="@currentOrder" />
-        </form>
-        
-        <!-- Active Filters Display -->
-        @if (!string.IsNullOrEmpty(currentFilter) || !string.IsNullOrEmpty(currentDepartment) || currentSemester.HasValue)
-        {
-            <div class="mt-3 p-3 bg-light rounded">
-                <small class="text-muted fw-bold">Active Filters:</small>
-                <div class="d-flex flex-wrap gap-2 mt-2">
-                    @if (!string.IsNullOrEmpty(currentFilter))
-                    {
-                        <span class="badge bg-primary">
-                            <i class="fas fa-search me-1"></i> Search: "@currentFilter"
-                            <a href="@Url.Action("Index", new { 
-                                department = currentDepartment, 
-                                semester = currentSemester,
-                                sortBy = currentSort,
-                                sortOrder = currentOrder
-                            })" class="text-white ms-2">
+                
+                <!-- Semester Filter -->
+                <div class="col-md-3">
+                    <label for="semester" class="form-label">Semester</label>
+                    <select name="semester" class="form-select" id="semesterSelect">
+                        <option value="">All Semesters</option>
+                        @foreach (var sem in semesters)
+                        {
+                            var isSelected = currentSemester?.ToString() == sem.ToString();
+                            <option value="@sem" selected="@isSelected">Semester @sem</option>
+                        }
+                    </select>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            <i class="fas fa-filter"></i> Apply
+                        </button>
+                        @if (!string.IsNullOrEmpty(currentFilter) || !string.IsNullOrEmpty(currentDepartment) || currentSemester.HasValue)
+                        {
+                            <a href="@Url.Action("Index")" class="btn btn-outline-danger">
                                 <i class="fas fa-times"></i>
                             </a>
-                        </span>
-                    }
-                    @if (!string.IsNullOrEmpty(currentDepartment))
-                    {
-                        <span class="badge bg-info">
-                            <i class="fas fa-building me-1"></i> Department: @currentDepartment
-                            <a href="@Url.Action("Index", new { 
-                                searchString = currentFilter, 
-                                semester = currentSemester,
-                                sortBy = currentSort,
-                                sortOrder = currentOrder
-                            })" class="text-white ms-2">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        </span>
-                    }
-                    @if (currentSemester.HasValue)
-                    {
-                        <span class="badge bg-warning text-dark">
-                            <i class="fas fa-calendar me-1"></i> Semester: @currentSemester
-                            <a href="@Url.Action("Index", new { 
-                                searchString = currentFilter, 
-                                department = currentDepartment,
-                                sortBy = currentSort,
-                                sortOrder = currentOrder
-                            })" class="text-dark ms-2">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        </span>
-                    }
+                        }
+                    </div>
                 </div>
-            </div>
-        }
-        
-        <!-- DEBUG: Remove this after testing -->
-        <div class="mt-3 alert alert-info">
-            <h6 class="mb-2">Debug Info (Current Values):</h6>
-            <div class="row small">
-                <div class="col-md-3">
-                    <strong>searchString:</strong> @(string.IsNullOrEmpty(currentFilter) ? "null" : $"\"{currentFilter}\"")
+                
+                <!-- Hidden fields to preserve sorting -->
+                <input type="hidden" name="sortBy" value="@currentSort" />
+                <input type="hidden" name="sortOrder" value="@currentOrder" />
+            </form>
+            
+            <!-- Active Filters Display -->
+            @if (!string.IsNullOrEmpty(currentFilter) || !string.IsNullOrEmpty(currentDepartment) || currentSemester.HasValue)
+            {
+                <div class="mt-3 p-3 bg-light rounded">
+                    <small class="text-muted fw-bold">Active Filters:</small>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        @if (!string.IsNullOrEmpty(currentFilter))
+                        {
+                            <span class="badge bg-primary">
+                                <i class="fas fa-search me-1"></i> Search: "@currentFilter"
+                                <a href="@Url.Action("Index", new { 
+                                    department = currentDepartment, 
+                                    semester = currentSemester,
+                                    sortBy = currentSort,
+                                    sortOrder = currentOrder
+                                })" class="text-white ms-2">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </span>
+                        }
+                        @if (!string.IsNullOrEmpty(currentDepartment))
+                        {
+                            <span class="badge bg-info">
+                                <i class="fas fa-building me-1"></i> Department: @currentDepartment
+                                <a href="@Url.Action("Index", new { 
+                                    searchString = currentFilter, 
+                                    semester = currentSemester,
+                                    sortBy = currentSort,
+                                    sortOrder = currentOrder
+                                })" class="text-white ms-2">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </span>
+                        }
+                        @if (currentSemester.HasValue)
+                        {
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-calendar me-1"></i> Semester: @currentSemester
+                                <a href="@Url.Action("Index", new { 
+                                    searchString = currentFilter, 
+                                    department = currentDepartment,
+                                    sortBy = currentSort,
+                                    sortOrder = currentOrder
+                                })" class="text-dark ms-2">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </span>
+                        }
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <strong>department:</strong> @(string.IsNullOrEmpty(currentDepartment) ? "null" : $"\"{currentDepartment}\"")
-                </div>
-                <div class="col-md-3">
-                    <strong>semester:</strong> @(currentSemester?.ToString() ?? "null")
-                </div>
-                <div class="col-md-3">
-                    <strong>Results:</strong> @Model.Count courses
-                </div>
-            </div>
+            }
         </div>
     </div>
-</div>
 
     <!-- Courses Table Container -->
     <div class="card">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
                 <i class="fas fa-table"></i> Courses List
-                <span class="badge bg-primary ms-2">@Model.Count Total</span>
+                <span class="badge bg-primary ms-2">@totalCourses Total</span>
             </h5>
             <div class="btn-group">
                 <form id="exportForm" asp-action="ExportSelected" method="post" class="d-inline">
@@ -521,12 +535,20 @@
                             {
                                 <div class="prerequisites-list">
                                     @{
-                                        var prereqCodes = course.PrerequisitesString.Split(',')
-                                            .Select(p => p.Trim())
-                                            .Where(p => !string.IsNullOrEmpty(p))
-                                            .Take(3);
+                                        // Fix for lambda expressions in prerequisites
+                                        var prereqArray = course.PrerequisitesString.Split(',');
+                                        var validPrereqCodes = new List<string>();
+                                        foreach (var prereq in prereqArray)
+                                        {
+                                            var trimmed = prereq.Trim();
+                                            if (!string.IsNullOrEmpty(trimmed))
+                                            {
+                                                validPrereqCodes.Add(trimmed);
+                                            }
+                                        }
+                                        var displayPrereqCodes = validPrereqCodes.Take(3).ToList();
                                     }
-                                    @foreach (var prereqCode in prereqCodes)
+                                    @foreach (var prereqCode in displayPrereqCodes)
                                     {
                                         <span class="badge bg-secondary me-1 mb-1" 
                                               data-bs-toggle="tooltip" 
@@ -534,9 +556,9 @@
                                             @prereqCode
                                         </span>
                                     }
-                                    @if (course.PrerequisitesString.Split(',').Length > 3)
+                                    @if (validPrereqCodes.Count > 3)
                                     {
-                                        <span class="badge bg-light text-dark">+@(course.PrerequisitesString.Split(',').Length - 3) more</span>
+                                        <span class="badge bg-light text-dark">+@(validPrereqCodes.Count - 3) more</span>
                                     }
                                 </div>
                             }
@@ -598,9 +620,6 @@
                                 <a href="@Url.Action("Delete", new { id = course.Id })" class="btn btn-danger delete-course" title="Delete Course" data-bs-toggle="tooltip" data-course-id="@course.Id" data-course-name="@course.CourseName">
                                     <i class="fas fa-trash"></i>
                                 </a>
-                                <button id="deleteAllBtn" class="btn btn-danger d-none">
-                                    <i class="fas fa-trash me-2"></i>Delete All Courses
-                                </button>
                             </div>
                         </td>
                     </tr>
@@ -686,7 +705,7 @@
                 <div id="deleteAllContent" style="display: none;">
                     <div class="alert alert-warning">
                         <h6><i class="fas fa-radiation me-2"></i>Danger Zone</h6>
-                        <p class="mb-0">You are about to delete <strong>ALL @Model.Count courses</strong> from the system!</p>
+                        <p class="mb-0">You are about to delete <strong>ALL @totalCourses courses</strong> from the system!</p>
                     </div>
                     <p class="text-danger">
                         <i class="fas fa-exclamation-triangle me-1"></i>
@@ -702,9 +721,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="deleteForm" method="post" style="display: inline;">
-                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn" disabled>Delete</button>
-                </form>
+                <button type="submit" class="btn btn-danger" id="confirmDeleteBtn" disabled>Delete</button>
             </div>
         </div>
     </div>
@@ -730,17 +747,16 @@
 
 @section Styles {
     <style>
+        /* Your existing CSS styles here - they should work fine */
         .table-container {
             position: relative;
             border: 1px solid #dee2e6;
         }
-
         .sticky-top {
             position: sticky;
             top: 0;
             z-index: 10;
         }
-
         .table th {
             position: relative;
             cursor: pointer;
@@ -748,30 +764,23 @@
             background-color: #343a40;
             color: white;
         }
-
-            .table th a {
-                text-decoration: none;
-                color: inherit;
-                display: block;
-            }
-
-            .table th:hover {
-                background-color: #495057;
-            }
-
+        .table th a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .table th:hover {
+            background-color: #495057;
+        }
         .sortable {
             cursor: pointer;
             user-select: none;
         }
-
-        /* ✅ FIXED: Change from auto to fixed layout */
         #coursesTable {
             table-layout: fixed;
             width: 100%;
             margin-bottom: 0;
         }
-
-        /* ✅ COMPLETE COLUMN WIDTH DEFINITIONS */
         .column-checkbox { width: 50px; min-width: 50px; max-width: 50px; }
         .column-serial { width: 70px; min-width: 70px; max-width: 70px; }
         .column-code { width: 100px; min-width: 100px; max-width: 100px; }
@@ -784,8 +793,6 @@
         .column-enrollment { width: 120px; min-width: 120px; max-width: 120px; }
         .column-status { width: 100px; min-width: 100px; max-width: 100px; }
         .column-actions { width: 180px; min-width: 180px; max-width: 180px; }
-
-        /* ✅ FIXED: Ensure proper text handling for ALL columns */
         #coursesTable td {
             word-wrap: break-word;
             vertical-align: middle;
@@ -793,113 +800,80 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-
-        /* ✅ ALLOW DESCRIPTION TO WRAP PROPERLY */
         .column-description {
             white-space: normal !important;
             line-height: 1.3;
             max-height: 60px;
             overflow: hidden;
         }
-
-        /* Hover effects */
         #coursesTable tbody tr:hover {
             background-color: rgba(0, 123, 255, 0.1);
         }
-
-        /* Checkbox styling */
         .form-check-input:checked {
             background-color: #0d6efd;
             border-color: #0d6efd;
         }
-
-        /* Action buttons */
         .btn-group-sm > .btn {
             padding: 0.25rem 0.5rem;
         }
-
-        /* Progress bar styling */
         .progress {
             background-color: #e9ecef;
             border-radius: 0.375rem;
         }
-
         .progress-bar {
             border-radius: 0.375rem;
             transition: width 0.3s ease;
         }
-
-        /* Bulk actions toolbar */
         #bulkActionsToolbar {
             transition: all 0.3s ease;
         }
-
-        /* Enrollment info */
         .enrollment-info {
             min-width: 100px;
         }
-
-        /* Custom scrollbar for table container */
         .table-container::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
-
         .table-container::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 4px;
         }
-
         .table-container::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 4px;
         }
-
-            .table-container::-webkit-scrollbar-thumb:hover {
-                background: #a8a8a8;
-            }
-
-        /* Column hiding */
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
         .column-description, .column-department {
             transition: all 0.3s ease;
         }
-
-        /* Responsive adjustments */
         @@media (max-width: 768px) {
             .table-container {
                 max-height: 50vh;
             }
-
             .btn-group-sm > .btn {
                 padding: 0.2rem 0.4rem;
             }
-
             #coursesTable {
                 font-size: 0.875rem;
             }
-
-            /* ✅ MOBILE: Adjust column widths for smaller screens */
             .column-code { width: 80px; min-width: 80px; }
             .column-name { width: 150px; min-width: 150px; }
             .column-description { width: 120px; min-width: 120px; }
             .column-prerequisites { width: 100px; min-width: 100px; }
         }
-
         .course-description {
             max-width: 300px;
             display: inline-block;
             vertical-align: middle;
         }
-    
-        /* Ensure text wraps properly */
         .modal-body {
             word-wrap: break-word;
             white-space: pre-wrap;
             max-height: 60vh;
             overflow-y: auto;
         }
-    
-        /* Textarea styling */
         textarea.form-control {
             resize: vertical;
             min-height: 120px;
@@ -908,449 +882,353 @@
 }
 
 @section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Initialize tooltips
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
+<script>
+// Set server-side values for JavaScript
+const serverData = {
+    totalCourses: @totalCourses
+};
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ========================
+    // TOOLTIP INITIALIZATION
+    // ========================
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+
+    // ========================
+    // ELEMENT REFERENCES
+    // ========================
+    const selectAll = document.getElementById('selectAll');
+    const courseCheckboxes = document.querySelectorAll('.course-checkbox');
+    const selectedCountBadge = document.getElementById('selectedCountBadge');
+    const bulkSelectedCount = document.getElementById('bulkSelectedCount');
+    const bulkActionsToolbar = document.getElementById('bulkActionsToolbar');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    const cancelBulkBtn = document.getElementById('cancelBulkBtn');
+    const exportSelectedBtn = document.getElementById('exportSelectedBtn');
+    const quickEnrollBtn = document.getElementById('quickEnrollBtn');
+
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const deleteCourseName = document.getElementById('deleteCourseName');
+    const deleteCount = document.getElementById('deleteCount');
+    const deleteCourseList = document.getElementById('deleteCourseList');
+    const confirmDeleteAll = document.getElementById('confirmDeleteAll');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+    const applyColumnsBtn = document.getElementById('applyColumns');
+    const columnToggles = document.querySelectorAll('.column-toggle');
+    const autoSaveColumns = document.getElementById('autoSaveColumns');
+
+    let currentDeleteAction = '';
+    let currentCourseId = null;
+    let selectedCourseIds = [];
+
+    // ========================
+    // COLUMN PREFERENCES
+    // ========================
+    function loadColumnPreferences() {
+        const saved = localStorage.getItem('courseTableColumns');
+        if (saved) {
+            const cols = JSON.parse(saved);
+            columnToggles.forEach(t => {
+                const col = t.dataset.column;
+                t.checked = cols[col] !== false;
+                toggleColumn(col, t.checked);
             });
+            autoSaveColumns.checked = true;
+        }
+    }
 
-            // Selection functionality
-            const selectAll = document.getElementById('selectAll');
-            const courseCheckboxes = document.querySelectorAll('.course-checkbox');
-            const selectedCountBadge = document.getElementById('selectedCountBadge');
-            const bulkSelectedCount = document.getElementById('bulkSelectedCount');
-            const bulkActionsToolbar = document.getElementById('bulkActionsToolbar');
-            const selectAllBtn = document.getElementById('selectAllBtn');
-            const deselectAllBtn = document.getElementById('deselectAllBtn');
-            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-            const deleteAllBtn = document.getElementById('deleteAllBtn');
-            const cancelBulkBtn = document.getElementById('cancelBulkBtn');
-            const exportSelectedBtn = document.getElementById('exportSelectedBtn');
-            const quickEnrollBtn = document.getElementById('quickEnrollBtn');
-            const columnToggleBtn = document.getElementById('columnToggleBtn');
-            const applyColumnsBtn = document.getElementById('applyColumns');
-            const columnToggles = document.querySelectorAll('.column-toggle');
-            const autoSaveColumns = document.getElementById('autoSaveColumns');
+    function saveColumnPreferences() {
+        if (!autoSaveColumns.checked) return;
 
-            // Modal elements
-            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            const deleteCourseName = document.getElementById('deleteCourseName');
-            const deleteCount = document.getElementById('deleteCount');
-            const deleteCourseList = document.getElementById('deleteCourseList');
-            const confirmDeleteAll = document.getElementById('confirmDeleteAll');
-            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            const deleteForm = document.getElementById('deleteForm');
-            const deleteSingleContent = document.getElementById('deleteSingleContent');
-            const deleteMultipleContent = document.getElementById('deleteMultipleContent');
-            const deleteAllContent = document.getElementById('deleteAllContent');
+        const cols = {};
+        columnToggles.forEach(t => {
+            cols[t.dataset.column] = t.checked;
+        });
+        localStorage.setItem('courseTableColumns', JSON.stringify(cols));
+    }
 
-            let currentDeleteAction = '';
-            let currentCourseId = null;
+    function toggleColumn(column, show) {
+        document.querySelectorAll(`th.column-${column}`).forEach(h => h.style.display = show ? '' : 'none');
+        document.querySelectorAll(`td.column-${column}`).forEach(c => c.style.display = show ? '' : 'none');
+    }
 
-            // Load column preferences from localStorage
-            function loadColumnPreferences() {
-                const savedColumns = localStorage.getItem('courseTableColumns');
-                if (savedColumns) {
-                    const columns = JSON.parse(savedColumns);
-                    columnToggles.forEach(toggle => {
-                        const column = toggle.dataset.column;
-                        toggle.checked = columns[column] !== false;
-                        toggleColumn(column, toggle.checked);
-                    });
-                    autoSaveColumns.checked = true;
-                }
-            }
+    // ========================
+    // SELECTION HANDLING
+    // ========================
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.course-checkbox:checked').length;
+        selectedCountBadge.textContent = selected;
+        bulkSelectedCount.textContent = selected;
 
-            // Save column preferences to localStorage
-            function saveColumnPreferences() {
-                if (autoSaveColumns.checked) {
-                    const columns = {};
-                    columnToggles.forEach(toggle => {
-                        columns[toggle.dataset.column] = toggle.checked;
-                    });
-                    localStorage.setItem('courseTableColumns', JSON.stringify(columns));
-                }
-            }
+        bulkActionsToolbar.style.display = selected > 0 ? 'block' : 'none';
+        quickEnrollBtn.style.display = selected > 0 ? 'inline-block' : 'none';
 
-            // Toggle column visibility
-            function toggleColumn(column, show) {
-                const headerCells = document.querySelectorAll(`th.column-${column}`);
-                const dataCells = document.querySelectorAll(`td.column-${column}`);
+        exportSelectedBtn.disabled = selected === 0;
+        deleteSelectedBtn.disabled = selected === 0;
 
-                headerCells.forEach(cell => {
-                    cell.style.display = show ? '' : 'none';
-                });
-                dataCells.forEach(cell => {
-                    cell.style.display = show ? '' : 'none';
-                });
-            }
+        // Update selected course IDs
+        selectedCourseIds = getSelectedCourseIds();
+    }
 
-            function updateSelectedCount() {
-                const selected = document.querySelectorAll('.course-checkbox:checked').length;
-                selectedCountBadge.textContent = selected;
-                bulkSelectedCount.textContent = selected;
+    function selectAllCourses(state) {
+        courseCheckboxes.forEach(c => c.checked = state);
+        selectAll.checked = state;
+        updateSelectedCount();
+    }
 
-                // Show/hide bulk actions toolbar
-                if (selected > 0) {
-                    bulkActionsToolbar.style.display = 'block';
-                    quickEnrollBtn.style.display = 'inline-block';
-                } else {
-                    bulkActionsToolbar.style.display = 'none';
-                    quickEnrollBtn.style.display = 'none';
-                }
-
-                // Enable/disable export button
-                exportSelectedBtn.disabled = selected === 0;
-            }
-
-            function selectAllCourses(select) {
-                courseCheckboxes.forEach(checkbox => {
-                    checkbox.checked = select;
-                });
-                selectAll.checked = select;
-                updateSelectedCount();
-            }
-
-            function getSelectedCourseIds() {
-                const selectedIds = [];
-                courseCheckboxes.forEach(checkbox => {
-                    if (checkbox.checked) {
-                        selectedIds.push(checkbox.value);
-                    }
-                });
-                return selectedIds;
-            }
-
-            function getSelectedCourses() {
-                const selected = [];
-                courseCheckboxes.forEach(checkbox => {
-                    if (checkbox.checked) {
-                        selected.push({
-                            id: checkbox.value,
-                            name: checkbox.dataset.courseName
-                        });
-                    }
-                });
-                return selected;
-            }
-
-            function showDeleteConfirmation(action, courseId = null, courseName = null) {
-                currentDeleteAction = action;
-                currentCourseId = courseId;
-
-                // Reset modal state
-                deleteSingleContent.style.display = 'none';
-                deleteMultipleContent.style.display = 'none';
-                deleteAllContent.style.display = 'none';
-                confirmDeleteAll.checked = false;
-                confirmDeleteBtn.disabled = true;
-
-                if (action === 'single') {
-                    deleteSingleContent.style.display = 'block';
-                    deleteCourseName.textContent = courseName;
-                    confirmDeleteBtn.disabled = false;
-                }
-                else if (action === 'multiple') {
-                    const selected = getSelectedCourses();
-                    deleteMultipleContent.style.display = 'block';
-                    deleteCount.textContent = selected.length;
-
-                    // Show course names
-                    deleteCourseList.innerHTML = '';
-                    selected.forEach(course => {
-                        const div = document.createElement('div');
-                        div.className = 'border-bottom pb-1 mb-1';
-                        div.textContent = course.name;
-                        deleteCourseList.appendChild(div);
-                    });
-                    confirmDeleteBtn.disabled = false;
-                }
-                else if (action === 'all') {
-                    deleteAllContent.style.display = 'block';
-                    confirmDeleteBtn.disabled = true;
-                }
-
-                deleteModal.show();
-            }
-
-            // Event listeners
-            selectAll.addEventListener('change', function () {
-                selectAllCourses(this.checked);
-            });
-
-            courseCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function () {
-                    // Update select all checkbox state
-                    const allChecked = document.querySelectorAll('.course-checkbox:checked').length === courseCheckboxes.length;
-                    selectAll.checked = allChecked;
-                    updateSelectedCount();
-                });
-            });
-
-            selectAllBtn.addEventListener('click', function () {
-                selectAllCourses(true);
-            });
-
-            deselectAllBtn.addEventListener('click', function () {
-                selectAllCourses(false);
-            });
-
-            deleteSelectedBtn.addEventListener('click', function () {
-                const selected = getSelectedCourses();
-                if (selected.length > 0) {
-                    showDeleteConfirmation('multiple');
-                } else {
-                    alert('Please select at least one course to delete.');
-                }
-            });
-
-            // document.getElementById('deleteAllBtn')?.addEventListener('click', function () {
-            //     var itemCount = @Json.Serialize(Model?.Count() ?? 0);
-            //     if (itemCount > 0) {
-            //         showDeleteConfirmation('all');
-            //     } else {
-            //         alert('No courses found to delete.');
-            //     }
-            // });
-
-            cancelBulkBtn.addEventListener('click', function () {
-                selectAllCourses(false);
-            });
-
-            // Individual delete buttons - FIXED: Proper event handling
-            document.querySelectorAll('a.delete-course').forEach(link => {
-                link.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const courseId = this.getAttribute('href').split('/').pop();
-                    const courseName = this.closest('tr').querySelector('td:nth-child(4)').textContent.trim();
-                    showDeleteConfirmation('single', courseId, courseName);
-                });
-            });
-
-            // Quick enroll button
-            quickEnrollBtn.addEventListener('click', function () {
-                const selected = getSelectedCourses();
-                if (selected.length > 0) {
-                    // Implement quick enroll functionality
-                    alert(`Quick enroll for ${selected.length} courses would be implemented here`);
-                }
-            });
-
-            // Delete all confirmation checkbox
-            confirmDeleteAll.addEventListener('change', function () {
-                confirmDeleteBtn.disabled = !this.checked;
-            });
-
-            // Confirm delete button handler - FIXED: Proper form submission
-            confirmDeleteBtn.addEventListener('click', function () {
-                if (currentDeleteAction === 'single') {
-                    // Redirect to single delete action
-                    window.location.href = `@Url.Action("Delete")/${currentCourseId}`;
-                }
-                else if (currentDeleteAction === 'multiple') {
-                    // Submit bulk delete form
-                    const selectedIds = getSelectedCourseIds();
-                    submitBulkDelete(selectedIds);
-                }
-                else if (currentDeleteAction === 'all') {
-                    // Submit delete all form
-                    submitDeleteAll();
-                }
-            });
-
-            // Bulk delete submission
-            function submitBulkDelete(selectedIds) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '@Url.Action("DeleteMultiple")';
-
-                // Add anti-forgery token
-                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                const tokenInput = document.createElement('input');
-                tokenInput.type = 'hidden';
-                tokenInput.name = '__RequestVerificationToken';
-                tokenInput.value = token;
-                form.appendChild(tokenInput);
-
-                // Add selected course IDs
-                selectedIds.forEach(id => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'selectedCourses';
-                    input.value = id;
-                    form.appendChild(input);
-                });
-
-                document.body.appendChild(form);
-                form.submit();
-            }
-
-            // Delete all submission
-            function submitDeleteAll() {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '@Url.Action("DeleteAll")';
-
-                // Add anti-forgery token
-                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                const tokenInput = document.createElement('input');
-                tokenInput.type = 'hidden';
-                tokenInput.name = '__RequestVerificationToken';
-                tokenInput.value = token;
-                form.appendChild(tokenInput);
-
-                document.body.appendChild(form);
-                form.submit();
-            }
-
-            // Export form submission
-            document.getElementById('exportForm').addEventListener('submit', function (e) {
-                const selectedCount = document.querySelectorAll('.course-checkbox:checked').length;
-                if (selectedCount === 0) {
-                    e.preventDefault();
-                    alert('Please select at least one course to export.');
-                    return false;
-                }
-                return confirm(`Export ${selectedCount} selected courses?`);
-            });
-
-            // Column customization
-            applyColumnsBtn.addEventListener('click', function () {
-                columnToggles.forEach(toggle => {
-                    const column = toggle.dataset.column;
-                    toggleColumn(column, toggle.checked);
-                });
-                saveColumnPreferences();
-                bootstrap.Modal.getInstance(document.getElementById('columnModal')).hide();
-            });
-
-            // Initialize column preferences
-            loadColumnPreferences();
-
-            // Auto-resize columns
-            function autoResizeColumns() {
-                const table = document.getElementById('coursesTable');
-                if (!table) return;
-
-                const headers = table.querySelectorAll('thead th');
-                headers.forEach((header, index) => {
-                    if (header.style.display === 'none') return;
-
-                    let maxWidth = 0;
-                    const cells = table.querySelectorAll(`tbody td:nth-child(${index + 1})`);
-
-                    cells.forEach(cell => {
-                        if (cell.style.display === 'none') return;
-                        const width = cell.textContent.length * 8 + 20;
-                        if (width > maxWidth) {
-                            maxWidth = width;
-                        }
-                    });
-
-                    // Set reasonable limits
-                    if (index === 0) maxWidth = Math.min(maxWidth, 50);  // Checkbox
-                    if (index === 1) maxWidth = Math.min(maxWidth, 70);  // Serial
-                    if (index === 5) maxWidth = Math.min(maxWidth, 80);  // Credits
-                    if (index === 7) maxWidth = Math.min(maxWidth, 100); // Semester
-                    if (index === 8) maxWidth = Math.min(maxWidth, 120); // Enrollment
-                    if (index === 9) maxWidth = Math.min(maxWidth, 100); // Status
-                    if (index === 10) maxWidth = Math.min(maxWidth, 180); // Actions
-
-                    header.style.minWidth = maxWidth + 'px';
+    function getSelectedCourses() {
+        const list = [];
+        courseCheckboxes.forEach(cb => {
+            if (cb.checked) {
+                list.push({
+                    id: cb.value,
+                    name: cb.dataset.courseName
                 });
             }
+        });
+        return list;
+    }
 
-            // Initialize
-            autoResizeColumns();
+    function getSelectedCourseIds() {
+        return getSelectedCourses().map(x => x.id);
+    }
+
+    // ========================
+    // DELETE CONFIRMATION
+    // ========================
+    function showDeleteConfirmation(action, courseId = null, courseName = null) {
+        currentDeleteAction = action;
+        currentCourseId = courseId;
+
+        deleteCourseList.innerHTML = "";
+        deleteCount.textContent = "";
+        deleteCourseName.textContent = "";
+
+        document.getElementById('deleteSingleContent').style.display = 'none';
+        document.getElementById('deleteMultipleContent').style.display = 'none';
+        document.getElementById('deleteAllContent').style.display = 'none';
+
+        confirmDeleteAll.checked = false;
+        confirmDeleteBtn.disabled = true;
+
+        if (action === 'single') {
+            document.getElementById('deleteSingleContent').style.display = 'block';
+            deleteCourseName.textContent = courseName;
+            confirmDeleteBtn.disabled = false;
+        } else if (action === 'multiple') {
+            const selected = getSelectedCourses();
+            document.getElementById('deleteMultipleContent').style.display = 'block';
+            deleteCount.textContent = selected.length;
+
+            selected.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'border-bottom pb-1 mb-1';
+                div.textContent = c.name;
+                deleteCourseList.appendChild(div);
+            });
+
+            confirmDeleteBtn.disabled = false;
+        } else if (action === 'all') {
+            document.getElementById('deleteAllContent').style.display = 'block';
+        }
+
+        deleteModal.show();
+    }
+
+    // ========================
+    // EVENT LISTENERS
+    // ========================
+    selectAll.addEventListener('change', function () {
+        selectAllCourses(this.checked);
+    });
+
+    courseCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function () {
+            selectAll.checked =
+                document.querySelectorAll('.course-checkbox:checked').length === courseCheckboxes.length;
             updateSelectedCount();
-
-            // Auto-hide import alert after 10 seconds
-            setTimeout(() => {
-                const alerts = document.querySelectorAll('.alert');
-                alerts.forEach(alert => {
-                    alert.style.transition = 'opacity 0.5s ease';
-                    alert.style.opacity = '0';
-                    setTimeout(() => alert.remove(), 500);
-                });
-            }, 10000);
-
-            // Enhance table sorting visual feedback
-            document.querySelectorAll('.sortable').forEach(header => {
-                header.addEventListener('click', function () {
-                    // Add visual feedback for sorting
-                    this.style.backgroundColor = '#495057';
-                    setTimeout(() => {
-                        this.style.backgroundColor = '';
-                    }, 200);
-                });
-            });
-        });
-    </script>
-
-    <script>
-    // View full description
-    document.addEventListener('DOMContentLoaded', function() {
-        // Tooltip initialization
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-
-        // Full description modal
-        const viewButtons = document.querySelectorAll('.view-full-description');
-        const modal = new bootstrap.Modal(document.getElementById('descriptionModal'));
-        const content = document.getElementById('fullDescriptionContent');
-
-        viewButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const description = this.getAttribute('data-description');
-                content.textContent = description;
-                modal.show();
-            });
         });
     });
 
+    selectAllBtn.onclick = () => selectAllCourses(true);
+    deselectAllBtn.onclick = () => selectAllCourses(false);
+    cancelBulkBtn.onclick = () => selectAllCourses(false);
 
-    // Add this to your existing JavaScript section
-document.addEventListener('DOMContentLoaded', function () {
-    // Auto-submit form when dropdowns change
-    const departmentSelect = document.getElementById('departmentSelect');
-    const semesterSelect = document.getElementById('semesterSelect');
-    
-    if (departmentSelect) {
-        departmentSelect.addEventListener('change', function() {
-            document.getElementById('filterForm').submit();
+    // Delete Selected Courses
+    deleteSelectedBtn.onclick = function () {
+        const selected = getSelectedCourses();
+        if (selected.length === 0) {
+            showToast('Please select at least one course to delete.', 'warning');
+            return;
+        }
+        showDeleteConfirmation('multiple');
+    };
+
+    // Delete All Courses - FIXED: Using serverData
+    deleteAllBtn.onclick = function () {
+        const totalCourses = serverData.totalCourses || 0;
+        if (totalCourses === 0) {
+            showToast('No courses available to delete.', 'warning');
+            return;
+        }
+        showDeleteConfirmation('all');
+    };
+
+    // Confirm Delete All Checkbox
+    confirmDeleteAll.addEventListener('change', function () {
+        confirmDeleteBtn.disabled = !this.checked;
+    });
+
+    // ========================
+    // CONFIRM DELETE HANDLER
+    // ========================
+    confirmDeleteBtn.addEventListener('click', function () {
+        if (currentDeleteAction === 'single') {
+            // Redirect to individual delete confirmation page
+            window.location.href = `@Url.Action("Delete", "Courses")/${currentCourseId}`;
+        }
+        else if (currentDeleteAction === 'multiple') {
+            // Submit bulk delete via form (redirects to confirmation)
+            submitBulkDelete();
+        }
+        else if (currentDeleteAction === 'all') {
+            // Submit delete all via form (redirects to confirmation)
+            submitDeleteAll();
+        }
+    });
+
+    // ========================
+    // SUBMIT BULK DELETE (VIA FORM REDIRECT)
+    // ========================
+    function submitBulkDelete() {
+        const selectedIds = getSelectedCourseIds();
+        if (selectedIds.length === 0) {
+            showToast('No courses selected.', 'warning');
+            return;
+        }
+
+        // Create a form and submit it to redirect to confirmation page (GET request)
+        const form = document.createElement('form');
+        form.method = 'GET';
+        form.action = '@Url.Action("BulkDeleteConfirmation", "Courses")';
+
+        // Add selected course IDs as query parameters
+        selectedIds.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'selectedCourses';
+            input.value = id;
+            form.appendChild(input);
         });
+
+        document.body.appendChild(form);
+        form.submit();
     }
-    
-    if (semesterSelect) {
-        semesterSelect.addEventListener('change', function() {
-            document.getElementById('filterForm').submit();
+
+    // ========================
+    // DELETE ALL (VIA FORM REDIRECT)
+    // ========================
+    function submitDeleteAll() {
+        // Create a form and submit it to redirect to confirmation page (GET request)
+        const form = document.createElement('form');
+        form.method = 'GET';
+        form.action = '@Url.Action("DeleteAllConfirmation", "Courses")';
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // ========================
+    // COLUMN APPLY BUTTON
+    // ========================
+    applyColumnsBtn.addEventListener('click', function () {
+        columnToggles.forEach(t => {
+            toggleColumn(t.dataset.column, t.checked);
         });
-    }
-    
-    // Real-time search with debounce
-    const searchInput = document.querySelector('input[name="searchString"]');
-    if (searchInput) {
-        let searchTimeout;
+        saveColumnPreferences();
+        bootstrap.Modal.getInstance(document.getElementById('columnModal')).hide();
+    });
+
+    // ========================
+    // TOAST NOTIFICATIONS
+    // ========================
+    function showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toastContainer') || createToastContainer();
         
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                // Show loading state
-                const submitBtn = document.querySelector('#filterForm button[type="submit"]');
-                const originalHtml = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                submitBtn.disabled = true;
-                
-                // Submit form after typing stops
-                document.getElementById('filterForm').submit();
-            }, 800);
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Remove toast after it's hidden
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
         });
     }
-});
+
+    function createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    // ========================
+    // INITIALIZATION
+    // ========================
+    loadColumnPreferences();
+    updateSelectedCount();
+
+    // Add individual delete button handlers
+    document.querySelectorAll('.delete-course').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const courseId = this.dataset.courseId;
+            const courseName = this.dataset.courseName;
+            showDeleteConfirmation('single', courseId, courseName);
+        });
+    });
+
+    // Handle export form submission
+    document.getElementById('exportForm').addEventListener('submit', function(e) {
+        const selectedIds = getSelectedCourseIds();
+        if (selectedIds.length === 0) {
+            e.preventDefault();
+            showToast('Please select at least one course to export.', 'warning');
+            return;
+        }
+
+        // Add selected IDs to form
+        selectedIds.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'selectedCourses';
+            input.value = id;
+            this.appendChild(input);
+        });
+    });
+
+}); // <-- This closes the document.addEventListener function
 
 </script>
 }

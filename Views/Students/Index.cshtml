@@ -427,6 +427,49 @@
         </div>
     </div>
 </div>
+<!-- Add this modal after the existing delete modal -->
+<!-- Bulk Enrollment Modal -->
+<div class="modal fade" id="bulkEnrollModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>Bulk Semester Enrollment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="bulkEnrollContent">
+                    <p>Enroll <strong id="selectedStudentsCount">0</strong> selected students in:</p>
+
+                    <div class="mb-3">
+                        <label for="semesterSelect" class="form-label">Select Semester:</label>
+                        <select class="form-select" id="semesterSelect">
+                            <option value="">Loading semesters...</option>
+                        </select>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Students will be automatically enrolled in all active courses for the selected semester.
+                        Prerequisites and capacity constraints will be validated.
+                    </div>
+
+                    <div id="semesterInfo" style="display: none;">
+                        <h6>Semester Information:</h6>
+                        <div id="semesterDetails" class="small text-muted"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmBulkEnroll" disabled>
+                    <i class="fas fa-user-plus me-1"></i>Enroll Students
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Styles {
     <style>
@@ -534,6 +577,171 @@
             const deleteSingleContent = document.getElementById('deleteSingleContent');
             const deleteMultipleContent = document.getElementById('deleteMultipleContent');
             const deleteAllContent = document.getElementById('deleteAllContent');
+
+
+                    // Add to students index JavaScript
+
+        // Bulk Enrollment Functionality
+        const bulkEnrollBtn = document.getElementById('bulkEnrollBtn') || createBulkEnrollButton();
+        const bulkEnrollModal = new bootstrap.Modal(document.getElementById('bulkEnrollModal'));
+        const semesterSelect = document.getElementById('semesterSelect');
+        const confirmBulkEnroll = document.getElementById('confirmBulkEnroll');
+        const selectedStudentsCount = document.getElementById('selectedStudentsCount');
+        const semesterInfo = document.getElementById('semesterInfo');
+        const semesterDetails = document.getElementById('semesterDetails');
+
+        // Create bulk enroll button if it doesn't exist
+        function createBulkEnrollButton() {
+            const button = document.createElement('button');
+            button.className = 'btn btn-success btn-sm me-2';
+            button.innerHTML = '<i class="fas fa-user-plus me-1"></i> Bulk Enroll';
+            button.id = 'bulkEnrollBtn';
+            button.style.display = 'none';
+
+            document.querySelector('.btn-group').prepend(button);
+            return button;
+        }
+
+        // Update bulk enroll button visibility
+        function updateBulkEnrollButton() {
+            const selected = document.querySelectorAll('.student-checkbox:checked').length;
+            bulkEnrollBtn.style.display = selected > 0 ? 'inline-block' : 'none';
+        }
+
+        // Load available semesters
+        async function loadSemesters() {
+            try {
+                const response = await fetch('@Url.Action("GetAvailableSemesters", "Enrollment")');
+                const semesters = await response.json();
+
+                semesterSelect.innerHTML = '<option value="">Select a semester...</option>';
+                semesters.forEach(semester => {
+                    const option = document.createElement('option');
+                    option.value = semester.id;
+                    option.textContent = `${semester.name} - ${semester.academicYear} (${semester.semesterType})`;
+                    option.dataset.semester = JSON.stringify(semester);
+                    semesterSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load semesters:', error);
+                semesterSelect.innerHTML = '<option value="">Error loading semesters</option>';
+            }
+        }
+
+        // Show semester details when selected
+        semesterSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const semester = JSON.parse(selectedOption.dataset.semester);
+                showSemesterDetails(semester);
+                confirmBulkEnroll.disabled = false;
+            } else {
+                semesterInfo.style.display = 'none';
+                confirmBulkEnroll.disabled = true;
+            }
+        });
+
+        function showSemesterDetails(semester) {
+            const startDate = new Date(semester.startDate).toLocaleDateString();
+            const endDate = new Date(semester.endDate).toLocaleDateString();
+            const regEndDate = new Date(semester.registrationEndDate).toLocaleDateString();
+
+            semesterDetails.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Period:</strong> ${startDate} to ${endDate}<br>
+                        <strong>Registration Ends:</strong> ${regEndDate}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Status:</strong>
+                        <span class="badge ${semester.isRegistrationOpen ? 'bg-success' : 'bg-warning'}">
+                            ${semester.isRegistrationOpen ? 'Open' : 'Closed'}
+                        </span><br>
+                        <strong>Active:</strong>
+                        <span class="badge ${semester.isActive ? 'bg-success' : 'bg-secondary'}">
+                            ${semester.isActive ? 'Yes' : 'No'}
+                        </span>
+                    </div>
+                </div>
+            `;
+            semesterInfo.style.display = 'block';
+        }
+
+        // Bulk enroll button click
+        bulkEnrollBtn.addEventListener('click', function() {
+            const selected = getSelectedStudents();
+            if (selected.length === 0) {
+                alert('Please select at least one student.');
+                return;
+            }
+
+            selectedStudentsCount.textContent = selected.length;
+            loadSemesters();
+            bulkEnrollModal.show();
+        });
+
+        // Confirm bulk enrollment
+        confirmBulkEnroll.addEventListener('click', function() {
+            const selectedStudents = getSelectedStudentIds();
+            const semesterId = semesterSelect.value;
+
+            if (!semesterId) {
+                alert('Please select a semester.');
+                return;
+            }
+
+            // Show loading state
+            confirmBulkEnroll.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+            confirmBulkEnroll.disabled = true;
+
+            // Submit bulk enrollment
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '@Url.Action("BulkEnrollSemester", "Enrollment")';
+
+            // Add anti-forgery token
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            // Add semester ID
+            const semesterInput = document.createElement('input');
+            semesterInput.type = 'hidden';
+            semesterInput.name = 'semesterId';
+            semesterInput.value = semesterId;
+            form.appendChild(semesterInput);
+
+            // Add selected students
+            const studentsInput = document.createElement('input');
+            studentsInput.type = 'hidden';
+            studentsInput.name = 'selectedStudents';
+            studentsInput.value = selectedStudents.join(',');
+            form.appendChild(studentsInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+        // Helper function to get selected student IDs
+        function getSelectedStudentIds() {
+            const selectedIds = [];
+            document.querySelectorAll('.student-checkbox:checked').forEach(checkbox => {
+                selectedIds.push(checkbox.value);
+            });
+            return selectedIds;
+        }
+
+        // Update bulk enroll button when selection changes
+        document.addEventListener('change', function() {
+            updateBulkEnrollButton();
+        });
+
+        // Initialize
+        updateBulkEnrollButton();
+
 
             let currentDeleteAction = '';
 

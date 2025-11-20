@@ -60,27 +60,9 @@ namespace StudentManagementSystem.Data
                 entity.Property(s => s.Percentage).HasColumnType("decimal(5,2)");
                 entity.Property(s => s.GPA).HasColumnType("decimal(4,2)");
 
-                // University structure relationships
-                //entity.HasOne(s => s.DepartmentNavigation)
-                //      .WithMany()
-                //      .HasForeignKey(s => s.DepartmentId)
-                //      .OnDelete(DeleteBehavior.Restrict)
-                //      .IsRequired(false);
-
-                //entity.HasOne(s => s.Branch)
-                //      .WithMany()
-                //      .HasForeignKey(s => s.BranchId)
-                //      .OnDelete(DeleteBehavior.Restrict)
-                //      .IsRequired(false);
-
-                //entity.HasOne(s => s.SemesterNavigation)
-                //      .WithMany()
-                //      .HasForeignKey(s => s.SemesterId)
-                //      .OnDelete(DeleteBehavior.Restrict)
-                //      .IsRequired(false);
+                
             });
 
-            // Configure Course entity
             // Configure Course entity
             builder.Entity<Course>(entity =>
             {
@@ -203,16 +185,17 @@ namespace StudentManagementSystem.Data
 
                 entity.Property(cp => cp.MinGrade).HasColumnType("decimal(5,2)");
 
-                // ✅ FIXED: Consistent delete behaviors
+                // CASCADE delete when course is deleted
                 entity.HasOne(cp => cp.Course)
                       .WithMany(c => c.Prerequisites)
                       .HasForeignKey(cp => cp.CourseId)
                       .OnDelete(DeleteBehavior.Cascade);
 
+                // RESTRICT delete of prerequisite courses
                 entity.HasOne(cp => cp.PrerequisiteCourse)
                       .WithMany(c => c.RequiredFor)
                       .HasForeignKey(cp => cp.PrerequisiteCourseId)
-                      .OnDelete(DeleteBehavior.Restrict); // Prevent deleting courses that are prerequisites
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             // University Configuration
