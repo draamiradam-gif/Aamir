@@ -657,7 +657,10 @@ namespace StudentManagementSystem.Controllers
                 stream.Position = 0;
 
                 Console.WriteLine($"Calling AnalyzeExcelImportAsync...");
+
+                // Use await since AnalyzeExcelImportAsync now returns Task<ImportResult>
                 var analysisResult = await _courseService.AnalyzeExcelImportAsync(stream);
+
                 Console.WriteLine($"Analysis Result - Success: {analysisResult.Success}, Message: {analysisResult.Message}");
                 Console.WriteLine($"Valid Courses: {analysisResult.ValidCourses?.Count}, Invalid Courses: {analysisResult.InvalidCourses?.Count}");
 
@@ -922,8 +925,55 @@ namespace StudentManagementSystem.Controllers
         ///
 
         // GET: Courses/ImportReview
+        //[HttpGet]
+        //public IActionResult ImportReview()
+        //{
+        //    try
+        //    {
+        //        var analysisJson = HttpContext.Session.GetString("ImportAnalysis");
+        //        if (string.IsNullOrEmpty(analysisJson))
+        //        {
+        //            TempData["Error"] = "Import session expired. Please upload the file again.";
+        //            return RedirectToAction(nameof(Import));
+        //        }
+
+        //        var analysisResult = System.Text.Json.JsonSerializer.Deserialize<ImportResult>(analysisJson);
+        //        if (analysisResult == null)
+        //        {
+        //            TempData["Error"] = "Invalid import data.";
+        //            return RedirectToAction(nameof(Import));
+        //        }
+
+        //        Console.WriteLine($"ImportReview - Valid: {analysisResult.ValidCourses?.Count}, Invalid: {analysisResult.InvalidCourses?.Count}");
+
+        //        // Add serial numbers
+        //        if (analysisResult.ValidCourses != null)
+        //        {
+        //            int serial = 1;
+        //            foreach (var course in analysisResult.ValidCourses)
+        //            {
+        //                course.SerialNumber = serial++;
+        //            }
+        //        }
+
+        //        var viewModel = new ImportReviewViewModel
+        //        {
+        //            ImportResult = analysisResult,
+        //            ImportSettings = new ImportSettings()
+        //        };
+
+        //        return View(viewModel);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"IMPORT REVIEW ERROR: {ex}");
+        //        TempData["Error"] = "Error loading import preview.";
+        //        return RedirectToAction(nameof(Import));
+        //    }
+        //}
+
         [HttpGet]
-        public IActionResult ImportReview()
+        public async Task<IActionResult> ImportReview()
         {
             try
             {
@@ -935,43 +985,217 @@ namespace StudentManagementSystem.Controllers
                 }
 
                 var analysisResult = System.Text.Json.JsonSerializer.Deserialize<ImportResult>(analysisJson);
-                if (analysisResult == null)
+                if (analysisResult == null || !analysisResult.Success)
                 {
                     TempData["Error"] = "Invalid import data.";
                     return RedirectToAction(nameof(Import));
                 }
 
-                Console.WriteLine($"ImportReview - Valid: {analysisResult.ValidCourses?.Count}, Invalid: {analysisResult.InvalidCourses?.Count}");
+                // Get existing semester IDs for validation
+                var existingSemesterIds = await _context.Semesters
+                    .Select(s => s.Id)
+                    .ToListAsync();
 
-                // Add serial numbers
-                if (analysisResult.ValidCourses != null)
-                {
-                    int serial = 1;
-                    foreach (var course in analysisResult.ValidCourses)
-                    {
-                        course.SerialNumber = serial++;
-                    }
-                }
+                // Get semester IDs from import (with proper nullable handling)
+                var semesterIdsInImport = GetSemesterIdsFromImport(analysisResult);
+
+                // Find missing semester IDs
+                var missingSemesterIds = semesterIdsInImport
+                    .Where(id => !existingSemesterIds.Contains(id))
+                    .ToList();
 
                 var viewModel = new ImportReviewViewModel
                 {
                     ImportResult = analysisResult,
-                    ImportSettings = new ImportSettings()
+                    ImportSettings = new ImportSettings(),
+                    MissingSemesterIds = missingSemesterIds,
+                    ExistingSemesterIds = existingSemesterIds
                 };
 
                 return View(viewModel);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"IMPORT REVIEW ERROR: {ex}");
-                TempData["Error"] = "Error loading import preview.";
+                TempData["Error"] = $"Error loading import review: {ex.Message}";
                 return RedirectToAction(nameof(Import));
             }
         }
 
-        // POST: Courses/ImportExecute
+
+        //// POST: Courses/ImportExecute
+        //[HttpPost]
+        ////[HttpPost("ImportExecute")]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> ImportExecute(ImportSettings settings)
+        //{
+        //    try
+        //    {
+        //        var analysisJson = HttpContext.Session.GetString("ImportAnalysis");
+        //        if (string.IsNullOrEmpty(analysisJson))
+        //        {
+        //            TempData["Error"] = "Import session expired. Please upload the file again.";
+        //            return RedirectToAction(nameof(Import));
+        //        }
+
+        //        var analysisResult = System.Text.Json.JsonSerializer.Deserialize<ImportResult>(analysisJson);
+        //        if (analysisResult == null || !analysisResult.Success)
+        //        {
+        //            TempData["Error"] = "Invalid import data.";
+        //            return RedirectToAction(nameof(Import));
+        //        }
+
+        //        var importResult = await _courseService.ExecuteImportAsync(analysisResult, settings);
+
+        //        // Clean up session data
+        //        HttpContext.Session.Remove("ImportAnalysis");
+        //        HttpContext.Session.Remove("FileName");
+
+        //        // Store import results for display on Index page
+        //        if (importResult.Success)
+        //        {
+        //            TempData["ImportResult"] = importResult.Message;
+        //            TempData["ImportedCount"] = importResult.ImportedCount;
+        //            TempData["ErrorCount"] = importResult.ErrorCount;
+        //        }
+
+        //        TempData[importResult.Success ? "Success" : "Error"] = importResult.Message;
+        //        return RedirectToAction(nameof(Index));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        TempData["Error"] = $"Import execution failed: {ex.Message}";
+        //        return RedirectToAction(nameof(Import));
+        //    }
+        //}
+
+
+
+
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> ImportExecute(ImportSettings settings, ImportOptions options)
+        //{
+        //    try
+        //    {
+        //        var analysisJson = HttpContext.Session.GetString("ImportAnalysis");
+        //        if (string.IsNullOrEmpty(analysisJson))
+        //        {
+        //            TempData["Error"] = "Import session expired. Please upload the file again.";
+        //            return RedirectToAction(nameof(Import));
+        //        }
+
+        //        var analysisResult = System.Text.Json.JsonSerializer.Deserialize<ImportResult>(analysisJson);
+        //        if (analysisResult == null || !analysisResult.Success)
+        //        {
+        //            TempData["Error"] = "Invalid import data.";
+        //            return RedirectToAction(nameof(Import));
+        //        }
+
+        //        // Handle semester creation based on options
+        //        if (options.SemesterCreationMode == "auto")
+        //        {
+        //            await CreateMissingSemesters(analysisResult.ValidCourses);
+        //        }
+        //        else if (options.SemesterCreationMode == "ask" && options.SemestersToCreate.Any())
+        //        {
+        //            await CreateSpecificSemesters(options.SemestersToCreate);
+        //        }
+        //        else if (options.SemesterCreationMode == "ignore")
+        //        {
+        //            // Remove semester assignments for non-existent semesters
+        //            await RemoveInvalidSemesterAssignments(analysisResult.ValidCourses);
+        //        }
+
+        //        var importResult = await _courseService.ExecuteImportAsync(analysisResult, settings);
+
+        //        // Clean up session data
+        //        HttpContext.Session.Remove("ImportAnalysis");
+
+        //        if (importResult.Success)
+        //        {
+        //            TempData["ImportResult"] = importResult.Message;
+        //            TempData["ImportedCount"] = importResult.ImportedCount;
+        //            TempData["ErrorCount"] = importResult.ErrorCount;
+        //        }
+
+        //        TempData[importResult.Success ? "Success" : "Error"] = importResult.Message;
+        //        return RedirectToAction(nameof(Index));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        TempData["Error"] = $"Import execution failed: {ex.Message}";
+        //        return RedirectToAction(nameof(Import));
+        //    }
+        //}
+
         [HttpPost]
-        //[HttpPost("ImportExecute")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ImportExecuteWithOptions(ImportSettings settings, ImportOptions options)
+        {
+            try
+            {
+                var analysisJson = HttpContext.Session.GetString("ImportAnalysis");
+                if (string.IsNullOrEmpty(analysisJson))
+                {
+                    TempData["Error"] = "Import session expired. Please upload the file again.";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                var analysisResult = System.Text.Json.JsonSerializer.Deserialize<ImportResult>(analysisJson);
+                if (analysisResult == null || !analysisResult.Success)
+                {
+                    TempData["Error"] = "Invalid import data.";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                // Handle semester creation based on options
+                if (options.SemesterCreationMode == "auto")
+                {
+                    await CreateMissingSemesters(analysisResult.ValidCourses);
+                }
+                else if (options.SemesterCreationMode == "ask" && options.SemestersToCreate.Any())
+                {
+                    await CreateSpecificSemesters(options.SemestersToCreate);
+                }
+                else if (options.SemesterCreationMode == "ignore")
+                {
+                    await RemoveInvalidSemesterAssignments(analysisResult.ValidCourses);
+                }
+
+                // Use the semester-preserving import logic
+                var importResult = await ExecuteImportWithSemesterPreservation(analysisResult, settings);
+
+                // Clean up session data
+                HttpContext.Session.Remove("ImportAnalysis");
+
+                if (importResult.Success)
+                {
+                    TempData["ImportResult"] = importResult.Message;
+                    TempData["ImportedCount"] = importResult.ImportedCount;
+                    TempData["ErrorCount"] = importResult.ErrorCount;
+                }
+
+                TempData[importResult.Success ? "Success" : "Error"] = importResult.Message;
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException dbEx)
+            {
+                var innerMessage = dbEx.InnerException?.Message ?? "No inner exception";
+                var fullError = $"Database constraint violation: {dbEx.Message}. Inner: {innerMessage}";
+
+                _logger.LogError(dbEx, "Database constraint violation during import");
+                TempData["Error"] = $"Import failed: {fullError}";
+                return RedirectToAction(nameof(Import));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during import execution");
+                TempData["Error"] = $"Import execution failed: {ex.Message}";
+                return RedirectToAction(nameof(Import));
+            }
+        }
+
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ImportExecute(ImportSettings settings)
         {
@@ -991,13 +1215,13 @@ namespace StudentManagementSystem.Controllers
                     return RedirectToAction(nameof(Import));
                 }
 
-                var importResult = await _courseService.ExecuteImportAsync(analysisResult, settings);
+                // Use the semester-preserving import logic (no semester options)
+                var importResult = await ExecuteImportWithSemesterPreservation(analysisResult, settings);
 
                 // Clean up session data
                 HttpContext.Session.Remove("ImportAnalysis");
                 HttpContext.Session.Remove("FileName");
 
-                // Store import results for display on Index page
                 if (importResult.Success)
                 {
                     TempData["ImportResult"] = importResult.Message;
@@ -1014,6 +1238,35 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction(nameof(Import));
             }
         }
+
+        private async Task HandleSemesterCreation(ImportOptions options, List<Course> validCourses)
+        {
+            // Get all existing semester IDs
+            var existingSemesterIds = await _context.Semesters
+                .Select(s => s.Id)
+                .ToListAsync();
+
+            // Find courses with non-existent semester IDs (safe nullable handling)
+            var coursesWithInvalidSemesters = validCourses
+                .Where(c => c.SemesterId.HasValue && c.SemesterId > 0 && !existingSemesterIds.Contains(c.SemesterId.Value)) // ✅ Fixed line 998
+                .ToList();
+
+            if (options.SemesterCreationMode == "auto" && coursesWithInvalidSemesters.Any())
+            {
+                await CreateMissingSemesters(coursesWithInvalidSemesters);
+            }
+            else if (options.SemesterCreationMode == "ask" && options.SemestersToCreate.Any())
+            {
+                await CreateSpecificSemesters(options.SemestersToCreate);
+            }
+            else if (options.SemesterCreationMode == "ignore" && coursesWithInvalidSemesters.Any())
+            {
+                await RemoveInvalidSemesterAssignments(coursesWithInvalidSemesters);
+            }
+        }
+
+
+
         // GET: Courses/DownloadTemplate
         [HttpGet]
         //[Route("DownloadTemplate")]
@@ -1038,20 +1291,20 @@ namespace StudentManagementSystem.Controllers
             using var package = new ExcelPackage();
             var worksheet = package.Workbook.Worksheets.Add("Courses Template");
 
-            // Headers with instructions - UPDATED WITH NEW FIELDS
+            // Headers with instructions - UPDATED FOR NULLABLE SEMESTER
             string[] headers = {
         "CourseCode (Required)",
         "CourseName (Required)",
         "Description",
         "Credits",
         "Department",
-        "Semester",
+        "Semester (Optional - leave empty for unassigned)", // ✅ Updated description
         "MaxStudents",
         "MinGPA",
         "MinPassedHours",
-        "Prerequisites", // ✅ NEW FIELD
-        "CourseSpecification", // ✅ NEW FIELD
-        "Icon", // ✅ NEW FIELD
+        "Prerequisites",
+        "CourseSpecification",
+        "Icon",
         "IsActive"
     };
 
@@ -1061,13 +1314,13 @@ namespace StudentManagementSystem.Controllers
         "Course description (max 5000 characters)",
         "Credit hours (1-6)",
         "Department name (e.g., Computer Science)",
-        "Semester number (1-8)",
+        "Semester ID number (optional - leave blank if not assigned to semester)", // ✅ Updated
         "Maximum students (1-1000)",
         "Minimum GPA required (0.00-4.00)",
         "Minimum passed hours required",
-        "Prerequisite course codes separated by commas (e.g., CS101,MATH201)", // ✅ NEW
-        "Course specification document link or text", // ✅ NEW
-        "Icon name or URL (e.g., fas fa-code)", // ✅ NEW
+        "Prerequisite course codes separated by commas (e.g., CS101,MATH201)",
+        "Course specification document link or text",
+        "Icon name or URL (e.g., fas fa-code)",
         "Yes/No or true/false or 1/0"
     };
 
@@ -1087,56 +1340,55 @@ namespace StudentManagementSystem.Controllers
                 worksheet.Cells[2, i + 1].Style.Font.Color.SetColor(System.Drawing.Color.Gray);
             }
 
-            // Add sample data - UPDATED WITH NEW FIELDS
+            // Add sample data - UPDATED WITH NULLABLE SEMESTER
             var sampleCourses = new[]
-            {
-        new {
-            CourseCode = "CS101",
-            CourseName = "Introduction to Computer Science",
-            Description = "Basic concepts of computer science and programming",
-            Credits = 3,
-            Department = "Computer Science",
-            Semester = 1,
-            MaxStudents = 1000,
-            MinGPA = 2.0m,
-            MinPassedHours = 0,
-            Prerequisites = "",
-            CourseSpecification = "https://example.com/cs101-spec.pdf",
-            Icon = "fas fa-laptop-code",
-            IsActive = "Yes"
-        },
-        new {
-            CourseCode = "MATH201",
-            CourseName = "Calculus I",
-            Description = "Differential and integral calculus of single variable functions",
-            Credits = 4,
-            Department = "Mathematics",
-            Semester = 2,
-            MaxStudents = 1000,
-            MinGPA = 2.5m,
-            MinPassedHours = 30,
-            Prerequisites = "MATH101",
-            CourseSpecification = "https://example.com/math201-spec.pdf",
-            Icon = "fas fa-calculator",
-            IsActive = "Yes"
-        },
-        new {
-            CourseCode = "CS301",
-            CourseName = "Data Structures",
-            Description = "Advanced data structures and algorithms analysis",
-            Credits = 3,
-            Department = "Computer Science",
-            Semester = 3,
-            MaxStudents = 1000,
-            MinGPA = 3.0m,
-            MinPassedHours = 60,
-            Prerequisites = "CS101,CS201",
-            CourseSpecification = "https://example.com/cs301-spec.pdf",
-            Icon = "fas fa-diagram-project",
-            IsActive = "Yes"
-        }
-    };
-
+{
+    new {
+        CourseCode = "CS101",
+        CourseName = "Introduction to Computer Science",
+        Description = "Basic concepts of computer science and programming",
+        Credits = 3,
+        Department = "Computer Science",
+        Semester = (object)1, // ✅ Cast to object - assigned to semester 1
+        MaxStudents = 1000,
+        MinGPA = 2.0m,
+        MinPassedHours = 0,
+        Prerequisites = "",
+        CourseSpecification = "https://example.com/cs101-spec.pdf",
+        Icon = "fas fa-laptop-code",
+        IsActive = "Yes"
+    },
+    new {
+        CourseCode = "MATH201",
+        CourseName = "Calculus I",
+        Description = "Differential and integral calculus of single variable functions",
+        Credits = 4,
+        Department = "Mathematics",
+        Semester = (object)"", // ✅ Cast to object - empty = unassigned (null)
+        MaxStudents = 1000,
+        MinGPA = 2.5m,
+        MinPassedHours = 30,
+        Prerequisites = "MATH101",
+        CourseSpecification = "https://example.com/math201-spec.pdf",
+        Icon = "fas fa-calculator",
+        IsActive = "Yes"
+    },
+    new {
+        CourseCode = "PHY101",
+        CourseName = "Physics I",
+        Description = "Fundamental principles of physics",
+        Credits = 4,
+        Department = "Physics",
+        Semester = (object)2, // ✅ Cast to object - assigned to semester 2
+        MaxStudents = 1000,
+        MinGPA = 2.0m,
+        MinPassedHours = 0,
+        Prerequisites = "",
+        CourseSpecification = "https://example.com/phy101-spec.pdf",
+        Icon = "fas fa-atom",
+        IsActive = "Yes"
+    }
+};
             // Add sample data to worksheet
             for (int i = 0; i < sampleCourses.Length; i++)
             {
@@ -1146,18 +1398,15 @@ namespace StudentManagementSystem.Controllers
                 worksheet.Cells[i + 3, 3].Value = course.Description;
                 worksheet.Cells[i + 3, 4].Value = course.Credits;
                 worksheet.Cells[i + 3, 5].Value = course.Department;
-                worksheet.Cells[i + 3, 6].Value = course.Semester;
+                worksheet.Cells[i + 3, 6].Value = course.Semester; // Can be number or empty string
                 worksheet.Cells[i + 3, 7].Value = course.MaxStudents;
                 worksheet.Cells[i + 3, 8].Value = course.MinGPA;
                 worksheet.Cells[i + 3, 9].Value = course.MinPassedHours;
-                worksheet.Cells[i + 3, 10].Value = course.Prerequisites; // ✅ NEW
-                worksheet.Cells[i + 3, 11].Value = course.CourseSpecification; // ✅ NEW
-                worksheet.Cells[i + 3, 12].Value = course.Icon; // ✅ NEW
+                worksheet.Cells[i + 3, 10].Value = course.Prerequisites;
+                worksheet.Cells[i + 3, 11].Value = course.CourseSpecification;
+                worksheet.Cells[i + 3, 12].Value = course.Icon;
                 worksheet.Cells[i + 3, 13].Value = course.IsActive;
             }
-
-            // Add data validation for numeric fields
-            AddExcelDataValidation(worksheet);
 
             // Auto-fit columns
             worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
@@ -1731,21 +1980,24 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        [HttpPost("CreateDefaultSemester")]
+        [HttpPost]
         public async Task<IActionResult> CreateDefaultSemester()
         {
             try
             {
-                if (!await _context.Semesters.AnyAsync())
+                // Check if any semester exists
+                var anySemester = await _context.Semesters.AnyAsync();
+
+                if (!anySemester)
                 {
                     var defaultSemester = new Semester
                     {
-                        Name = "Fall " + DateTime.Now.Year,
+                        Name = "Default Semester",
                         SemesterType = "Fall",
                         AcademicYear = DateTime.Now.Year,
-                        StartDate = new DateTime(DateTime.Now.Year, 9, 1),
-                        EndDate = new DateTime(DateTime.Now.Year, 12, 31),
-                        RegistrationStartDate = DateTime.Now.AddDays(-30),
+                        StartDate = DateTime.Now,
+                        EndDate = DateTime.Now.AddMonths(4),
+                        RegistrationStartDate = DateTime.Now.AddDays(-7),
                         RegistrationEndDate = DateTime.Now.AddDays(30),
                         IsActive = true,
                         IsCurrent = true,
@@ -1755,19 +2007,32 @@ namespace StudentManagementSystem.Controllers
                     _context.Semesters.Add(defaultSemester);
                     await _context.SaveChangesAsync();
 
-                    TempData["Success"] = "Default semester created successfully!";
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Created default semester",
+                        semester = new { defaultSemester.Id, defaultSemester.Name }
+                    });
                 }
                 else
                 {
-                    TempData["Info"] = "Semesters already exist in the database.";
+                    var existingSemester = await _context.Semesters.FirstAsync();
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Semester already exists",
+                        semester = new { existingSemester.Id, existingSemester.Name }
+                    });
                 }
-
-                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error creating default semester: {ex.Message}";
-                return RedirectToAction(nameof(Index));
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
             }
         }
 
@@ -1931,6 +2196,1328 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction(nameof(DeleteAllConfirmation));
             }
         }
+
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> ImportExecute(ImportSettings settings)
+        //{
+        //    try
+        //    {
+        //        var analysisJson = HttpContext.Session.GetString("ImportAnalysis");
+        //        if (string.IsNullOrEmpty(analysisJson))
+        //        {
+        //            TempData["Error"] = "Import session expired. Please upload the file again.";
+        //            return RedirectToAction(nameof(Import));
+        //        }
+
+        //        var analysisResult = System.Text.Json.JsonSerializer.Deserialize<ImportResult>(analysisJson);
+        //        if (analysisResult == null || !analysisResult.Success)
+        //        {
+        //            TempData["Error"] = "Invalid import data.";
+        //            return RedirectToAction(nameof(Import));
+        //        }
+
+        //        // FIX: Use the semester IDs from the imported courses
+        //        var importResult = await ExecuteImportWithSemesterPreservation(analysisResult, settings);
+
+        //        // Clean up session data
+        //        HttpContext.Session.Remove("ImportAnalysis");
+        //        HttpContext.Session.Remove("FileName");
+
+        //        if (importResult.Success)
+        //        {
+        //            TempData["ImportResult"] = importResult.Message;
+        //            TempData["ImportedCount"] = importResult.ImportedCount;
+        //            TempData["ErrorCount"] = importResult.ErrorCount;
+        //        }
+
+        //        TempData[importResult.Success ? "Success" : "Error"] = importResult.Message;
+        //        return RedirectToAction(nameof(Index));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        TempData["Error"] = $"Import execution failed: {ex.Message}";
+        //        return RedirectToAction(nameof(Import));
+        //    }
+        //}
+
+        private async Task<ImportResult> ExecuteImportWithSemesterPreservation(ImportResult analysisResult, ImportSettings settings)
+        {
+            try
+            {
+                int importedCount = 0;
+                int errorCount = 0;
+                var errors = new List<string>();
+
+                // Get all existing course codes for duplicate checking
+                var existingCourseCodes = await _context.Courses
+                    .Where(c => c.IsActive)
+                    .Select(c => c.CourseCode.ToLower())
+                    .ToListAsync();
+
+                // Get valid semester IDs once
+                var validSemesterIds = await _context.Semesters
+                    .Select(s => s.Id)
+                    .ToListAsync();
+
+                if (!validSemesterIds.Any())
+                {
+                    return new ImportResult
+                    {
+                        Success = false,
+                        Message = "No semesters exist in the database. Please create at least one semester before importing courses.",
+                        ImportedCount = 0,
+                        ErrorCount = analysisResult.ValidCourses.Count,
+                        Errors = new List<string> { "No semesters available" }
+                    };
+                }
+
+                foreach (var importedCourse in analysisResult.ValidCourses)
+                {
+                    try
+                    {
+                        // Validate and fix semester ID first
+                        if (!importedCourse.SemesterId.HasValue || importedCourse.SemesterId <= 0 || !validSemesterIds.Contains(importedCourse.SemesterId.Value))
+                        {
+                            importedCourse.SemesterId = validSemesterIds.First();
+                        }
+
+                        // Check if course code already exists (case-insensitive)
+                        var normalizedCode = importedCourse.CourseCode?.ToLower() ?? string.Empty;
+                        var courseExists = existingCourseCodes.Contains(normalizedCode);
+
+                        if (courseExists)
+                        {
+                            switch (settings.DuplicateHandling)
+                            {
+                                case "Skip":
+                                    errors.Add($"Skipped: Course '{importedCourse.CourseCode}' already exists");
+                                    continue;
+                                case "Override":
+                                    // Find and update existing course
+                                    var existingCourse = await _context.Courses
+                                        .FirstOrDefaultAsync(c => c.CourseCode.ToLower() == normalizedCode);
+
+                                    if (existingCourse != null)
+                                    {
+                                        existingCourse.CourseName = importedCourse.CourseName ?? string.Empty;
+                                        existingCourse.Description = importedCourse.Description;
+                                        existingCourse.Credits = importedCourse.Credits;
+                                        existingCourse.Department = importedCourse.Department ?? "General";
+                                        existingCourse.SemesterId = importedCourse.SemesterId; // Use validated semester ID
+                                        existingCourse.MaxStudents = importedCourse.MaxStudents;
+                                        existingCourse.MinGPA = importedCourse.MinGPA;
+                                        existingCourse.MinPassedHours = importedCourse.MinPassedHours;
+                                        existingCourse.IsActive = true;
+                                        existingCourse.ModifiedDate = DateTime.Now;
+                                        importedCount++;
+                                    }
+                                    break;
+                                case "CreateNew":
+                                    // Create new course with unique code
+                                    var newCourseCode = await GenerateUniqueCourseCode(importedCourse.CourseCode);
+                                    await CreateCourseCopyWithSemester(importedCourse, newCourseCode);
+                                    importedCount++;
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            // Create new course with validated semester ID
+                            await CreateNewCourseWithSemester(importedCourse);
+                            importedCount++;
+                            // Add to existing codes to prevent duplicates in same import
+                            existingCourseCodes.Add(normalizedCode);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        errorCount++;
+                        errors.Add($"Error importing '{importedCourse.CourseCode}': {ex.Message}");
+                        _logger.LogError(ex, "Error importing course {CourseCode}", importedCourse.CourseCode);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return new ImportResult
+                {
+                    Success = importedCount > 0,
+                    Message = $"Imported {importedCount} courses successfully. {errorCount} errors.",
+                    ImportedCount = importedCount,
+                    ErrorCount = errorCount,
+                    Errors = errors
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in import execution");
+                return new ImportResult
+                {
+                    Success = false,
+                    Message = $"Import failed: {ex.Message}",
+                    ImportedCount = 0,
+                    ErrorCount = analysisResult.ValidCourses.Count,
+                    Errors = new List<string> { ex.Message, ex.InnerException?.Message ?? "No inner exception" }
+                };
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TestFixedImport()
+        {
+            try
+            {
+                // Create test courses with various semester IDs
+                var testCourses = new List<Course>
+        {
+            new Course
+            {
+                CourseCode = "FIXED-TEST-1",
+                CourseName = "Fixed Test Course 1",
+                Credits = 3,
+                Department = "Testing",
+                SemesterId = 0, // This should be fixed to semester 1
+                IsActive = true,
+                MaxStudents = 1000,
+                CreatedDate = DateTime.Now
+            },
+            new Course
+            {
+                CourseCode = "FIXED-TEST-2",
+                CourseName = "Fixed Test Course 2",
+                Credits = 4,
+                Department = "Testing",
+                SemesterId = 999, // This should be fixed to semester 1
+                IsActive = true,
+                MaxStudents = 1000,
+                CreatedDate = DateTime.Now
+            },
+            new Course
+            {
+                CourseCode = "FIXED-TEST-3",
+                CourseName = "Fixed Test Course 3",
+                Credits = 3,
+                Department = "Testing",
+                SemesterId = 1, // This is valid
+                IsActive = true,
+                MaxStudents = 1000,
+                CreatedDate = DateTime.Now
+            }
+        };
+
+                // Test the validation and creation
+                foreach (var course in testCourses)
+                {
+                    await ValidateAndFixSingleSemesterId(course);
+                }
+
+                _context.Courses.AddRange(testCourses);
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Fixed import test completed successfully",
+                    courses = testCourses.Select(c => new { c.CourseCode, c.SemesterId })
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
+        }
+
+        private Task CreateNewCourseWithSemester(Course importedCourse)
+        {
+            var course = new Course
+            {
+                CourseCode = importedCourse.CourseCode ?? string.Empty,
+                CourseName = importedCourse.CourseName ?? string.Empty,
+                Description = importedCourse.Description,
+                Credits = importedCourse.Credits,
+                Department = importedCourse.Department ?? "General",
+                SemesterId = importedCourse.SemesterId, // Can be null now
+                IsActive = true,
+                MaxStudents = importedCourse.MaxStudents,
+                MinGPA = importedCourse.MinGPA,
+                MinPassedHours = importedCourse.MinPassedHours,
+                CreatedDate = DateTime.Now
+            };
+
+            _context.Courses.Add(course);
+            return Task.CompletedTask;
+        }
+
+        private async Task ValidateAndFixSingleSemesterId(Course course)
+        {
+            // Get all valid semester IDs
+            var validSemesterIds = await _context.Semesters
+                .Select(s => s.Id)
+                .ToListAsync();
+
+            // If semester ID is invalid or 0, assign to first available semester
+            if (!course.SemesterId.HasValue || course.SemesterId <= 0 || !validSemesterIds.Contains(course.SemesterId.Value))
+            {
+                if (validSemesterIds.Any())
+                {
+                    var originalSemesterId = course.SemesterId;
+                    course.SemesterId = validSemesterIds.First();
+
+                    _logger.LogWarning("Course {CourseCode} had invalid SemesterId {OriginalId}, assigned to SemesterId {NewId}",
+                        course.CourseCode, originalSemesterId, course.SemesterId);
+                }
+                else
+                {
+                    throw new InvalidOperationException("No semesters exist in the database. Please create at least one semester.");
+                }
+            }
+        }
+
+        private async Task<string> GenerateUniqueCourseCode(string? baseCourseCode)
+        {
+            if (string.IsNullOrWhiteSpace(baseCourseCode))
+            {
+                baseCourseCode = "COURSE";
+            }
+
+            var counter = 1;
+            string newCourseCode;
+
+            // First try without counter
+            newCourseCode = $"{baseCourseCode}-COPY";
+
+            // If that exists, start with counter
+            if (await _context.Courses.AnyAsync(c => c.CourseCode == newCourseCode))
+            {
+                newCourseCode = $"{baseCourseCode}-COPY1";
+                counter = 2;
+            }
+
+            // Increment counter until we find a unique code
+            while (await _context.Courses.AnyAsync(c => c.CourseCode == newCourseCode))
+            {
+                newCourseCode = $"{baseCourseCode}-COPY{counter}";
+                counter++;
+
+                // Safety check to prevent infinite loop
+                if (counter > 1000)
+                {
+                    newCourseCode = $"{baseCourseCode}-{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+                    break;
+                }
+            }
+
+            return newCourseCode;
+        }
+
+        private async Task CreateCourseCopyWithSemester(Course sourceCourse, string newCourseCode)
+        {
+            // Create copy with new course code but same semester ID (handle nullable)
+            var course = new Course
+            {
+                CourseCode = newCourseCode ?? string.Empty,
+                CourseName = sourceCourse.CourseName ?? string.Empty,
+                Description = sourceCourse.Description,
+                Credits = sourceCourse.Credits,
+                Department = sourceCourse.Department ?? "General",
+                SemesterId = sourceCourse.SemesterId, // Can be null now
+                IsActive = true,
+                MaxStudents = sourceCourse.MaxStudents,
+                MinGPA = sourceCourse.MinGPA,
+                MinPassedHours = sourceCourse.MinPassedHours,
+                CreatedDate = DateTime.Now
+            };
+
+            _context.Courses.Add(course);
+            await _context.SaveChangesAsync(); // Add await since this is now async
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> TestImportWithSemesterPreservation()
+        {
+            try
+            {
+                // Create test courses with different semester IDs
+                var testCourses = new List<Course>
+        {
+            new Course { CourseCode = "TEST101", CourseName = "Test Course 1", Credits = 3, Department = "Testing", SemesterId = 2, IsActive = true },
+            new Course { CourseCode = "TEST102", CourseName = "Test Course 2", Credits = 4, Department = "Testing", SemesterId = 3, IsActive = true },
+            new Course { CourseCode = "TEST103", CourseName = "Test Course 3", Credits = 3, Department = "Testing", SemesterId = 0, IsActive = true },
+            new Course { CourseCode = "TEST104", CourseName = "Test Course 4", Credits = 4, Department = "Testing", SemesterId = 4, IsActive = true }
+        };
+
+                _context.Courses.AddRange(testCourses);
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Created test courses with different semester IDs",
+                    courses = testCourses.Select(c => new { c.CourseCode, c.SemesterId })
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TestImportWithSemesters()
+        {
+            try
+            {
+                // Test data with different semester IDs
+                var testCourses = new List<Course>
+        {
+            new Course {
+                CourseCode = "IMPORT101",
+                CourseName = "Import Test 1",
+                Credits = 3,
+                Department = "Testing",
+                SemesterId = 2,
+                IsActive = true,
+                CreatedDate = DateTime.Now
+            },
+            new Course {
+                CourseCode = "IMPORT102",
+                CourseName = "Import Test 2",
+                Credits = 4,
+                Department = "Testing",
+                SemesterId = 3,
+                IsActive = true,
+                CreatedDate = DateTime.Now
+            },
+            new Course {
+                CourseCode = "IMPORT103",
+                CourseName = "Import Test 3",
+                Credits = 3,
+                Department = "Testing",
+                SemesterId = 0,
+                IsActive = true,
+                CreatedDate = DateTime.Now
+            },
+            new Course {
+                CourseCode = "IMPORT104",
+                CourseName = "Import Test 4",
+                Credits = 4,
+                Department = "Testing",
+                SemesterId = 4,
+                IsActive = true,
+                CreatedDate = DateTime.Now
+            }
+        };
+
+                _context.Courses.AddRange(testCourses);
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Created test import courses with different semester IDs",
+                    courses = testCourses.Select(c => new { c.CourseCode, c.SemesterId })
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        public Task<ImportResult> AnalyzeExcelImportAsync(Stream stream)
+        {
+            try
+            {
+                using var package = new ExcelPackage(stream);
+                var worksheet = package.Workbook.Worksheets[0];
+
+                if (worksheet?.Dimension == null)
+                {
+                    return Task.FromResult(new ImportResult
+                    {
+                        Success = false,
+                        Message = "Excel file is empty or invalid",
+                        ValidCourses = new List<Course>(),
+                        InvalidCourses = new List<InvalidCourse>(),
+                        TotalRows = 0,
+                        Errors = new List<string> { "Worksheet or dimension is null" }
+                    });
+                }
+
+                var validCourses = new List<Course>();
+                var invalidCourses = new List<InvalidCourse>();
+                var errors = new List<string>();
+
+                var rowCount = worksheet.Dimension.Rows;
+
+                for (int row = 2; row <= rowCount; row++)
+                {
+                    try
+                    {
+                        var courseCode = worksheet.Cells[row, 1].Value?.ToString()?.Trim();
+                        var courseName = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
+                        var description = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
+                        var credits = int.TryParse(worksheet.Cells[row, 4].Value?.ToString(), out int c) ? c : 3;
+                        var department = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
+
+                        // ✅ UPDATED: Read semester ID as nullable int
+                        var semesterIdValue = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
+                        int? semesterId = null;
+
+                        if (!string.IsNullOrEmpty(semesterIdValue) && int.TryParse(semesterIdValue, out int parsedSemesterId))
+                        {
+                            semesterId = parsedSemesterId;
+                        }
+                        // If semesterIdValue is empty or invalid, semesterId remains null
+
+                        // Validation with null safety
+                        if (string.IsNullOrEmpty(courseCode))
+                        {
+                            invalidCourses.Add(new InvalidCourse
+                            {
+                                RowNumber = row,
+                                ErrorMessage = "Course code is required",
+                                CourseCode = courseCode ?? string.Empty,
+                                CourseName = courseName ?? string.Empty
+                            });
+                            continue;
+                        }
+
+                        if (string.IsNullOrEmpty(courseName))
+                        {
+                            invalidCourses.Add(new InvalidCourse
+                            {
+                                RowNumber = row,
+                                ErrorMessage = "Course name is required",
+                                CourseCode = courseCode ?? string.Empty,
+                                CourseName = courseName ?? string.Empty
+                            });
+                            continue;
+                        }
+
+                        // Create Course entity with null safety
+                        var course = new Course
+                        {
+                            SerialNumber = row - 1,
+                            CourseCode = courseCode ?? string.Empty,
+                            CourseName = courseName ?? string.Empty,
+                            Description = description,
+                            Credits = credits,
+                            Department = department ?? "General",
+                            SemesterId = semesterId, // ✅ Now accepts null values
+                            MaxStudents = 1000, // Default value or read from Excel if available
+                            IsActive = true,
+                            CreatedDate = DateTime.Now
+                        };
+
+                        validCourses.Add(course);
+                    }
+                    catch (Exception ex)
+                    {
+                        invalidCourses.Add(new InvalidCourse
+                        {
+                            RowNumber = row,
+                            ErrorMessage = $"Error parsing row: {ex.Message}"
+                        });
+                    }
+                }
+
+                return Task.FromResult(new ImportResult
+                {
+                    Success = true,
+                    Message = $"Analysis complete: {validCourses.Count} valid, {invalidCourses.Count} invalid",
+                    ValidCourses = validCourses,
+                    InvalidCourses = invalidCourses,
+                    TotalRows = rowCount - 1,
+                    Errors = errors
+                });
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(new ImportResult
+                {
+                    Success = false,
+                    Message = $"Error analyzing Excel file: {ex.Message}",
+                    ValidCourses = new List<Course>(),
+                    InvalidCourses = new List<InvalidCourse>(),
+                    TotalRows = 0,
+                    Errors = new List<string> { ex.Message }
+                });
+            }
+        }
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> DebugImportBehavior()
+        {
+            try
+            {
+                // Check recent imports to see semester assignments
+                var recentImports = await _context.Courses
+                    .OrderByDescending(c => c.CreatedDate)
+                    .Take(10)
+                    .Select(c => new {
+                        c.CourseCode,
+                        c.CourseName,
+                        c.SemesterId,
+                        c.CreatedDate,
+                        SemesterName = c.CourseSemester != null ? c.CourseSemester.Name : "Unassigned"
+                    })
+                    .ToListAsync();
+
+                // Safe semester distribution query
+                var allCourses = await _context.Courses
+                    .Include(c => c.CourseSemester)
+                    .ToListAsync();
+
+                var distribution = allCourses
+                    .GroupBy(c => c.SemesterId)
+                    .Select(g => new
+                    {
+                        SemesterId = g.Key,
+                        Count = g.Count(),
+                        SemesterName = g.FirstOrDefault()?.CourseSemester?.Name ?? "Unassigned"
+                    })
+                    .ToList();
+
+                return Json(new
+                {
+                    RecentImports = recentImports,
+                    SemesterDistribution = distribution,
+                    TotalCourses = allCourses.Count,
+                    Message = "Check if recently imported courses have correct semester assignments"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+
+
+
+        
+
+        private string CleanCourseCode(string courseCode)
+        {
+            if (string.IsNullOrWhiteSpace(courseCode))
+                return "COURSE";
+
+            // Remove or replace invalid characters
+            var cleaned = System.Text.RegularExpressions.Regex.Replace(courseCode, @"[^a-zA-Z0-9\-_]", "");
+
+            // Trim to reasonable length
+            if (cleaned.Length > 15)
+                cleaned = cleaned.Substring(0, 15);
+
+            // Ensure it's not empty after cleaning
+            if (string.IsNullOrWhiteSpace(cleaned))
+                cleaned = "COURSE";
+
+            return cleaned.Trim();
+        }
+
+        private async Task CreateMissingSemesters(List<Course> coursesWithInvalidSemesters)
+        {
+            // Get unique semester IDs that need to be created (with proper nullable handling)
+            var missingSemesterIds = coursesWithInvalidSemesters
+                .Where(c => c.SemesterId.HasValue && c.SemesterId > 0) // ✅ Check HasValue first
+                .Select(c => c.SemesterId!.Value) // ✅ Use null-forgiving operator since we filtered nulls
+                .Distinct()
+                .ToList();
+
+            // Get existing semester IDs to avoid duplicates
+            var existingSemesterIds = await _context.Semesters
+                .Select(s => s.Id)
+                .ToListAsync();
+
+            // Filter out semester IDs that already exist
+            var semestersToCreate = missingSemesterIds
+                .Where(id => !existingSemesterIds.Contains(id))
+                .ToList();
+
+            foreach (var semesterId in semestersToCreate)
+            {
+                // Double-check it doesn't exist (concurrent operation safety)
+                var existingSemester = await _context.Semesters.FindAsync(semesterId);
+                if (existingSemester == null)
+                {
+                    var semester = new Semester
+                    {
+                        Name = $"Auto-Created Semester {semesterId}",
+                        SemesterType = "Fall",
+                        AcademicYear = DateTime.Now.Year,
+                        StartDate = DateTime.Now,
+                        EndDate = DateTime.Now.AddMonths(4),
+                        RegistrationStartDate = DateTime.Now.AddDays(-7),
+                        RegistrationEndDate = DateTime.Now.AddDays(30),
+                        IsActive = true,
+                        IsCurrent = false,
+                        IsRegistrationOpen = true
+                    };
+
+                    _context.Semesters.Add(semester);
+                }
+            }
+
+            if (semestersToCreate.Any())
+            {
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        private async Task CreateSpecificSemesters(List<int> semesterIdsToCreate)
+        {
+            if (!semesterIdsToCreate.Any()) return;
+
+            var currentYear = DateTime.Now.Year;
+            foreach (var semesterId in semesterIdsToCreate)
+            {
+                // Check if semester already exists
+                var exists = await _context.Semesters.AnyAsync(s => s.Id == semesterId);
+                if (!exists)
+                {
+                    var newSemester = new Semester
+                    {
+                        Name = $"Imported Semester {semesterId}",
+                        SemesterType = "Fall",
+                        AcademicYear = currentYear,
+                        StartDate = DateTime.Now,
+                        EndDate = DateTime.Now.AddMonths(4),
+                        RegistrationStartDate = DateTime.Now.AddDays(-7),
+                        RegistrationEndDate = DateTime.Now.AddDays(30),
+                        IsActive = true,
+                        IsCurrent = false,
+                        IsRegistrationOpen = true
+                    };
+
+                    _context.Semesters.Add(newSemester);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task RemoveInvalidSemesterAssignments(List<Course> coursesWithInvalidSemesters)
+        {
+            // Set SemesterId to null for courses with invalid semester assignments
+            foreach (var course in coursesWithInvalidSemesters)
+            {
+                course.SemesterId = null;
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        private List<int> GetSemesterIdsFromImport(ImportResult analysisResult)
+        {
+            if (analysisResult?.ValidCourses == null)
+            {
+                return new List<int>();
+            }
+
+            var semesterIdsInImport = new List<int>();
+
+            foreach (var course in analysisResult.ValidCourses)
+            {
+                if (course.SemesterId.HasValue && course.SemesterId.Value > 0)
+                {
+                    semesterIdsInImport.Add(course.SemesterId.Value);
+                }
+            }
+
+            return semesterIdsInImport.Distinct().ToList();
+        }
+
+        private async Task ValidateAndFixSemesterIds(List<Course> courses)
+        {
+            // Get all valid semester IDs (including 0 if it exists)
+            var validSemesterIds = await _context.Semesters
+                .Select(s => s.Id)
+                .ToListAsync();
+
+            // Check if semester 0 exists, if not we need to handle it differently
+            var hasUnassignedSemester = validSemesterIds.Contains(0);
+
+            // Fix courses with invalid semester IDs
+            foreach (var course in courses)
+            {
+                if (course.SemesterId.HasValue && course.SemesterId > 0 && !validSemesterIds.Contains(course.SemesterId.Value))
+                {
+                    _logger.LogWarning("Course {CourseCode} has invalid SemesterId {SemesterId}",
+                        course.CourseCode, course.SemesterId);
+
+                    // If we have an unassigned semester, use it. Otherwise, use the first available semester.
+                    if (hasUnassignedSemester)
+                    {
+                        course.SemesterId = 0;
+                    }
+                    else if (validSemesterIds.Any())
+                    {
+                        course.SemesterId = validSemesterIds.First();
+                        _logger.LogInformation("Assigned course {CourseCode} to semester {SemesterId}",
+                            course.CourseCode, course.SemesterId);
+                    }
+                    else
+                    {
+                        // No semesters exist at all - this is a problem
+                        _logger.LogError("No semesters exist in database for course {CourseCode}", course.CourseCode);
+                        throw new InvalidOperationException("No semesters exist in the database. Please create at least one semester.");
+                    }
+                }
+            }
+        }
+
+        private void ValidateCourseData(Course course)
+        {
+            if (string.IsNullOrEmpty(course.CourseCode))
+                throw new ArgumentException("CourseCode is required");
+
+            if (string.IsNullOrEmpty(course.CourseName))
+                throw new ArgumentException("CourseName is required");
+
+            if (string.IsNullOrEmpty(course.Department))
+                course.Department = "General";
+
+            // Truncate if too long
+            if (course.CourseCode.Length > 20)
+                course.CourseCode = course.CourseCode.Substring(0, 20);
+
+            if (course.CourseName.Length > 100)
+                course.CourseName = course.CourseName.Substring(0, 100);
+
+            if (course.Department.Length > 50)
+                course.Department = course.Department.Substring(0, 50);
+
+            // Validate credits
+            if (course.Credits < 1) course.Credits = 1;
+            if (course.Credits > 6) course.Credits = 6;
+
+            // Validate max students
+            if (course.MaxStudents < 1) course.MaxStudents = 1000;
+            if (course.MaxStudents > 1000) course.MaxStudents = 1000;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TestCompleteImportFlow()
+        {
+            try
+            {
+                // Create a test import result
+                var testCourses = new List<Course>
+        {
+            new Course
+            {
+                CourseCode = "TEST001",
+                CourseName = "Test Course 1",
+                Credits = 3,
+                Department = "Testing",
+                SemesterId = 999, // This should trigger semester creation
+                IsActive = true,
+                MaxStudents = 1000,
+                CreatedDate = DateTime.Now
+            },
+            new Course
+            {
+                CourseCode = "TEST002",
+                CourseName = "Test Course 2",
+                Credits = 4,
+                Department = "Testing",
+                SemesterId = 0, // Unassigned
+                IsActive = true,
+                MaxStudents = 1000,
+                CreatedDate = DateTime.Now
+            }
+        };
+
+                var importResult = new ImportResult
+                {
+                    Success = true,
+                    ValidCourses = testCourses,
+                    InvalidCourses = new List<InvalidCourse>(),
+                    TotalRows = 2
+                };
+
+                var settings = new ImportSettings { DuplicateHandling = "Skip" };
+                var options = new ImportOptions { SemesterCreationMode = "auto" };
+
+                // Test the import flow
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                var result = await ExecuteImportWithSemesterPreservation(importResult, settings);
+
+                await transaction.CommitAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Test import flow completed",
+                    importResult = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateUnassignedSemester()
+        {
+            try
+            {
+                // Check if semester with ID 0 already exists
+                var existingSemester = await _context.Semesters.FindAsync(0);
+
+                if (existingSemester == null)
+                {
+                    var unassignedSemester = new Semester
+                    {
+                        Id = 0, // Explicitly set ID to 0
+                        Name = "Unassigned Courses",
+                        SemesterType = "Unassigned",
+                        AcademicYear = DateTime.Now.Year,
+                        StartDate = DateTime.Now,
+                        EndDate = DateTime.Now.AddYears(1),
+                        RegistrationStartDate = DateTime.Now,
+                        RegistrationEndDate = DateTime.Now.AddYears(1),
+                        IsActive = true,
+                        IsCurrent = false,
+                        IsRegistrationOpen = false
+                    };
+
+                    _context.Semesters.Add(unassignedSemester);
+                    await _context.SaveChangesAsync();
+
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Created 'Unassigned' semester with ID = 0",
+                        semester = new { unassignedSemester.Id, unassignedSemester.Name }
+                    });
+                }
+                else
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Unassigned semester already exists",
+                        semester = new { existingSemester.Id, existingSemester.Name }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
+        }
+
+        [HttpGet]
+        [Route("Courses/DebugImportConstraints")]
+        public async Task<IActionResult> DebugImportConstraints()
+        {
+            try
+            {
+                var results = new List<object>();
+
+                // Test 1: Basic course creation
+                try
+                {
+                    var testCourse = new Course
+                    {
+                        CourseCode = $"TEST-{DateTime.Now:HHmmss}",
+                        CourseName = "Test Course",
+                        Credits = 3,
+                        Department = "Testing",
+                        SemesterId = 0,
+                        IsActive = true,
+                        MaxStudents = 1000,
+                        CreatedDate = DateTime.Now
+                    };
+
+                    _context.Courses.Add(testCourse);
+                    await _context.SaveChangesAsync();
+
+                    // Clean up
+                    _context.Courses.Remove(testCourse);
+                    await _context.SaveChangesAsync();
+
+                    results.Add(new
+                    {
+                        test = "Basic Course Creation",
+                        success = true,
+                        message = "Can create and delete courses successfully"
+                    });
+                }
+                catch (Exception ex)
+                {
+                    results.Add(new
+                    {
+                        test = "Basic Course Creation",
+                        success = false,
+                        error = ex.Message,
+                        innerError = ex.InnerException?.Message,
+                        details = "This tests if basic course operations work"
+                    });
+                }
+
+                // Test 2: Check for duplicate course codes
+                try
+                {
+                    var duplicateCodes = await _context.Courses
+                        .GroupBy(c => c.CourseCode)
+                        .Where(g => g.Count() > 1)
+                        .Select(g => new { CourseCode = g.Key, Count = g.Count() })
+                        .ToListAsync();
+
+                    results.Add(new
+                    {
+                        test = "Duplicate Course Codes Check",
+                        success = true,
+                        duplicates = duplicateCodes
+                    });
+                }
+                catch (Exception ex)
+                {
+                    results.Add(new
+                    {
+                        test = "Duplicate Course Codes Check",
+                        success = false,
+                        error = ex.Message
+                    });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    timestamp = DateTime.Now,
+                    tests = results
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace
+                });
+            }
+        }
+        [HttpPost]
+        public async Task<IActionResult> DebugDatabaseConstraints()
+        {
+            try
+            {
+                var results = new List<object>();
+
+                // Test 1: Basic course creation with valid semester
+                try
+                {
+                    // Get first available semester
+                    var availableSemester = await _context.Semesters.FirstOrDefaultAsync();
+                    if (availableSemester == null)
+                    {
+                        results.Add(new
+                        {
+                            test = "Basic Course Creation",
+                            success = false,
+                            error = "No semesters exist in database. Please create a semester first."
+                        });
+                    }
+                    else
+                    {
+                        var testCourse1 = new Course
+                        {
+                            CourseCode = $"TEST-{DateTime.Now:HHmmss}",
+                            CourseName = "Test Course",
+                            Credits = 3,
+                            Department = "Testing",
+                            SemesterId = availableSemester.Id, // Use existing semester
+                            IsActive = true,
+                            MaxStudents = 1000,
+                            CreatedDate = DateTime.Now
+                        };
+                        _context.Courses.Add(testCourse1);
+                        await _context.SaveChangesAsync();
+                        results.Add(new
+                        {
+                            test = "Basic Course Creation",
+                            success = true,
+                            courseCode = testCourse1.CourseCode,
+                            semesterId = availableSemester.Id
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    results.Add(new
+                    {
+                        test = "Basic Course Creation",
+                        success = false,
+                        error = ex.Message,
+                        inner = ex.InnerException?.Message
+                    });
+                }
+
+                return Json(new { tests = results });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    error = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DebugSemesters()
+        {
+            try
+            {
+                var semesters = await _context.Semesters
+                    .OrderBy(s => s.Id)
+                    .Select(s => new { s.Id, s.Name, s.SemesterType, s.IsActive })
+                    .ToListAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    semesters = semesters,
+                    message = $"Found {semesters.Count} semesters in database"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    error = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
+        }
+        [HttpPost]
+        public async Task<IActionResult> TestSafeImport()
+        {
+            try
+            {
+                // Get first available semester
+                var availableSemester = await _context.Semesters.FirstOrDefaultAsync();
+                if (availableSemester == null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "No semesters exist. Please create a semester first using /Courses/CreateDefaultSemester"
+                    });
+                }
+
+                // Create a simple test course
+                var testCourse = new Course
+                {
+                    CourseCode = $"SAFETEST-{DateTime.Now:HHmmss}",
+                    CourseName = "Safe Test Course",
+                    Credits = 3,
+                    Department = "Testing",
+                    SemesterId = availableSemester.Id, // Use existing semester
+                    IsActive = true,
+                    MaxStudents = 1000,
+                    CreatedDate = DateTime.Now
+                };
+
+                _context.Courses.Add(testCourse);
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Safe test course created successfully",
+                    course = new { testCourse.CourseCode, testCourse.SemesterId },
+                    semester = new { availableSemester.Id, availableSemester.Name }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TestNullableSemester()
+        {
+            try
+            {
+                // Test 1: Course with null SemesterId
+                var course1 = new Course
+                {
+                    CourseCode = "TEST-NULL",
+                    CourseName = "Test Course with Null Semester",
+                    Credits = 3,
+                    Department = "Testing",
+                    SemesterId = null, // ✅ This should work now
+                    IsActive = true,
+                    CreatedDate = DateTime.Now
+                };
+
+                // Test 2: Course with SemesterId = 0
+                var course2 = new Course
+                {
+                    CourseCode = "TEST-ZERO",
+                    CourseName = "Test Course with Zero Semester",
+                    Credits = 3,
+                    Department = "Testing",
+                    SemesterId = 0, // ✅ This should also work
+                    IsActive = true,
+                    CreatedDate = DateTime.Now
+                };
+
+                _context.Courses.AddRange(course1, course2);
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Nullable semester test passed!",
+                    courses = new[] {
+                new { course1.CourseCode, course1.SemesterId },
+                new { course2.CourseCode, course2.SemesterId }
+            }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message,
+                    innerException = ex.InnerException?.Message
+                });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DebugCourseSemesters()
+        {
+            var courses = await _context.Courses
+                .Include(c => c.CourseSemester)
+                .Select(c => new
+                {
+                    c.CourseCode,
+                    c.CourseName,
+                    SemesterId = c.SemesterId, // This can be null
+                    SemesterName = c.CourseSemester != null ? c.CourseSemester.Name : "Unassigned"
+                })
+                .Take(10)
+                .ToListAsync();
+
+            // Safe JSON serialization
+            return Json(new
+            {
+                Courses = courses,
+                Message = "Sample courses with semester assignments (null = unassigned)"
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TestNullableSemesterHandling()
+        {
+            try
+            {
+                // Test creating courses with different SemesterId values
+                var testCourses = new List<Course>
+        {
+            new Course { CourseCode = "TEST1", CourseName = "Test 1", SemesterId = null, IsActive = true },
+            new Course { CourseCode = "TEST2", CourseName = "Test 2", SemesterId = 0, IsActive = true },
+            new Course { CourseCode = "TEST3", CourseName = "Test 3", SemesterId = 1, IsActive = true }
+        };
+
+                _context.Courses.AddRange(testCourses);
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Nullable semester handling test passed!",
+                    courses = testCourses.Select(c => new { c.CourseCode, c.SemesterId })
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message,
+                    innerException = ex.InnerException?.Message
+                });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourseData(int id)
+        {
+            var course = await _context.Courses
+                .Include(c => c.CourseSemester)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (course == null)
+            {
+                return NotFound();
+            }
+
+            var courseData = new Dictionary<string, object>
+            {
+                ["Id"] = course.Id,
+                ["CourseCode"] = course.CourseCode,
+                ["CourseName"] = course.CourseName,
+                ["SemesterId"] = course.SemesterId?.ToString() ?? "null", // ✅ Fixed
+                ["SemesterName"] = course.CourseSemester?.Name ?? "Unassigned",
+                ["Department"] = course.Department ?? string.Empty,
+                ["Credits"] = course.Credits
+            };
+
+            return Json(courseData);
+        }
+
+        private static List<int> GetValidSemesterIds(IEnumerable<Course> courses)
+        {
+            return courses?
+                .Select(c => c.SemesterId)
+                .Where(id => id.HasValue && id > 0)
+                .Select(id => id!.Value)
+                .Distinct()
+                .ToList() ?? new List<int>();
+        }
     }
 
+
+
 }
+

@@ -1,0 +1,35 @@
+﻿@{
+    ViewData["Title"] = "Conflict Resolution";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-exclamation-triangle me-2"></i>Conflict Resolution
+        </h2>
+        <a href="@Url.Action("Dashboard")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Enrollment Conflicts</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-5">
+                        <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">Conflict Resolution System</h4>
+                        <p class="text-muted">This feature is currently under development.</p>
+                        <p class="text-muted">It will help resolve scheduling conflicts, prerequisite issues, and capacity problems.</p>
+                        <a href="@Url.Action("BulkEnrollment")" class="btn btn-primary mt-3">
+                            <i class="fas fa-users me-1"></i> Go to Bulk Enrollment
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
