@@ -497,7 +497,7 @@
                             </div>
                         </td>
                         <td class="column-serial text-center">@serialNumber</td>
-                        <td class="column-code fw-bold">@course.CourseCode</td>
+                        <td class="column-code fw-bold text-nowrap">@course.CourseCode</td>
                         <td class="column-name text-nowrap">@course.CourseName</td>
                         <td class="column-description">
                             @if (!string.IsNullOrEmpty(course.Description))
@@ -783,7 +783,7 @@
         }
         .column-checkbox { width: 50px; min-width: 50px; max-width: 50px; }
         .column-serial { width: 70px; min-width: 70px; max-width: 70px; }
-        .column-code { width: 100px; min-width: 100px; max-width: 100px; }
+        .column-code { width: 120px; min-width: 100px; max-width: 120px; }
         .column-name { width: 200px; min-width: 200px; max-width: 200px; }
         .column-description { width: 200px; min-width: 200px; max-width: 200px; }
         .column-prerequisites { width: 150px; min-width: 150px; max-width: 150px; }

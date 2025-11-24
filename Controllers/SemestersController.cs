@@ -11,6 +11,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using StudentManagementSystem.Services;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace StudentManagementSystem.Controllers
 {
@@ -19,14 +21,17 @@ namespace StudentManagementSystem.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<SemestersController> _logger;
         private readonly ISemesterService _semesterService;
+        private readonly IEnrollmentService _enrollmentService;
 
         public SemestersController(ApplicationDbContext context,
                               ILogger<SemestersController> logger,
-                              ISemesterService semesterService) // Add this
+                              ISemesterService semesterService,
+                              IEnrollmentService enrollmentService) // Add this
         {
             _context = context;
             _logger = logger;
             _semesterService = semesterService; // Add this
+            _enrollmentService = enrollmentService;
         }
 
         // GET: Semesters
@@ -90,23 +95,7 @@ namespace StudentManagementSystem.Controllers
 
             ViewBag.Departments = new SelectList(departments, "Id", "Name");
         }
-
-        // GET: Semesters/Details/5
-        //public async Task<IActionResult> Details(int? id)
-        //{
-        //    if (id == null) return NotFound();
-
-        //    var semester = await _context.Semesters
-        //        .Include(s => s.Department)
-        //        .Include(s => s.Branch)
-        //        .Include(s => s.SubBranch)
-        //        .FirstOrDefaultAsync(m => m.Id == id);
-
-        //    if (semester == null) return NotFound();
-
-        //    return View(semester);
-        //}
-
+                
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -413,29 +402,8 @@ namespace StudentManagementSystem.Controllers
             return _context.Semesters.Any(e => e.Id == id);
         }
 
-        // GET: Semesters/Details/5
-        // GET: Semesters/Details/5
-        //public async Task<IActionResult> Details(int? id)
-        //{
-        //    if (id == null)
-        //    {
-        //        return NotFound();
-        //    }
 
-        //    var semester = await _context.Semesters
-        //        .Include(s => s.Department)
-        //        .Include(s => s.Branch)
-        //        .Include(s => s.SubBranch)
-        //        .FirstOrDefaultAsync(m => m.Id == id);
 
-        //    if (semester == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    return View(semester);
-        //}
-        // In SemestersController Details action, add this:
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -448,72 +416,20 @@ namespace StudentManagementSystem.Controllers
 
             if (semester == null) return NotFound();
 
-            // Load courses directly instead of using AJAX
+            // Load courses for this semester
             var courses = await _context.Courses
                 .Where(c => c.SemesterId == id && c.IsActive)
+                .Include(c => c.CourseEnrollments)
+                .Include(c => c.CourseDepartment)
+                .Include(c => c.CourseSemester)
                 .ToListAsync();
 
-            ViewBag.Courses = courses;
+            // Ensure ViewBag.Courses is never null
+            ViewBag.Courses = courses ?? new List<Course>();
+            ViewBag.SemesterId = id;
 
             return View(semester);
         }
-        //// GET: Semesters/Create with parameters
-        //[HttpGet]
-        //[Route("Semesters/Create/{departmentId?}/{branchId?}/{subBranchId?}")]
-        //public async Task<IActionResult> Create(int? departmentId, int? branchId, int? subBranchId)
-        //{
-        //    if (departmentId.HasValue)
-        //    {
-        //        var department = await _context.Departments
-        //            .Include(d => d.College!)
-        //            .ThenInclude(c => c.University!)
-        //            .FirstOrDefaultAsync(d => d.Id == departmentId);
-
-        //        ViewBag.ParentDepartment = department ?? null;
-        //        ViewBag.EntityType = department != null ? "Department" : null;
-        //    }
-        //    else
-        //    {
-        //        ViewBag.ParentDepartment = null;
-        //        ViewBag.EntityType = null;
-        //    }
-
-        //    if (branchId.HasValue)
-        //    {
-        //        var branch = await _context.Branches
-        //            .Include(b => b.Department!)
-        //            .ThenInclude(d => d.College!)
-        //            .ThenInclude(c => c.University!)
-        //            .FirstOrDefaultAsync(b => b.Id == branchId);
-
-        //        ViewBag.ParentBranch = branch ?? null;
-        //        ViewBag.EntityType = branch != null ? "Branch" : null;
-        //    }
-        //    else
-        //    {
-        //        ViewBag.ParentBranch = null;
-        //    }
-
-        //    if (subBranchId.HasValue)
-        //    {
-        //        var subBranch = await _context.Branches
-        //            .Include(b => b.Department!)
-        //            .ThenInclude(d => d.College!)
-        //            .ThenInclude(c => c.University!)
-        //            .Include(b => b.ParentBranch)
-        //            .FirstOrDefaultAsync(b => b.Id == subBranchId);
-
-        //        ViewBag.ParentSubBranch = subBranch ?? null;
-        //        ViewBag.EntityType = subBranch != null ? "Sub-Branch" : null;
-        //    }
-        //    else
-        //    {
-        //        ViewBag.ParentSubBranch = null;
-        //    }
-
-        //    await PopulateDropdowns();
-        //    return View("Create");
-        //}
 
 
         // POST: Semesters/Create
@@ -652,20 +568,30 @@ namespace StudentManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCoursesBySemester(int semesterId)
         {
-            var courses = await _context.Courses
-                .Where(c => c.SemesterId == semesterId && c.IsActive)
-                .Select(c => new
-                {
-                    id = c.Id,
-                    courseName = c.CourseName,
-                    courseCode = c.CourseCode,
-                    credits = c.Credits,
-                    description = c.Description,
-                    isActive = c.IsActive
-                })
-                .ToListAsync();
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => c.SemesterId == semesterId && c.IsActive)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        courseCode = c.CourseCode,
+                        courseName = c.CourseName,
+                        credits = c.Credits,
+                        department = c.Department ?? "No Department",
+                        maxStudents = c.MaxStudents,
+                        currentEnrollment = c.CourseEnrollments.Count(ce => ce.IsActive && ce.EnrollmentStatus == EnrollmentStatus.Active),
+                        isActive = c.IsActive
+                    })
+                    .ToListAsync();
 
-            return Json(courses);
+                return Json(courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting courses for semester {SemesterId}", semesterId);
+                return Json(new List<object>());
+            }
         }
 
 
@@ -682,32 +608,31 @@ namespace StudentManagementSystem.Controllers
             return View();
         }
 
-        [HttpPost]
-        public async Task<IActionResult> RemoveCourseFromSemester(int semesterId, int courseId)
-        {
-            try
-            {
-                var course = await _context.Courses
-                    .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId); // Direct comparison
+        //[HttpPost]
+        //public async Task<IActionResult> RemoveCourseFromSemester(int semesterId, int courseId)
+        //{
+        //    try
+        //    {
+        //        var course = await _context.Courses
+        //            .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
 
-                if (course == null)
-                {
-                    return Json(new { success = false, message = "Course not found in this semester." });
-                }
+        //        if (course == null)
+        //        {
+        //            return Json(new { success = false, message = "Course not found in this semester." });
+        //        }
 
-                // Remove the semester association - set to 0 instead of null
-                course.SemesterId = 0;
+        //        // Remove the semester association by setting to null
+        //        course.SemesterId = null;
+        //        await _context.SaveChangesAsync();
 
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "Course removed from semester successfully." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error removing course {CourseId} from semester {SemesterId}", courseId, semesterId);
-                return Json(new { success = false, message = "An error occurred while removing the course." });
-            }
-        }
+        //        return Json(new { success = true, message = "Course removed from semester successfully." });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error removing course {CourseId} from semester {SemesterId}", courseId, semesterId);
+        //        return Json(new { success = false, message = "Error removing course from semester." });
+        //    }
+        //}
 
 
         // GET: Semesters/ManageCourse/5?semesterId=4
@@ -900,14 +825,14 @@ namespace StudentManagementSystem.Controllers
                     return Json(new { success = false, message = "Course not found." });
                 }
 
-                // Check if course is already in this semester - direct comparison
+                // Check if course is already in this semester
                 if (course.SemesterId == semesterId)
                 {
                     return Json(new { success = false, message = "Course is already in this semester." });
                 }
 
                 // Add course to semester
-                course.SemesterId = semesterId; // Direct assignment
+                course.SemesterId = semesterId;
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true, message = "Course added to semester successfully." });
@@ -929,13 +854,18 @@ namespace StudentManagementSystem.Controllers
         {
             try
             {
+                if (request == null || !request.CourseIds.Any())
+                {
+                    return Json(new { success = false, message = "No courses selected." });
+                }
+
                 var courses = await _context.Courses
                     .Where(c => request.CourseIds.Contains(c.Id) && c.SemesterId == request.SemesterId)
                     .ToListAsync();
 
                 foreach (var course in courses)
                 {
-                    course.SemesterId = 0; // Set to 0 instead of null
+                    course.SemesterId = null; // Use null since SemesterId is nullable
                 }
 
                 await _context.SaveChangesAsync();
@@ -948,11 +878,276 @@ namespace StudentManagementSystem.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error removing courses from semester {SemesterId}", request.SemesterId);
+                _logger.LogError(ex, "Error removing courses from semester {SemesterId}", request?.SemesterId ?? 0);
                 return Json(new { success = false, message = "An error occurred while removing courses." });
             }
         }
 
+        //[HttpPost]
+        //public async Task<IActionResult> RemoveCourseFromSemester(int semesterId, int courseId)
+        //{
+        //    try
+        //    {
+        //        var course = await _context.Courses
+        //            .Include(c => c.CourseEnrollments)
+        //            .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
+
+        //        if (course == null)
+        //        {
+        //            return Json(new { success = false, message = "Course not found in this semester." });
+        //        }
+
+        //        // Check if there are active enrollments
+        //        var activeEnrollments = course.CourseEnrollments?
+        //            .Count(ce => ce.IsActive && ce.EnrollmentStatus == EnrollmentStatus.Active) ?? 0;
+
+        //        if (activeEnrollments > 0)
+        //        {
+        //            // Auto-unenroll all students first
+        //            var enrollments = await _context.CourseEnrollments
+        //                .Where(ce => ce.CourseId == courseId && ce.SemesterId == semesterId && ce.IsActive)
+        //                .ToListAsync();
+
+        //            foreach (var enrollment in enrollments)
+        //            {
+        //                enrollment.IsActive = false;
+        //                enrollment.EnrollmentStatus = EnrollmentStatus.Dropped;
+        //                enrollment.ModifiedDate = DateTime.Now;
+        //            }
+
+        //            await _context.SaveChangesAsync();
+        //        }
+
+        //        // Now remove the semester association
+        //        course.SemesterId = null;
+        //        await _context.SaveChangesAsync();
+
+        //        return Json(new
+        //        {
+        //            success = true,
+        //            message = $"Course removed from semester successfully. {activeEnrollments} students were automatically unenrolled."
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error removing course {CourseId} from semester {SemesterId}", courseId, semesterId);
+        //        return Json(new
+        //        {
+        //            success = false,
+        //            message = $"Error removing course: {ex.Message}"
+        //        });
+        //    }
+        //}
+
+        //[HttpPost]
+        //public async Task<IActionResult> RemoveCourseFromSemester(int semesterId, int courseId, bool autoUnenroll = true)
+        //{
+        //    try
+        //    {
+        //        var course = await _context.Courses
+        //            .Include(c => c.CourseEnrollments)
+        //            .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
+
+        //        if (course == null)
+        //        {
+        //            return Json(new { success = false, message = "Course not found in this semester." });
+        //        }
+
+        //        // Check if there are active enrollments
+        //        var activeEnrollments = course.CourseEnrollments?
+        //            .Count(ce => ce.IsActive && ce.EnrollmentStatus == EnrollmentStatus.Active) ?? 0;
+
+        //        if (activeEnrollments > 0 && autoUnenroll)
+        //        {
+        //            // Auto-unenroll all students first
+        //            var enrollments = await _context.CourseEnrollments
+        //                .Where(ce => ce.CourseId == courseId && ce.SemesterId == semesterId && ce.IsActive)
+        //                .ToListAsync();
+
+        //            foreach (var enrollment in enrollments)
+        //            {
+        //                enrollment.IsActive = false;
+        //                enrollment.EnrollmentStatus = EnrollmentStatus.Dropped;
+        //                enrollment.ModifiedDate = DateTime.Now;
+        //            }
+        //            await _context.SaveChangesAsync();
+        //        }
+        //        else if (activeEnrollments > 0 && !autoUnenroll)
+        //        {
+        //            return Json(new
+        //            {
+        //                success = false,
+        //                message = $"Cannot remove course. There are {activeEnrollments} active enrollments.",
+        //                hasEnrollments = true,
+        //                enrollmentCount = activeEnrollments
+        //            });
+        //        }
+
+        //        // Remove the semester association - use 0 instead of null to avoid foreign key issues
+        //        course.SemesterId = 0; // Use 0 instead of null
+        //        await _context.SaveChangesAsync();
+
+        //        return Json(new
+        //        {
+        //            success = true,
+        //            message = $"Course removed from semester successfully." +
+        //                     (activeEnrollments > 0 ? $" {activeEnrollments} students were auto-unenrolled." : "")
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error removing course {CourseId} from semester {SemesterId}", courseId, semesterId);
+
+        //        // More detailed error information
+        //        var errorMessage = "Error removing course from semester.";
+        //        if (ex.InnerException != null)
+        //        {
+        //            errorMessage += $" Details: {ex.InnerException.Message}";
+        //        }
+
+        //        return Json(new
+        //        {
+        //            success = false,
+        //            message = errorMessage
+        //        });
+        //    }
+        //}
+
+        [HttpPost]
+        public async Task<IActionResult> RemoveCourseFromSemester(int semesterId, int courseId, bool autoUnenroll = true)
+        {
+            try
+            {
+                var course = await _context.Courses
+                    .Include(c => c.CourseEnrollments)
+                    .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
+
+                if (course == null)
+                {
+                    return Json(new { success = false, message = "Course not found in this semester." });
+                }
+
+                // Handle enrollments if any exist
+                var activeEnrollments = course.CourseEnrollments?
+                    .Count(ce => ce.IsActive && ce.EnrollmentStatus == EnrollmentStatus.Active) ?? 0;
+
+                if (activeEnrollments > 0 && autoUnenroll)
+                {
+                    var enrollments = await _context.CourseEnrollments
+                        .Where(ce => ce.CourseId == courseId && ce.SemesterId == semesterId && ce.IsActive)
+                        .ToListAsync();
+
+                    foreach (var enrollment in enrollments)
+                    {
+                        enrollment.IsActive = false;
+                        enrollment.EnrollmentStatus = EnrollmentStatus.Dropped;
+                        enrollment.ModifiedDate = DateTime.Now;
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                // Try to remove the semester association
+                try
+                {
+                    course.SemesterId = null;
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    // If setting to null fails, use workaround
+                    _logger.LogWarning(dbEx, "Cannot set SemesterId to null, using workaround");
+
+                    // Workaround: Use a special semester ID or mark as inactive
+                    course.SemesterId = 0; // Or some other value that means "unassigned"
+                    await _context.SaveChangesAsync();
+
+                    return Json(new
+                    {
+                        success = true,
+                        message = $"Course removed from semester (workaround applied). {activeEnrollments} students were auto-unenrolled.",
+                        usedWorkaround = true
+                    });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Course removed from semester successfully. {activeEnrollments} students were auto-unenrolled."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing course {CourseId} from semester {SemesterId}", courseId, semesterId);
+
+                return Json(new
+                {
+                    success = false,
+                    message = $"Error removing course: {ex.InnerException?.Message ?? ex.Message}"
+                });
+            }
+        }
+
+        // First, ensure there's an "Unassigned" semester in your database
+        private async Task EnsureUnassignedSemesterExists()
+        {
+            var unassignedSemester = await _context.Semesters
+                .FirstOrDefaultAsync(s => s.Name == "Unassigned");
+
+            if (unassignedSemester == null)
+            {
+                unassignedSemester = new Semester
+                {
+                    Name = "Unassigned",
+                    SemesterType = "Other",
+                    AcademicYear = DateTime.Now.Year,
+                    StartDate = DateTime.Now,
+                    EndDate = DateTime.Now.AddYears(10),
+                    RegistrationStartDate = DateTime.Now,
+                    RegistrationEndDate = DateTime.Now.AddYears(10),
+                    IsActive = true,
+                    IsCurrent = false,
+                    IsRegistrationOpen = false
+                };
+                _context.Semesters.Add(unassignedSemester);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourseEnrollments(int courseId, int semesterId)
+        {
+            try
+            {
+                // Validate inputs
+                if (courseId <= 0 || semesterId <= 0)
+                {
+                    return Json(new { error = "Invalid course or semester ID" });
+                }
+
+                var enrollments = await _context.CourseEnrollments
+                    .Include(ce => ce.Student)
+                    .Where(ce => ce.CourseId == courseId &&
+                                ce.SemesterId == semesterId &&
+                                ce.IsActive)
+                    .Select(ce => new
+                    {
+                        id = ce.Id,
+                        studentId = ce.StudentId,
+                        studentCode = ce.Student != null ? ce.Student.StudentId : "N/A",
+                        studentName = ce.Student != null ? ce.Student.Name : "Unknown Student",
+                        status = ce.EnrollmentStatus.ToString(),
+                        enrollmentDate = ce.CreatedDate
+                    })
+                    .ToListAsync();
+
+                return Json(enrollments);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting enrollments for course {CourseId} in semester {SemesterId}", courseId, semesterId);
+                return Json(new { error = $"Error loading enrollments: {ex.Message}" });
+            }
+        }
 
         // In SemestersController.cs - Fix the GetAvailableCourses method
         [HttpGet]
@@ -961,7 +1156,6 @@ namespace StudentManagementSystem.Controllers
             try
             {
                 var courses = await _context.Courses
-                    .Include(c => c.CourseSemester)
                     .Where(c => c.IsActive && (c.SemesterId == 0 || c.SemesterId == semesterId))
                     .Select(c => new
                     {
@@ -971,8 +1165,10 @@ namespace StudentManagementSystem.Controllers
                         credits = c.Credits,
                         department = c.Department ?? "No Department",
                         currentSemester = c.SemesterId == semesterId ? "Current" :
-                                        (c.CourseSemester != null ? c.CourseSemester.Name : "Not assigned"),
-                        isActive = c.IsActive
+                                        (c.SemesterId > 0 ? $"Semester {c.SemesterId}" : "Not assigned"),
+                        isActive = c.IsActive,
+                        maxStudents = c.MaxStudents,
+                        currentEnrollment = c.CourseEnrollments.Count(ce => ce.IsActive && ce.EnrollmentStatus == EnrollmentStatus.Active)
                     })
                     .ToListAsync();
 
@@ -1003,6 +1199,11 @@ namespace StudentManagementSystem.Controllers
         {
             try
             {
+                if (request == null || !request.CourseIds.Any())
+                {
+                    return Json(new { success = false, message = "No courses selected." });
+                }
+
                 var courses = await _context.Courses
                     .Where(c => request.CourseIds.Contains(c.Id))
                     .ToListAsync();
@@ -1022,7 +1223,7 @@ namespace StudentManagementSystem.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding courses to semester {SemesterId}", request.SemesterId);
+                _logger.LogError(ex, "Error adding courses to semester {SemesterId}", request?.SemesterId ?? 0);
                 return Json(new { success = false, message = "An error occurred while adding courses." });
             }
         }
@@ -1034,8 +1235,12 @@ namespace StudentManagementSystem.Controllers
         {
             try
             {
-                var enrollmentService = new EnrollmentService(_context);
-                var result = await enrollmentService.BulkEnrollInCoursesAsync(
+                if (request == null)
+                {
+                    return Json(new { success = false, message = "Invalid request." });
+                }
+
+                var result = await _enrollmentService.BulkEnrollInCoursesAsync(
                     request.SemesterId,
                     request.CourseIds,
                     request.StudentIds
@@ -1050,7 +1255,7 @@ namespace StudentManagementSystem.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in bulk enrollment for semester {SemesterId}", request.SemesterId);
+                _logger.LogError(ex, "Error in bulk enrollment for semester {SemesterId}", request?.SemesterId ?? 0);
                 return Json(new { success = false, message = "An error occurred during bulk enrollment." });
             }
         }
@@ -1089,8 +1294,7 @@ namespace StudentManagementSystem.Controllers
         {
             try
             {
-                var enrollmentService = new EnrollmentService(_context);
-                var result = await enrollmentService.QuickEnrollInCourseAsync(studentId, courseId, semesterId);
+                var result = await _enrollmentService.QuickEnrollInCourseAsync(studentId, courseId, semesterId);
 
                 if (result.Success)
                 {
@@ -1107,6 +1311,7 @@ namespace StudentManagementSystem.Controllers
                 return Json(new { success = false, message = "An error occurred during enrollment." });
             }
         }
+
 
         // In SemestersController.cs - Add this method
         [HttpGet]
@@ -1186,14 +1391,303 @@ namespace StudentManagementSystem.Controllers
             return await query.ToListAsync();
         }
 
-       
+        [HttpGet]
+        public async Task<IActionResult> GetAvailableCoursesForSemester(int semesterId)
+        {
+            try
+            {
+                // ✅ CREDIT HOUR SYSTEM: Show ALL active courses regardless of planned semester
+                var availableCourses = await _context.Courses
+                    .Where(c => c.IsActive) // Remove: && c.SemesterId != semesterId
+                    .Include(c => c.CourseSemester)
+                    .Include(c => c.CourseEnrollments)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        courseCode = c.CourseCode,
+                        courseName = c.CourseName,
+                        credits = c.Credits,
+                        department = c.Department ?? "No Department",
+                        plannedSemesterName = c.CourseSemester != null ? c.CourseSemester.Name : "Not planned",
+                        plannedSemesterId = c.SemesterId, // This is the PLANNED semester
+                        isActive = c.IsActive,
+                        maxStudents = c.MaxStudents,
+                        currentEnrollment = c.CourseEnrollments.Count(ce => ce.IsActive && ce.EnrollmentStatus == EnrollmentStatus.Active),
+                        status = "Available" // All courses are available in credit hour system
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"Found {availableCourses.Count} available courses for semester {semesterId}");
+
+                return Json(availableCourses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading available courses for semester {SemesterId}", semesterId);
+                return Json(new List<object>());
+            }
+        }
+
+
+        //[HttpPost]
+        //public async Task<IActionResult> AddCoursesToSemester(int semesterId, int[] courseIds)
+        //{
+        //    try
+        //    {
+        //        var semester = await _context.Semesters.FindAsync(semesterId);
+        //        if (semester == null)
+        //        {
+        //            return Json(new { success = false, message = "Semester not found." });
+        //        }
+
+        //        int addedCount = 0;
+        //        foreach (var courseId in courseIds)
+        //        {
+        //            var course = await _context.Courses.FindAsync(courseId);
+        //            if (course != null)
+        //            {
+        //                course.SemesterId = semesterId;
+        //                addedCount++;
+        //            }
+        //        }
+
+        //        await _context.SaveChangesAsync();
+
+        //        return Json(new { success = true, addedCount = addedCount });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error adding courses to semester {SemesterId}", semesterId);
+        //        return Json(new { success = false, message = "Error adding courses to semester." });
+        //    }
+        //}
+
+        // Temporary debug method - add this to SemestersController
+        [HttpGet]
+        public async Task<IActionResult> DebugCourses(int semesterId)
+        {
+            var allCourses = await _context.Courses
+                .Include(c => c.CourseSemester)
+                .Select(c => new
+                {
+                    id = c.Id,
+                    courseCode = c.CourseCode,
+                    courseName = c.CourseName,
+                    semesterId = c.SemesterId,
+                    semesterName = c.CourseSemester != null ? c.CourseSemester.Name : "None",
+                    isActive = c.IsActive
+                })
+                .ToListAsync();
+
+            return Json(new
+            {
+                TotalCourses = allCourses.Count,
+                ActiveCourses = allCourses.Count(c => c.isActive),
+                CoursesInTargetSemester = allCourses.Count(c => c.semesterId == semesterId),
+                AvailableCourses = allCourses.Count(c => c.isActive && c.semesterId != semesterId),
+                AllCourses = allCourses
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DebugEnrollments()
+        {
+            var enrollmentStats = await _context.CourseEnrollments
+                .GroupBy(ce => ce.EnrollmentStatus)
+                .Select(g => new
+                {
+                    Status = g.Key.ToString(),
+                    Count = g.Count(),
+                    ActiveCount = g.Count(ce => ce.IsActive)
+                })
+                .ToListAsync();
+
+            return Json(new
+            {
+                TotalEnrollments = await _context.CourseEnrollments.CountAsync(),
+                TotalActiveEnrollments = await _context.CourseEnrollments.CountAsync(ce => ce.IsActive),
+                StatusBreakdown = enrollmentStats
+            });
+        }
+
+        // GET: Unenroll student from course (for admin)
+        [HttpPost]
+        public async Task<IActionResult> UnenrollStudent(int enrollmentId)
+        {
+            try
+            {
+                var enrollment = await _context.CourseEnrollments
+                    .Include(ce => ce.Course)
+                    .Include(ce => ce.Student)
+                    .FirstOrDefaultAsync(ce => ce.Id == enrollmentId && ce.IsActive);
+
+                if (enrollment == null)
+                {
+                    return Json(new { success = false, message = "Enrollment not found or already inactive." });
+                }
+
+                enrollment.IsActive = false;
+                enrollment.EnrollmentStatus = EnrollmentStatus.Dropped;
+                enrollment.ModifiedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Student {enrollment.Student?.Name} unenrolled from {enrollment.Course?.CourseName} successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unenrolling student from enrollment {EnrollmentId}", enrollmentId);
+                return Json(new { success = false, message = "Error unenrolling student." });
+            }
+        }
+
+        // GET: Bulk unenroll all students from a course
+        [HttpPost]
+        public async Task<IActionResult> UnenrollAllFromCourse(int courseId, int semesterId)
+        {
+            try
+            {
+                var enrollments = await _context.CourseEnrollments
+                    .Include(ce => ce.Course)
+                    .Include(ce => ce.Student)
+                    .Where(ce => ce.CourseId == courseId && ce.SemesterId == semesterId && ce.IsActive)
+                    .ToListAsync();
+
+                if (!enrollments.Any())
+                {
+                    return Json(new { success = false, message = "No active enrollments found for this course." });
+                }
+
+                foreach (var enrollment in enrollments)
+                {
+                    enrollment.IsActive = false;
+                    enrollment.EnrollmentStatus = EnrollmentStatus.Dropped;
+                    enrollment.ModifiedDate = DateTime.Now;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"{enrollments.Count} students unenrolled from course successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unenrolling all students from course {CourseId}", courseId);
+                return Json(new { success = false, message = "Error unenrolling students." });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourseEnrollmentCount(int courseId, int semesterId)
+        {
+            try
+            {
+                var enrollmentCount = await _context.CourseEnrollments
+                    .CountAsync(ce => ce.CourseId == courseId &&
+                                     ce.SemesterId == semesterId &&
+                                     ce.IsActive &&
+                                     ce.EnrollmentStatus == EnrollmentStatus.Active);
+
+                return Json(new { enrollmentCount = enrollmentCount });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting enrollment count for course {CourseId}", courseId);
+                return Json(new { enrollmentCount = 0 });
+            }
+        }
+
+
+        /////////
+        ///
+        [HttpGet]
+        public async Task<IActionResult> DebugCourse(int courseId, int semesterId)
+        {
+            try
+            {
+                var course = await _context.Courses
+                    .Include(c => c.CourseEnrollments)
+                    .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
+
+                if (course == null)
+                {
+                    return Json(new { error = "Course not found in semester" });
+                }
+
+                var enrollments = await _context.CourseEnrollments
+                    .Where(ce => ce.CourseId == courseId && ce.SemesterId == semesterId)
+                    .ToListAsync();
+
+                return Json(new
+                {
+                    courseId = course.Id,
+                    courseName = course.CourseName,
+                    semesterId = course.SemesterId,
+                    enrollmentCount = enrollments.Count,
+                    activeEnrollments = enrollments.Count(e => e.IsActive),
+                    enrollments = enrollments.Select(e => new
+                    {
+                        e.Id,
+                        e.StudentId,
+                        e.IsActive,
+                        e.EnrollmentStatus
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message, innerError = ex.InnerException?.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DebugSemesterCourses(int semesterId)
+        {
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => c.SemesterId == semesterId)
+                    .Select(c => new
+                    {
+                        c.Id,
+                        c.CourseCode,
+                        c.CourseName,
+                        c.SemesterId
+                    })
+                    .ToListAsync();
+
+                return Json(new
+                {
+                    semesterId = semesterId,
+                    courseCount = courses.Count,
+                    courses = courses
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+
+
+
+
     }
-    
+
 }
 public class RemoveCoursesRequest
 {
     public int SemesterId { get; set; }
     public List<int> CourseIds { get; set; } = new List<int>();
+
 }
 
 public class AddCoursesRequest
@@ -1208,3 +1702,16 @@ public class BulkEnrollRequest
     public List<int> CourseIds { get; set; } = new List<int>();
     public List<int> StudentIds { get; set; } = new List<int>();
 }
+
+//public class SemesterDetailsViewModel
+//{
+//    public Semester Semester { get; set; } = null!;
+//    public List<CourseWithEnrollment> Courses { get; set; } = new List<CourseWithEnrollment>();
+//}
+
+//public class CourseWithEnrollment
+//{
+//    public Course Course { get; set; } = null!;
+//    public int CurrentEnrollment { get; set; }
+//}
+

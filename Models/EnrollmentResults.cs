@@ -9,6 +9,7 @@ namespace StudentManagementSystem.Models
         public List<StudentEnrollmentResult> Results { get; set; } = new List<StudentEnrollmentResult>();
         public string SemesterName { get; set; } = string.Empty;
         public DateTime ProcessedAt { get; set; } = DateTime.Now;
+        public string Message { get; set; } = string.Empty;
     }
 
     public class StudentEnrollmentResult
