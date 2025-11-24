@@ -3515,6 +3515,7 @@ namespace StudentManagementSystem.Controllers
                 .Distinct()
                 .ToList() ?? new List<int>();
         }
+<<<<<<< HEAD
 
         [HttpGet]
         public async Task<IActionResult> GetCourseEnrollments(int courseId, int semesterId)
@@ -3545,6 +3546,8 @@ namespace StudentManagementSystem.Controllers
         }
 
 
+=======
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
     }
 
 

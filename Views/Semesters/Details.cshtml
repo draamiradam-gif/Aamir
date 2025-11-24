@@ -322,6 +322,7 @@
                             </button>
                         </div>
                     }
+<<<<<<< HEAD
                 </div>
             </div>
         </div>
@@ -397,6 +398,8 @@
                             </tbody>
                         </table>
                     </div>
+=======
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
                 </div>
             </div>
         </div>
@@ -471,7 +474,10 @@
 
 @section Scripts {
     <script>
+<<<<<<< HEAD
             console.log("JavaScript loaded for semester details");
+=======
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
             // Table sorting functionality
             function initializeTableSorting() {
                 let currentSort = { column: 'courseCode', order: 'asc' };
@@ -586,6 +592,51 @@
             });
 
             $('.course-checkbox').on('change', updateCourseSelectionUI);
+<<<<<<< HEAD
+
+            // Load available courses for modal
+            function loadAvailableCourses() {
+                $('#availableCoursesBody').html(`
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading available courses...
+                        </td>
+                    </tr>
+                `);
+
+                $.get('@Url.Action("GetAvailableCoursesForSemester", "Semesters")', { semesterId: @Model.Id })
+                    .done(function(courses) {
+                        availableCourses = courses;
+                        renderAvailableCourses(courses);
+                    })
+                    .fail(function(xhr, status, error) {
+                        console.error('Error loading courses:', error);
+                        $('#availableCoursesBody').html(`
+                            <tr>
+                                <td colspan="7" class="text-center text-danger">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Failed to load courses: ${xhr.responseJSON?.message || error}
+                                </td>
+                            </tr>
+                        `);
+                    });
+            }
+
+            // Render available courses in modal
+            function renderAvailableCourses(courses) {
+                const tbody = $('#availableCoursesBody');
+                tbody.empty();
+
+                if (courses.length === 0) {
+                    tbody.html(`
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                <i class="fas fa-inbox me-2"></i>No available courses found.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+=======
 
             // Load available courses for modal
             function loadAvailableCourses() {
@@ -677,6 +728,155 @@
                 });
             });
 
+            $('#filterActiveOnly').on('change', function() {
+                $('#courseSearchFilter').trigger('input');
+            });
+
+            // Available course selection
+            $('#selectAllAvailableCourses').on('change', function() {
+                $('.available-course-checkbox').prop('checked', this.checked);
+            });
+
+            function updateAvailableSelection() {
+                const selectedCount = $('.available-course-checkbox:checked').length;
+                const totalCount = $('.available-course-checkbox').length;
+                $('#selectAllAvailableCourses').prop('checked', selectedCount === totalCount && totalCount > 0);
+            }
+
+            // Modal events
+            $('#addCoursesModal').on('show.bs.modal', function() {
+                loadAvailableCourses();
+            });
+
+            $('#confirmAddCourses').on('click', function() {
+                const selectedCourses = $('.available-course-checkbox:checked').map(function() {
+                    return {
+                        id: parseInt($(this).val()),
+                        name: $(this).data('course-name')
+                    };
+                }).get();
+
+                if (selectedCourses.length === 0) {
+                    showToast('Warning', 'Please select at least one course to add.', 'warning');
+                    return;
+                }
+
+                addCoursesToSemester(selectedCourses);
+            });
+
+            function addCoursesToSemester(courses) {
+                const courseIds = courses.map(c => c.id);
+
+                $.post('@Url.Action("AddCoursesToSemester", "Semesters")', {
+                    semesterId: @Model.Id,
+                    courseIds: courseIds
+                })
+                .done(function(result) {
+                    if (result.success) {
+                        showToast('Success', `Added ${result.addedCount} courses to semester.`, 'success');
+                        $('#addCoursesModal').modal('hide');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showToast('Error', result.message || 'Failed to add courses.', 'error');
+                    }
+                })
+                .fail(function(xhr, status, error) {
+                    showToast('Error', 'Failed to add courses: ' + (xhr.responseJSON?.message || error), 'error');
+                });
+            }
+
+            // Remove course functionality
+            $('.remove-course-btn').on('click', function() {
+                const courseId = $(this).data('course-id');
+                const courseName = $(this).data('course-name');
+
+                if (confirm(`Are you sure you want to remove "${courseName}" from this semester?`)) {
+                    removeCourseFromSemester(courseId, courseName);
+                }
+            });
+
+            function removeCourseFromSemester(courseId, courseName) {
+                $.post('@Url.Action("RemoveCourseFromSemester", "Semesters")', {
+                    semesterId: @Model.Id,
+                    courseId: courseId
+                })
+                .done(function(result) {
+                    if (result.success) {
+                        showToast('Success', `Removed "${courseName}" from semester.`, 'success');
+                        $(`[data-course-id="${courseId}"]`).fadeOut(300, function() {
+                            $(this).remove();
+                            updateCourseSelectionUI();
+                        });
+                    } else {
+                        showToast('Error', result.message || 'Failed to remove course.', 'error');
+                    }
+                })
+                .fail(function(xhr, status, error) {
+                    showToast('Error', 'Failed to remove course: ' + (xhr.responseJSON?.message || error), 'error');
+                });
+            }
+
+            // Bulk enrollment
+            $('#bulkEnrollBtn').on('click', function() {
+                if (selectedCourseIds.length > 0) {
+                    // Redirect to bulk enrollment page with preselected courses
+                    const url = '@Url.Action("BulkEnrollment", "Enrollment")' +
+                                `?semesterId=@Model.Id&preselectedCourses=${selectedCourseIds.join(',')}`;
+                    window.location.href = url;
+                } else {
+                    showToast('Warning', 'Please select at least one course for bulk enrollment.', 'warning');
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
+                }
+
+                courses.forEach(course => {
+                    const row = `
+                        <tr class="available-course-row" data-course-id="${course.id}">
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input available-course-checkbox" type="checkbox"
+                                           value="${course.id}" data-course-name="${course.courseName}">
+                                </div>
+                            </td>
+                            <td class="fw-bold">${course.courseCode}</td>
+                            <td>${course.courseName}</td>
+                            <td class="text-center">
+                                <span class="badge bg-info">${course.credits}</span>
+                            </td>
+                            <td>${course.department}</td>
+                            <td>
+                                ${course.currentSemesterName || '<span class="text-muted">Not assigned</span>'}
+                            </td>
+                            <td>
+                                ${course.isActive ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}
+                            </td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+
+                // Initialize available course checkboxes
+                $('.available-course-checkbox').on('change', updateAvailableSelection);
+            }
+
+            // Filter available courses
+            $('#courseSearchFilter').on('input', function() {
+                const searchTerm = $(this).val().toLowerCase();
+                const activeOnly = $('#filterActiveOnly').is(':checked');
+
+                $('.available-course-row').each(function() {
+                    const text = $(this).text().toLowerCase();
+                    const isActive = $(this).find('.badge').hasClass('bg-success');
+
+                    const matchesSearch = text.includes(searchTerm);
+                    const matchesActive = !activeOnly || isActive;
+
+                    $(this).toggle(matchesSearch && matchesActive);
+                });
+            });
+
+<<<<<<< HEAD
             $('#filterActiveOnly').on('change', function() {
                 $('#courseSearchFilter').trigger('input');
             });
@@ -902,6 +1102,8 @@
                 }
             });
 
+=======
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
             // Initialize
             updateCourseSelectionUI();
 
@@ -924,6 +1126,7 @@
                     toast.alert('close');
                 }, 5000);
             }
+<<<<<<< HEAD
 
                     // Enrollment management functionality
         $(document).ready(function() {
@@ -1327,6 +1530,8 @@
                     text: $(this).find('option:selected').text().trim()
                 });
             });
+=======
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
         });
     </script>
 

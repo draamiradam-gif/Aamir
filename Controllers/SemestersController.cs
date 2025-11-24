@@ -416,7 +416,11 @@ namespace StudentManagementSystem.Controllers
 
             if (semester == null) return NotFound();
 
+<<<<<<< HEAD
             // Load courses for this semester
+=======
+            // Load courses for this semester with enrollment data
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
             var courses = await _context.Courses
                 .Where(c => c.SemesterId == id && c.IsActive)
                 .Include(c => c.CourseEnrollments)
@@ -424,8 +428,12 @@ namespace StudentManagementSystem.Controllers
                 .Include(c => c.CourseSemester)
                 .ToListAsync();
 
+<<<<<<< HEAD
             // Ensure ViewBag.Courses is never null
             ViewBag.Courses = courses ?? new List<Course>();
+=======
+            ViewBag.Courses = courses;
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
             ViewBag.SemesterId = id;
 
             return View(semester);
@@ -608,6 +616,7 @@ namespace StudentManagementSystem.Controllers
             return View();
         }
 
+<<<<<<< HEAD
         //[HttpPost]
         //public async Task<IActionResult> RemoveCourseFromSemester(int semesterId, int courseId)
         //{
@@ -615,12 +624,22 @@ namespace StudentManagementSystem.Controllers
         //    {
         //        var course = await _context.Courses
         //            .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
+=======
+        [HttpPost]
+        public async Task<IActionResult> RemoveCourseFromSemester(int semesterId, int courseId)
+        {
+            try
+            {
+                var course = await _context.Courses
+                    .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
 
         //        if (course == null)
         //        {
         //            return Json(new { success = false, message = "Course not found in this semester." });
         //        }
 
+<<<<<<< HEAD
         //        // Remove the semester association by setting to null
         //        course.SemesterId = null;
         //        await _context.SaveChangesAsync();
@@ -633,6 +652,20 @@ namespace StudentManagementSystem.Controllers
         //        return Json(new { success = false, message = "Error removing course from semester." });
         //    }
         //}
+=======
+                // Remove the semester association by setting to 0 (not null since it's non-nullable)
+                course.SemesterId = 0;
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing course {CourseId} from semester {SemesterId}", courseId, semesterId);
+                return Json(new { success = false, message = "Error removing course from semester." });
+            }
+        }
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
 
 
         // GET: Semesters/ManageCourse/5?semesterId=4
@@ -1429,6 +1462,7 @@ namespace StudentManagementSystem.Controllers
         }
 
 
+<<<<<<< HEAD
         //[HttpPost]
         //public async Task<IActionResult> AddCoursesToSemester(int semesterId, int[] courseIds)
         //{
@@ -1461,6 +1495,40 @@ namespace StudentManagementSystem.Controllers
         //        return Json(new { success = false, message = "Error adding courses to semester." });
         //    }
         //}
+=======
+        [HttpPost]
+        public async Task<IActionResult> AddCoursesToSemester(int semesterId, int[] courseIds)
+        {
+            try
+            {
+                var semester = await _context.Semesters.FindAsync(semesterId);
+                if (semester == null)
+                {
+                    return Json(new { success = false, message = "Semester not found." });
+                }
+
+                int addedCount = 0;
+                foreach (var courseId in courseIds)
+                {
+                    var course = await _context.Courses.FindAsync(courseId);
+                    if (course != null)
+                    {
+                        course.SemesterId = semesterId;
+                        addedCount++;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, addedCount = addedCount });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding courses to semester {SemesterId}", semesterId);
+                return Json(new { success = false, message = "Error adding courses to semester." });
+            }
+        }
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
 
         // Temporary debug method - add this to SemestersController
         [HttpGet]
@@ -1510,6 +1578,7 @@ namespace StudentManagementSystem.Controllers
             });
         }
 
+<<<<<<< HEAD
         // GET: Unenroll student from course (for admin)
         [HttpPost]
         public async Task<IActionResult> UnenrollStudent(int enrollmentId)
@@ -1678,6 +1747,8 @@ namespace StudentManagementSystem.Controllers
 
 
 
+=======
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
 
 
     }
