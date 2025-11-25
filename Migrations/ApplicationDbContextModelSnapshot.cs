@@ -386,12 +386,9 @@ namespace StudentManagementSystem.Migrations
                         .HasColumnType("nvarchar(1000)");
 
                     b.Property<int?>("SemesterId")
-<<<<<<< HEAD
                         .HasColumnType("int");
 
                     b.Property<int?>("SemesterId1")
-=======
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -1355,13 +1352,10 @@ namespace StudentManagementSystem.Migrations
                         .WithMany()
                         .HasForeignKey("SemesterId")
                         .OnDelete(DeleteBehavior.SetNull);
-<<<<<<< HEAD
 
                     b.HasOne("StudentManagementSystem.Models.Semester", null)
                         .WithMany("Courses")
                         .HasForeignKey("SemesterId1");
-=======
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
 
                     b.Navigation("CourseDepartment");
 

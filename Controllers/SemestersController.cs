@@ -10,7 +10,6 @@ using StudentManagementSystem.Data;
 using StudentManagementSystem.Models;
 using StudentManagementSystem.Models.ViewModels;
 using StudentManagementSystem.Services;
-<<<<<<< HEAD
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
@@ -21,10 +20,6 @@ using System.Threading.Tasks;
 using System.IO;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-=======
-using System.Linq;
-using System.Threading.Tasks;
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
 
 namespace StudentManagementSystem.Controllers
 {
@@ -44,10 +39,7 @@ namespace StudentManagementSystem.Controllers
             _logger = logger;
             _semesterService = semesterService; // Add this
             _enrollmentService = enrollmentService;
-<<<<<<< HEAD
             ExcelPackage.License.SetNonCommercialOrganization("Student Management System");
-=======
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
         }
 
         // GET: Semesters
@@ -488,15 +480,7 @@ namespace StudentManagementSystem.Controllers
 
             if (semester == null) return NotFound();
 
-<<<<<<< HEAD
             // Load courses for this semester
-=======
-<<<<<<< HEAD
-            // Load courses for this semester
-=======
-            // Load courses for this semester with enrollment data
->>>>>>> b719770a87085740b760d958104cdbb206173fc7
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
             var courses = await _context.Courses
                 .Where(c => c.SemesterId == id && c.IsActive)
                 .Include(c => c.CourseEnrollments)
@@ -504,17 +488,8 @@ namespace StudentManagementSystem.Controllers
                 .Include(c => c.CourseSemester)
                 .ToListAsync();
 
-<<<<<<< HEAD
             // Ensure ViewBag.Courses is never null
             ViewBag.Courses = courses ?? new List<Course>();
-=======
-<<<<<<< HEAD
-            // Ensure ViewBag.Courses is never null
-            ViewBag.Courses = courses ?? new List<Course>();
-=======
-            ViewBag.Courses = courses;
->>>>>>> b719770a87085740b760d958104cdbb206173fc7
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
             ViewBag.SemesterId = id;
 
             return View(semester);
@@ -697,10 +672,6 @@ namespace StudentManagementSystem.Controllers
             return View();
         }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
         //[HttpPost]
         //public async Task<IActionResult> RemoveCourseFromSemester(int semesterId, int courseId)
         //{
@@ -708,28 +679,12 @@ namespace StudentManagementSystem.Controllers
         //    {
         //        var course = await _context.Courses
         //            .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
-<<<<<<< HEAD
-=======
-=======
-        [HttpPost]
-        public async Task<IActionResult> RemoveCourseFromSemester(int semesterId, int courseId)
-        {
-            try
-            {
-                var course = await _context.Courses
-                    .FirstOrDefaultAsync(c => c.Id == courseId && c.SemesterId == semesterId);
->>>>>>> b719770a87085740b760d958104cdbb206173fc7
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
 
         //        if (course == null)
         //        {
         //            return Json(new { success = false, message = "Course not found in this semester." });
         //        }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
         //        // Remove the semester association by setting to null
         //        course.SemesterId = null;
         //        await _context.SaveChangesAsync();
@@ -742,23 +697,6 @@ namespace StudentManagementSystem.Controllers
         //        return Json(new { success = false, message = "Error removing course from semester." });
         //    }
         //}
-<<<<<<< HEAD
-=======
-=======
-                // Remove the semester association by setting to 0 (not null since it's non-nullable)
-                course.SemesterId = 0;
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error removing course {CourseId} from semester {SemesterId}", courseId, semesterId);
-                return Json(new { success = false, message = "Error removing course from semester." });
-            }
-        }
->>>>>>> b719770a87085740b760d958104cdbb206173fc7
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
 
 
         // GET: Semesters/ManageCourse/5?semesterId=4
@@ -1555,10 +1493,6 @@ namespace StudentManagementSystem.Controllers
         }
 
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
         //[HttpPost]
         //public async Task<IActionResult> AddCoursesToSemester(int semesterId, int[] courseIds)
         //{
@@ -1591,43 +1525,6 @@ namespace StudentManagementSystem.Controllers
         //        return Json(new { success = false, message = "Error adding courses to semester." });
         //    }
         //}
-<<<<<<< HEAD
-=======
-=======
-        [HttpPost]
-        public async Task<IActionResult> AddCoursesToSemester(int semesterId, int[] courseIds)
-        {
-            try
-            {
-                var semester = await _context.Semesters.FindAsync(semesterId);
-                if (semester == null)
-                {
-                    return Json(new { success = false, message = "Semester not found." });
-                }
-
-                int addedCount = 0;
-                foreach (var courseId in courseIds)
-                {
-                    var course = await _context.Courses.FindAsync(courseId);
-                    if (course != null)
-                    {
-                        course.SemesterId = semesterId;
-                        addedCount++;
-                    }
-                }
-
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, addedCount = addedCount });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error adding courses to semester {SemesterId}", semesterId);
-                return Json(new { success = false, message = "Error adding courses to semester." });
-            }
-        }
->>>>>>> b719770a87085740b760d958104cdbb206173fc7
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
 
         // Temporary debug method - add this to SemestersController
         [HttpGet]
@@ -1677,10 +1574,6 @@ namespace StudentManagementSystem.Controllers
             });
         }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
         // GET: Unenroll student from course (for admin)
         [HttpPost]
         public async Task<IActionResult> UnenrollStudent(int enrollmentId)
@@ -1847,7 +1740,6 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-<<<<<<< HEAD
         ////////
         ///
         [HttpPost]
@@ -2638,13 +2530,6 @@ namespace StudentManagementSystem.Controllers
                 return Json(new { success = false, message = "Error deleting semesters." });
             }
         }
-=======
-
-
-=======
->>>>>>> b719770a87085740b760d958104cdbb206173fc7
-
->>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
 
     }
 
