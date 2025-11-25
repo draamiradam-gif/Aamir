@@ -33,7 +33,9 @@ namespace StudentManagementSystem.Data
         public DbSet<GradeScale> GradeScales { get; set; }
         public DbSet<QRCodeSession> QRCodeSessions { get; set; }
         public DbSet<QRAttendance> QRAttendances { get; set; }
-       
+
+        public DbSet<WaitlistEntry> WaitlistEntries { get; set; } = null!;
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -56,6 +58,7 @@ namespace StudentManagementSystem.Data
                 entity.Property(s => s.Grade).HasMaxLength(50);
                 entity.Property(s => s.Phone).HasMaxLength(15);
                 entity.Property(s => s.Email).HasMaxLength(100);
+                entity.Property(s => s.IsActive).HasDefaultValue(true);
 
                 entity.Property(s => s.Percentage).HasColumnType("decimal(5,2)");
                 entity.Property(s => s.GPA).HasColumnType("decimal(4,2)");
@@ -84,7 +87,9 @@ namespace StudentManagementSystem.Data
                 entity.HasOne(c => c.CourseSemester)
                       .WithMany()
                       .HasForeignKey(c => c.SemesterId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      //.OnDelete(DeleteBehavior.Restrict);
+                      .OnDelete(DeleteBehavior.SetNull) // Or Restrict
+                      .IsRequired(false); // Make foreign key optional
 
                 entity.HasOne(c => c.CourseDepartment)
                       .WithMany(d => d.Courses)
@@ -283,6 +288,6 @@ namespace StudentManagementSystem.Data
                       .OnDelete(DeleteBehavior.NoAction);
             });
 
-        }
+        }   
     }
 }

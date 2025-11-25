@@ -1,6 +1,14 @@
 ﻿@model IEnumerable<Semester>
 @{
     ViewData["Title"] = "Semesters";
+
+    // Calculate statistics for analysis
+    var totalSemesters = Model.Count();
+    var activeSemesters = Model.Count(s => s.IsActive);
+    var currentSemester = Model.FirstOrDefault(s => s.IsCurrent);
+    var registrationOpen = Model.Count(s => s.IsRegistrationOpen);
+    var upcomingSemesters = Model.Count(s => s.StartDate > DateTime.Now);
+    var ongoingSemesters = Model.Count(s => s.StartDate <= DateTime.Now && s.EndDate >= DateTime.Now);
 }
 
 <div class="page-header">
@@ -11,30 +19,192 @@
             </h1>
             <p class="text-muted mb-0">Manage academic semesters and schedules</p>
         </div>
-        <a asp-action="Create" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>Add Semester
-        </a>
+        <div class="btn-group">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add Semester
+            </a>
+            <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+                <span class="visually-hidden">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" id="exportSelected"><i class="fas fa-download me-2"></i>Export Selected</a></li>
+                <li><a class="dropdown-item" href="#" id="exportAll"><i class="fas fa-file-export me-2"></i>Export All</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" asp-action="Create"><i class="fas fa-plus-circle me-2"></i>Quick Create</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Analysis Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-gradient-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Semester Analytics & Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Key Metrics -->
+                    <div class="col-lg-8">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <div class="card bg-primary text-white h-100">
+                                    <div class="card-body text-center">
+                                        <h3 class="mb-1">@totalSemesters</h3>
+                                        <p class="mb-0 opacity-75">Total Semesters</p>
+                                        <small class="opacity-75">@activeSemesters Active</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card bg-success text-white h-100">
+                                    <div class="card-body text-center">
+                                        <h3 class="mb-1">@currentSemester?.Name</h3>
+                                        <p class="mb-0 opacity-75">Current Semester</p>
+                                        <small class="opacity-75">@currentSemester?.AcademicYear</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card bg-info text-white h-100">
+                                    <div class="card-body text-center">
+                                        <h3 class="mb-1">@registrationOpen</h3>
+                                        <p class="mb-0 opacity-75">Registration Open</p>
+                                        <small class="opacity-75">@ongoingSemesters Ongoing</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card bg-warning text-dark h-100">
+                                    <div class="card-body text-center">
+                                        <h3 class="mb-1">@upcomingSemesters</h3>
+                                        <p class="mb-0 opacity-75">Upcoming</p>
+                                        <small class="opacity-75">Future Semesters</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Semester Distribution Chart -->
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-semibold">Semester Type Distribution</span>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="border rounded p-2">
+                                        <h5 class="text-primary mb-1">@Model.Count(s => s.SemesterType == "Fall")</h5>
+                                        <small class="text-muted">Fall Semesters</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border rounded p-2">
+                                        <h5 class="text-success mb-1">@Model.Count(s => s.SemesterType == "Spring")</h5>
+                                        <small class="text-muted">Spring Semesters</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border rounded p-2">
+                                        <h5 class="text-warning mb-1">@Model.Count(s => s.SemesterType == "Summer")</h5>
+                                        <small class="text-muted">Summer Semesters</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="col-lg-4">
+                        <div class="bg-light rounded p-3 h-100">
+                            <h6 class="border-bottom pb-2 mb-3">Quick Statistics</h6>
+                            <div class="row">
+                                <div class="col-6 mb-2">
+                                    <small class="text-muted">Active:</small>
+                                    <div class="fw-bold">@activeSemesters</div>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <small class="text-muted">Inactive:</small>
+                                    <div class="fw-bold">@(totalSemesters - activeSemesters)</div>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <small class="text-muted">Current:</small>
+                                    <div class="fw-bold">@(currentSemester != null ? "Yes" : "No")</div>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <small class="text-muted">Reg. Open:</small>
+                                    <div class="fw-bold">@registrationOpen</div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted d-block">Academic Year Range:</small>
+                                <div class="fw-bold">
+                                    @(Model.Any() ? Model.Min(s => s.AcademicYear) : "N/A") - @(Model.Any() ? Model.Max(s => s.AcademicYear) : "N/A")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="card-university card">
-    <div class="card-header bg-white py-3">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0 text-dark">
             <i class="fas fa-list me-2"></i>Semester Directory
+            <span class="badge bg-primary ms-2" id="semesterCount">@totalSemesters</span>
         </h5>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary" id="toggleFilters">
+                <i class="fas fa-filter me-1"></i>Filters
+            </button>
+            <button class="btn btn-sm btn-outline-primary" id="selectAllBtn">
+                <i class="fas fa-check-square me-1"></i>Select All
+            </button>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i>Export
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" id="exportSelectedSemesters"><i class="fas fa-table me-2"></i>Export Selected</a></li>
+                    <li><a class="dropdown-item" href="#" id="exportAllSemesters"><i class="fas fa-list me-2"></i>Export All</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" id="exportSummary"><i class="fas fa-file-pdf me-2"></i>Export Summary (PDF)</a></li>
+                    <li><a class="dropdown-item" href="#" id="exportDetails"><i class="fas fa-file-excel me-2"></i>Export Details (Excel)</a></li>
+                </ul>
+            </div>
+        </div>
     </div>
     <div class="card-body">
-        <div class="row mb-4">
+        <!-- Enhanced Filters Section -->
+        <div class="row mb-4" id="filtersSection">
             <div class="col-12">
                 <div class="card bg-light">
                     <div class="card-body py-3">
-                        <h6 class="card-title mb-3">
-                            <i class="fas fa-filter me-2"></i>Filter Semesters
-                        </h6>
-                        <form method="get" asp-action="Index" id="filterForm" class="row g-3 align-items-end">
-                            <div class="col-md-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-filter me-2"></i>Advanced Filters
+                            </h6>
+                            <button class="btn btn-sm btn-outline-secondary" id="clearAllFilters">
+                                <i class="fas fa-times me-1"></i>Clear All
+                            </button>
+                        </div>
+
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold small">Search</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" id="searchFilter" placeholder="Search semesters...">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label fw-semibold small">Status</label>
-                                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <select class="form-select form-select-sm" id="statusFilter">
                                     <option value="">All Status</option>
                                     <option value="active">Active Only</option>
                                     <option value="inactive">Inactive Only</option>
@@ -42,36 +212,65 @@
                                     <option value="registration">Registration Open</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label fw-semibold small">Academic Year</label>
-                                <select name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <select class="form-select form-select-sm" id="yearFilter">
                                     <option value="">All Years</option>
-                                    <option value="2024">2024</option>
-                                    <option value="2023">2023</option>
-                                    <option value="2022">2022</option>
+                                    @foreach (var year in Model.Select(s => s.AcademicYear).Distinct().OrderByDescending(y => y))
+                                    {
+                                        <option value="@year">@year</option>
+                                    }
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label fw-semibold small">Semester Type</label>
-                                <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <select class="form-select form-select-sm" id="typeFilter">
                                     <option value="">All Types</option>
                                     <option value="Fall">Fall</option>
                                     <option value="Spring">Spring</option>
                                     <option value="Summer">Summer</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <div class="d-grid">
-                                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">
-                                        <i class="fas fa-times me-1"></i>Clear Filters
-                                    </a>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold small">Time Period</label>
+                                <select class="form-select form-select-sm" id="periodFilter">
+                                    <option value="">All Periods</option>
+                                    <option value="past">Past Semesters</option>
+                                    <option value="current">Current</option>
+                                    <option value="upcoming">Upcoming</option>
+                                </select>
+                            </div>
+                            <!-- In the filters section -->
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold small">Department</label>
+                                <select class="form-select form-select-sm" id="departmentFilter">
+                                    <option value="">All Departments</option>
+                                    @foreach (var dept in Model.Where(s => s.Department != null).Select(s => s.Department!.Name).Distinct().OrderBy(d => d))
+                                    {
+                                        <option value="@dept">@dept</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-light text-dark" id="filterCount">Showing @totalSemesters of @totalSemesters semesters</span>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="showInactive" checked>
+                                        <label class="form-check-label small" for="showInactive">Show Inactive</label>
+                                    </div>
                                 </div>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
         @if (!Model.Any())
         {
             <div class="text-center py-5">
@@ -87,85 +286,159 @@
         {
             <div class="table-responsive">
                 <table id="semestersTable" class="table table-hover">
-                    <thead>
+                    <thead class="table-light">
                         <tr>
-                            <th>Semester Information</th>
-                            <th>Type & Year</th>
-                            <th>Academic Path</th>
-                            <th>Status</th>
-                            <th class="text-center">Actions</th>
+                            <th width="50">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                </div>
+                            </th>
+                            <th data-sort="name" class="sortable">
+                                Semester Information <span class="sort-indicator">🔻</span>
+                            </th>
+                            <th data-sort="type" class="sortable">
+                                Type & Year
+                            </th>
+                            <th data-sort="path" class="sortable">
+                                Academic Path
+                            </th>
+                            <th data-sort="dates" class="sortable">
+                                Duration
+                            </th>
+                            <th data-sort="status" class="sortable">
+                                Status
+                            </th>
+                            <th class="text-center" width="200">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var item in Model)
                         {
-                            <tr>
+                            var isPast = item.EndDate < DateTime.Now;
+                            var isCurrent = item.StartDate <= DateTime.Now && item.EndDate >= DateTime.Now;
+                            var isUpcoming = item.StartDate > DateTime.Now;
+
+                            <tr data-semester-id="@item.Id"
+                                data-name="@item.Name.ToLower()"
+                                data-type="@item.SemesterType"
+                                data-year="@item.AcademicYear"
+                                data-status="@(item.IsActive ? "active" : "inactive")"
+                                data-period="@(isPast ? "past" : isCurrent ? "current" : "upcoming")"
+                                data-department="@(item.Department?.Name ?? "")">
                                 <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input semester-checkbox" type="checkbox" value="@item.Id">
+                                    </div>
+                                </td>
+                                <td data-sort-value="@item.Name">
                                     <div class="d-flex align-items-center">
                                         <div class="flex-shrink-0">
                                             <i class="fas fa-calendar-alt text-primary fs-4"></i>
                                         </div>
                                         <div class="flex-grow-1 ms-3">
-                                            <h6 class="mb-1 fw-semibold">@item.Name</h6>
-                                            <small class="text-muted">@item.SemesterType @item.AcademicYear</small>
+                                            <h6 class="mb-1 fw-semibold">
+                                                <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark">
+                                                    @item.Name
+                                                </a>
+                                            </h6>
+                                            <small class="text-muted">
+                                                <i class="fas @(item.IsActive ? "fa-check text-success" : "fa-times text-danger") me-1"></i>
+                                                @(item.IsActive ? "Active" : "Inactive")
+                                            </small>
                                         </div>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-sort-value="@item.SemesterType">
                                     <span class="badge bg-primary">@item.SemesterType</span>
                                     <br>
-                                    <small class="text-muted">@item.AcademicYear</small>
+                                    <small class="text-muted fw-bold">@item.AcademicYear</small>
                                 </td>
-                                <td>
-                                    <small>@item.FullPath</small>
+                                <td data-sort-value="@item.FullPath">
+                                    <small class="text-truncate d-block" style="max-width: 200px;" title="@item.FullPath">
+                                        @item.FullPath
+                                    </small>
                                 </td>
-                                <td>
-                                    @if (item.IsCurrent)
+                                <td data-sort-value="@item.StartDate.Ticks">
+                                    <small class="d-block">@item.StartDate.ToString("MMM dd, yyyy")</small>
+                                    <small class="d-block text-muted">to @item.EndDate.ToString("MMM dd, yyyy")</small>
+                                    @if (isPast)
                                     {
-                                        <span class="badge bg-success">Current</span>
+                                        <span class="badge bg-secondary mt-1">Completed</span>
                                     }
-                                    @if (item.IsRegistrationOpen)
+                                    else if (isCurrent)
                                     {
-                                        <span class="badge bg-info">Registration Open</span>
+                                        <span class="badge bg-success mt-1">Ongoing</span>
                                     }
-                                    @if (!item.IsActive)
+                                    else
                                     {
-                                        <span class="badge bg-secondary">Inactive</span>
+                                        <span class="badge bg-warning mt-1">Upcoming</span>
                                     }
+                                </td>
+                                <td data-sort-value="@(item.IsCurrent ? "3" : item.IsRegistrationOpen ? "2" : item.IsActive ? "1" : "0")">
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @if (item.IsCurrent)
+                                        {
+                                            <span class="badge bg-success" title="Current Semester">
+                                                <i class="fas fa-star me-1"></i>Current
+                                            </span>
+                                        }
+                                        @if (item.IsRegistrationOpen)
+                                        {
+                                            <span class="badge bg-info" title="Registration Open">
+                                                <i class="fas fa-user-plus me-1"></i>Registration
+                                            </span>
+                                        }
+                                        @if (!item.IsActive)
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                        @if (item.IsActive && !item.IsCurrent && !item.IsRegistrationOpen)
+                                        {
+                                            <span class="badge bg-light text-dark">Active</span>
+                                        }
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column gap-1">
-                                        <!-- Semester Name as clickable link -->
-                                        <a asp-action="Details" asp-route-id="@item.Id"
-                                           class="btn btn-sm btn-outline-primary text-start" title="View Semester Details">
-                                            <i class="fas fa-eye me-1"></i>@item.Name
-                                        </a>
-                                        <div class="d-flex justify-content-center gap-1">
+                                        <!-- Quick Actions -->
+                                        <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                            <a asp-action="Details" asp-route-id="@item.Id"
+                                               class="btn btn-sm btn-outline-primary" title="View Details" data-bs-toggle="tooltip">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
                                             <a asp-controller="Courses" asp-action="Create" asp-route-semesterId="@item.Id"
-                                               class="btn btn-sm btn-outline-success" title="Add Course">
+                                               class="btn btn-sm btn-outline-success" title="Add Course" data-bs-toggle="tooltip">
                                                 <i class="fas fa-plus"></i>
                                             </a>
                                             <a asp-action="Edit" asp-route-id="@item.Id"
-                                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                                               class="btn btn-sm btn-outline-warning" title="Edit" data-bs-toggle="tooltip">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <a asp-action="Duplicate" asp-route-id="@item.Id"
-                                               class="btn btn-sm btn-outline-warning" title="Duplicate">
+                                               class="btn btn-sm btn-outline-info" title="Duplicate" data-bs-toggle="tooltip">
                                                 <i class="fas fa-copy"></i>
                                             </a>
                                             @if (!item.IsCurrent)
                                             {
                                                 <form asp-action="SetCurrent" method="post" class="d-inline">
                                                     <input type="hidden" name="id" value="@item.Id" />
-                                                    <button type="submit" class="btn btn-sm btn-outline-info" title="Set as Current">
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Set as Current" data-bs-toggle="tooltip">
                                                         <i class="fas fa-star"></i>
                                                     </button>
                                                 </form>
                                             }
                                             <a asp-action="Delete" asp-route-id="@item.Id"
-                                               class="btn btn-sm btn-outline-danger" title="Delete">
+                                               class="btn btn-sm btn-outline-danger" title="Delete" data-bs-toggle="tooltip">
                                                 <i class="fas fa-trash"></i>
                                             </a>
+                                        </div>
+
+                                        <!-- Quick Stats -->
+                                        <div class="text-center">
+                                            <small class="text-muted">
+                                                <i class="fas fa-book me-1"></i>
+                                                <span class="fw-semibold">0</span> courses
+                                            </small>
                                         </div>
                                     </div>
                                 </td>
@@ -174,6 +447,32 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Bulk Actions Panel -->
+            <div class="row mt-3" id="bulkActionsPanel" style="display: none;">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-body py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="fw-semibold" id="selectedCount">0</span> semesters selected
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-danger" id="bulkDeleteBtn">
+                                        <i class="fas fa-trash me-1"></i>Delete Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" id="bulkDeactivateBtn">
+                                        <i class="fas fa-times me-1"></i>Deactivate Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" id="bulkActivateBtn">
+                                        <i class="fas fa-check me-1"></i>Activate Selected
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
     </div>
 </div>
@@ -181,15 +480,513 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            // Initialize DataTable
-            $('#semestersTable').DataTable({
-                "pageLength": 25,
-                "responsive": true,
-                "order": [[0, 'asc']],
-                "columnDefs": [
-                    { "orderable": false, "targets": [4] } // Make actions column not sortable
-                ]
+            console.log('Semesters page loaded - enhanced version');
+
+            // Initialize all components
+            initializeTooltips();
+            initializeEnhancedFilters();
+            initializeTableSorting();
+            initializeBulkActions();
+            initializeExportFunctionality();
+
+            // Toggle filters section
+            $('#toggleFilters').on('click', function() {
+                $('#filtersSection').slideToggle();
+                updateToggleButtonIcon();
             });
+
+            // Show/hide inactive semesters
+            $('#showInactive').on('change', function() {
+                filterSemesters();
+            });
+
+            console.log('All components initialized successfully');
         });
+
+        // Tooltips
+        function initializeTooltips() {
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        }
+
+        // Enhanced Filtering
+        function initializeEnhancedFilters() {
+            console.log('Initializing enhanced filters');
+
+            // Apply filters on input/change
+            $('#searchFilter').on('input', filterSemesters);
+            $('#statusFilter, #yearFilter, #typeFilter, #periodFilter, #departmentFilter').on('change', filterSemesters);
+
+            // Clear all filters
+            $('#clearAllFilters').on('click', function() {
+                $('#searchFilter').val('');
+                $('#statusFilter').val('');
+                $('#yearFilter').val('');
+                $('#typeFilter').val('');
+                $('#periodFilter').val('');
+                $('#departmentFilter').val('');
+                $('#showInactive').prop('checked', true);
+                filterSemesters();
+            });
+        }
+
+        function filterSemesters() {
+            const searchTerm = $('#searchFilter').val().toLowerCase();
+            const status = $('#statusFilter').val();
+            const year = $('#yearFilter').val();
+            const type = $('#typeFilter').val();
+            const period = $('#periodFilter').val();
+            const department = $('#departmentFilter').val();
+            const showInactive = $('#showInactive').is(':checked');
+
+            let visibleCount = 0;
+            const totalCount = $('tr[data-semester-id]').length;
+
+            $('tr[data-semester-id]').each(function() {
+                const $row = $(this);
+                const name = $row.data('name');
+                const rowStatus = $row.data('status');
+                const rowYear = $row.data('year').toString();
+                const rowType = $row.data('type');
+                const rowPeriod = $row.data('period');
+                const rowDepartment = $row.data('department').toLowerCase();
+
+                const matchesSearch = !searchTerm || name.includes(searchTerm);
+                const matchesStatus = !status ||
+                    (status === 'active' && rowStatus === 'active') ||
+                    (status === 'inactive' && rowStatus === 'inactive') ||
+                    (status === 'current' && $row.find('.badge.bg-success').length > 0) ||
+                    (status === 'registration' && $row.find('.badge.bg-info').length > 0);
+                const matchesYear = !year || rowYear === year;
+                const matchesType = !type || rowType === type;
+                const matchesPeriod = !period || rowPeriod === period;
+                const matchesDepartment = !department || rowDepartment.includes(department.toLowerCase());
+                const matchesInactive = showInactive || rowStatus === 'active';
+
+                const isVisible = matchesSearch && matchesStatus && matchesYear &&
+                                matchesType && matchesPeriod && matchesDepartment && matchesInactive;
+
+                $row.toggle(isVisible);
+                if (isVisible) visibleCount++;
+            });
+
+            // Update counters
+            $('#filterCount').text(`Showing ${visibleCount} of ${totalCount} semesters`);
+            $('#semesterCount').text(visibleCount);
+
+            // Update bulk actions UI
+            updateBulkActionsUI();
+        }
+
+        function updateToggleButtonIcon() {
+            const $button = $('#toggleFilters');
+            const $icon = $button.find('i');
+            const isVisible = $('#filtersSection').is(':visible');
+
+            if (isVisible) {
+                $icon.removeClass('fa-filter').addClass('fa-times');
+            } else {
+                $icon.removeClass('fa-times').addClass('fa-filter');
+            }
+        }
+
+        // Enhanced Table Sorting
+        function initializeTableSorting() {
+            let currentSort = { column: 'name', order: 'asc' };
+
+            $('.sortable').on('click', function() {
+                const column = $(this).data('sort');
+                const $th = $(this);
+
+                // Determine new order
+                let newOrder = 'asc';
+                if (currentSort.column === column) {
+                    newOrder = currentSort.order === 'asc' ? 'desc' : 'asc';
+                }
+
+                // Update current sort
+                currentSort = { column: column, order: newOrder };
+
+                // Update UI indicators
+                $('.sortable').find('.sort-indicator').remove();
+                const indicator = newOrder === 'asc' ? '🔺' : '🔻';
+                $th.append(`<span class="sort-indicator">${indicator}</span>`);
+
+                // Sort the table
+                sortTable(column, newOrder);
+            });
+        }
+
+        function sortTable(column, order) {
+            const $table = $('#semestersTable');
+            const $rows = $table.find('tbody tr:visible').get();
+
+            $rows.sort(function(a, b) {
+                const aVal = $(a).find(`td[data-sort-value]`).eq(getColumnIndex(column)).data('sort-value') ||
+                             $(a).find('td').eq(getColumnIndex(column)).text().trim();
+                const bVal = $(b).find(`td[data-sort-value]`).eq(getColumnIndex(column)).data('sort-value') ||
+                             $(b).find('td').eq(getColumnIndex(column)).text().trim();
+
+                // Handle different data types
+                if (column === 'dates') {
+                    const aNum = parseFloat(aVal) || 0;
+                    const bNum = parseFloat(bVal) || 0;
+                    return order === 'asc' ? aNum - bNum : bNum - aNum;
+                }
+
+                // Text sorting
+                return order === 'asc' ?
+                    aVal.toString().localeCompare(bVal.toString()) :
+                    bVal.toString().localeCompare(aVal.toString());
+            });
+
+            // Re-append sorted rows
+            $.each($rows, function(index, row) {
+                $table.children('tbody').append(row);
+            });
+        }
+
+        function getColumnIndex(column) {
+            const headers = {
+                'name': 1,
+                'type': 2,
+                'path': 3,
+                'dates': 4,
+                'status': 5
+            };
+            return headers[column] || 0;
+        }
+
+        // Bulk Actions
+        function initializeBulkActions() {
+            console.log('Initializing bulk actions');
+
+            // Select all functionality
+            $('#selectAll').on('change', function() {
+                $('.semester-checkbox').prop('checked', this.checked);
+                updateBulkActionsUI();
+            });
+
+            $('.semester-checkbox').on('change', function() {
+                updateBulkActionsUI();
+            });
+
+            // Select all button
+            $('#selectAllBtn').on('click', function() {
+                const allChecked = $('.semester-checkbox:checked').length === $('.semester-checkbox:visible').length;
+                $('.semester-checkbox:visible').prop('checked', !allChecked);
+                updateBulkActionsUI();
+            });
+
+            // Bulk delete
+            $('#bulkDeleteBtn').on('click', function() {
+                const selectedIds = getSelectedSemesterIds();
+
+                if (selectedIds.length === 0) {
+                    showAlert('Please select at least one semester to delete.', 'warning');
+                    return;
+                }
+
+                showConfirmation(
+                    `Are you sure you want to delete ${selectedIds.length} selected semester(s)?`,
+                    function() {
+                        bulkDeleteSemesters(selectedIds);
+                    }
+                );
+            });
+
+            // Bulk activate
+            $('#bulkActivateBtn').on('click', function() {
+                const selectedIds = getSelectedSemesterIds();
+
+                if (selectedIds.length === 0) {
+                    showAlert('Please select at least one semester to activate.', 'warning');
+                    return;
+                }
+
+                showConfirmation(
+                    `Are you sure you want to activate ${selectedIds.length} selected semester(s)?`,
+                    function() {
+                        bulkUpdateSemesters(selectedIds, 'activate');
+                    }
+                );
+            });
+
+            // Bulk deactivate
+            $('#bulkDeactivateBtn').on('click', function() {
+                const selectedIds = getSelectedSemesterIds();
+
+                if (selectedIds.length === 0) {
+                    showAlert('Please select at least one semester to deactivate.', 'warning');
+                    return;
+                }
+
+                showConfirmation(
+                    `Are you sure you want to deactivate ${selectedIds.length} selected semester(s)?`,
+                    function() {
+                        bulkUpdateSemesters(selectedIds, 'deactivate');
+                    }
+                );
+            });
+        }
+
+        function getSelectedSemesterIds() {
+            return $('.semester-checkbox:checked').map(function() {
+                return $(this).val();
+            }).get();
+        }
+
+        function updateBulkActionsUI() {
+            const selectedCount = $('.semester-checkbox:checked').length;
+            const $bulkPanel = $('#bulkActionsPanel');
+            const $selectedCount = $('#selectedCount');
+
+            if (selectedCount > 0) {
+                $bulkPanel.show();
+                $selectedCount.text(selectedCount);
+            } else {
+                $bulkPanel.hide();
+            }
+
+            // Update select all checkbox
+            const visibleCount = $('.semester-checkbox:visible').length;
+            $('#selectAll').prop('checked', selectedCount === visibleCount && visibleCount > 0);
+        }
+
+        // Export Functionality
+        function initializeExportFunctionality() {
+            console.log('Initializing export functionality');
+
+            // Export selected semesters (Excel)
+            $('#exportSelectedSemesters').on('click', function(e) {
+                e.preventDefault();
+                handleExportSelected('excel');
+            });
+
+            // Export all semesters (Excel)
+            $('#exportAllSemesters').on('click', function(e) {
+                e.preventDefault();
+                handleExportAll('excel');
+            });
+
+            // Export summary (PDF)
+            $('#exportSummary').on('click', function(e) {
+                e.preventDefault();
+                handleExportOverview('summary');
+            });
+
+            // Export details (Excel)
+            $('#exportDetails').on('click', function(e) {
+                e.preventDefault();
+                handleExportOverview('details');
+            });
+
+            // Main header export buttons
+            $('#exportSelected').on('click', function(e) {
+                e.preventDefault();
+                handleExportSelected('excel');
+            });
+
+            $('#exportAll').on('click', function(e) {
+                e.preventDefault();
+                handleExportAll('excel');
+            });
+        }
+
+        function handleExportSelected(format) {
+            const selectedIds = getSelectedSemesterIds();
+
+            if (selectedIds.length === 0) {
+                showAlert('Please select at least one semester to export.', 'warning');
+                return;
+            }
+
+            console.log('Exporting selected semesters:', selectedIds);
+            submitExportForm(selectedIds, format);
+        }
+
+        function handleExportAll(format) {
+            const allIds = $('.semester-checkbox').map(function() {
+                return $(this).val();
+            }).get();
+
+            console.log('Exporting all semesters:', allIds);
+            submitExportForm(allIds, format);
+        }
+
+        function handleExportOverview(type) {
+            console.log('Exporting overview:', type);
+            submitOverviewForm(type);
+        }
+
+        function submitExportForm(semesterIds, exportType) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Semesters/ExportSemesters';
+
+            const idsInput = document.createElement('input');
+            idsInput.type = 'hidden';
+            idsInput.name = 'semesterIds';
+            idsInput.value = semesterIds.join(',');
+
+            const typeInput = document.createElement('input');
+            typeInput.type = 'hidden';
+            typeInput.name = 'exportType';
+            typeInput.value = exportType;
+
+            form.appendChild(idsInput);
+            form.appendChild(typeInput);
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function submitOverviewForm(exportType) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Semesters/ExportSemesterOverview';
+
+            const typeInput = document.createElement('input');
+            typeInput.type = 'hidden';
+            typeInput.name = 'exportType';
+            typeInput.value = exportType;
+
+            form.appendChild(typeInput);
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        // Utility Functions
+        function showAlert(message, type = 'info') {
+            // You can implement a custom alert system here
+            // For now, using browser alert
+            alert(message);
+        }
+
+        function showConfirmation(message, onConfirm) {
+            if (confirm(message)) {
+                onConfirm();
+            }
+        }
+
+        // Bulk operations
+        function bulkDeleteSemesters(ids) {
+            console.log('Bulk delete:', ids);
+            showAlert('Bulk delete functionality would be implemented here. Selected IDs: ' + ids.join(', '));
+            // Implement AJAX call for bulk delete
+            /*
+            $.ajax({
+                url: '/Semesters/BulkDelete',
+                type: 'POST',
+                data: { semesterIds: ids },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert(response.message, 'success');
+                        location.reload();
+                    } else {
+                        showAlert('Error: ' + response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showAlert('An error occurred while deleting semesters.', 'error');
+                }
+            });
+            */
+        }
+
+        function bulkUpdateSemesters(ids, action) {
+            console.log('Bulk update:', action, ids);
+            showAlert(`Bulk ${action} functionality would be implemented here. Selected IDs: ` + ids.join(', '));
+            // Implement AJAX call for bulk update
+            /*
+            $.ajax({
+                url: '/Semesters/BulkUpdate',
+                type: 'POST',
+                data: {
+                    semesterIds: ids,
+                    action: action
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert(response.message, 'success');
+                        location.reload();
+                    } else {
+                        showAlert('Error: ' + response.message, 'error');
+                    }
+                },
+                error: function() {
+                    showAlert('An error occurred while processing your request.', 'error');
+                }
+            });
+            */
+        }
     </script>
+
+    <style>
+        .sortable {
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+
+            .sortable:hover {
+                background-color: #e9ecef;
+            }
+
+        .sort-indicator {
+            margin-left: 5px;
+            font-size: 0.8em;
+        }
+
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%) !important;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+
+        .card-university {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+        }
+
+        .btn-group .dropdown-toggle-split {
+            border-left: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* Bulk actions panel */
+        #bulkActionsPanel {
+            transition: all 0.3s ease;
+        }
+
+        /* Filter section animations */
+        #filtersSection {
+            transition: all 0.3s ease;
+        }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .btn-group {
+                margin-top: 1rem;
+            }
+
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+
+            .sort-indicator {
+                display: none;
+            }
+        }
+
+        /* Loading states */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
 }

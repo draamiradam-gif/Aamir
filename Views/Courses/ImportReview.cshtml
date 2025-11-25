@@ -11,6 +11,11 @@
     var hasInvalidCourses = invalidCoursesCount > 0;
     var message = Model.ImportResult?.Message ?? "No import data available.";
     var errorCount = Model.ImportResult?.Errors?.Count ?? 0;
+
+    // Semester handling
+    var hasMissingSemesters = Model.MissingSemesterIds?.Any() == true;
+    var missingSemesterIds = Model.MissingSemesterIds ?? new List<int>();
+    var existingSemesterIds = Model.ExistingSemesterIds ?? new List<int>();
 }
 
 <div class="container-fluid">
@@ -19,7 +24,7 @@
             <i class="fas fa-search me-2"></i>Review Course Import
         </h2>
         <div>
-            <a href="@Url.Action("Import")" class="btn btn-outline-secondary">
+            <a href="@Url.Action("Import", "CourseImport")" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-2"></i>Back to Upload
             </a>
         </div>
@@ -92,6 +97,77 @@
             </div>
         </div>
     </div>
+
+    <!-- Semester Handling Options -->
+    @if (hasMissingSemesters)
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Semester Assignment Options
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    The import contains courses assigned to semesters that don't exist in the system:
+                    <strong>@string.Join(", ", missingSemesterIds)</strong>
+                </p>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="SemesterCreationMode"
+                                   id="optionAsk" value="ask" checked>
+                            <label class="form-check-label fw-bold" for="optionAsk">
+                                Ask Me Which Semesters to Create
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                You'll select which semesters to create from the list below
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="SemesterCreationMode"
+                                   id="optionAuto" value="auto">
+                            <label class="form-check-label fw-bold" for="optionAuto">
+                                Automatically Create All Missing Semesters
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                System will create semesters: @string.Join(", ", missingSemesterIds)
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="SemesterCreationMode"
+                                   id="optionIgnore" value="ignore">
+                            <label class="form-check-label fw-bold" for="optionIgnore">
+                                Keep Semester IDs for Manual Creation Later
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                Courses will keep their semester assignments; create semesters manually later
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div id="semesterSelection">
+                            <h6>Select Semesters to Create:</h6>
+                            @foreach (var semesterId in missingSemesterIds)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input semester-checkbox" type="checkbox"
+                                           value="@semesterId" id="semester-@semesterId" checked>
+                                    <label class="form-check-label" for="semester-@semesterId">
+                                        Semester @semesterId
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
     @if (hasValidCourses)
     {
@@ -221,44 +297,102 @@
                         </h6>
                     </div>
                     <div class="card-body">
-                        <form id="importForm" asp-action="ImportExecute" method="post">
-                            @if (Model.ImportSettings != null)
-                            {
-                                <div class="mb-3">
-                                    <label class="form-label small fw-bold">Duplicate Handling</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="Skip" checked>
-                                        <label class="form-check-label small">
-                                            Skip existing
-                                        </label>
+                        <!-- Form for imports WITH semester options -->
+                        @if (hasMissingSemesters)
+                        {
+                            <form id="importFormWithOptions" asp-action="ImportExecuteWithOptions" asp-controller="CourseImport" method="post">
+                                <!-- Hidden fields for semester options -->
+                                <input type="hidden" name="SelectedCourses" id="selectedCoursesInput" value="">
+                                <input type="hidden" name="options.SemesterCreationMode" id="semesterCreationModeInput" value="ask">
+                                <input type="hidden" name="options.SemestersToCreate" id="semestersToCreateInput" value="@string.Join(",", missingSemesterIds)">
+
+                                @if (Model.ImportSettings != null)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Duplicate Handling</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="Skip" checked>
+                                            <label class="form-check-label small">
+                                                Skip existing
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="Override">
+                                            <label class="form-check-label small">
+                                                Override existing
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="CreateNew">
+                                            <label class="form-check-label small">
+                                                Create new records
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="Override">
-                                        <label class="form-check-label small">
-                                            Override existing
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="CreateNew">
-                                        <label class="form-check-label small">
-                                            Create new records
-                                        </label>
-                                    </div>
+                                }
+
+                                <div class="alert alert-info small">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>Ready to import:</strong>
+                                    <span id="importCount">@validCoursesCount</span> courses
+                                    @if (hasMissingSemesters)
+                                    {
+                                        <br>
+                                        <span class="text-warning">Note: This import includes semester creation options.</span>
+                                    }
                                 </div>
-                            }
 
-                            <div class="alert alert-info small">
-                                <i class="fas fa-info-circle me-1"></i>
-                                <strong>Ready to import:</strong>
-                                <span id="importCount">@validCoursesCount</span> courses
-                            </div>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-play me-1"></i>Start Import with Semester Options
+                                    </button>
+                                </div>
+                            </form>
+                        }
+                        else
+                        {
+                            <!-- Form for imports WITHOUT semester options -->
+                            <form id="importForm" asp-action="ImportExecute" asp-controller="CourseImport" method="post">
+                                <input type="hidden" name="SelectedCourses" id="selectedCoursesInput" value="">
 
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success btn-sm">
-                                    <i class="fas fa-play me-1"></i>Start Import
-                                </button>
-                            </div>
-                        </form>
+                                @if (Model.ImportSettings != null)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Duplicate Handling</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="Skip" checked>
+                                            <label class="form-check-label small">
+                                                Skip existing
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="Override">
+                                            <label class="form-check-label small">
+                                                Override existing
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" asp-for="ImportSettings!.DuplicateHandling" value="CreateNew">
+                                            <label class="form-check-label small">
+                                                Create new records
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="alert alert-info small">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>Ready to import:</strong>
+                                    <span id="importCount">@validCoursesCount</span> courses
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-play me-1"></i>Start Import
+                                    </button>
+                                </div>
+                            </form>
+                        }
                     </div>
                 </div>
             </div>
@@ -296,37 +430,43 @@
                                                 <input class="form-check-input" type="checkbox" id="tableSelectAll">
                                             </div>
                                         </th>
-                                        <th width="70">
+                                        <th width="70" class="text-center text-nowrap">
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="serial">
                                                 #
                                                 <i class="fas fa-sort ms-1"></i>
                                             </a>
                                         </th>
-                                        <th>
+                                        <th width="150" class="text-center text-nowrap">
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="courseCode">
                                                 Course Code
                                                 <i class="fas fa-sort ms-1"></i>
                                             </a>
                                         </th>
-                                        <th>
+                                        <th width="250" class="text-center text-nowrap">
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="courseName">
                                                 Course Name
                                                 <i class="fas fa-sort ms-1"></i>
                                             </a>
                                         </th>
-                                        <th>
+                                        <th width="250" class="text-center text-nowrap">
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="department">
                                                 Department
                                                 <i class="fas fa-sort ms-1"></i>
                                             </a>
                                         </th>
-                                        <th width="80">
+                                        <th width="80" class="text-center text-nowrap">
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="credits">
                                                 Credits
                                                 <i class="fas fa-sort ms-1"></i>
                                             </a>
                                         </th>
-                                        <th width="80">
+                                        <th width="150" class="text-center text-nowrap">
+                                            <a href="#" class="sort-link text-white text-decoration-none" data-sort="prerequisites">
+                                                Prerequisites
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </a>
+                                        </th>
+                                        <th width="250" class="text-center text-nowrap">
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="semester">
                                                 Semester
                                                 <i class="fas fa-sort ms-1"></i>
@@ -341,7 +481,7 @@
                                     {
                                         foreach (var course in Model.ImportResult.ValidCourses)
                                         {
-                                            <tr class="course-row" data-course-code="@course.CourseCode" data-department="@course.Department" data-credits="@course.Credits" data-semester="@course.Semester" data-valid="true">
+                                            <tr class="course-row" data-course-code="@course.CourseCode" data-department="@course.Department" data-credits="@course.Credits" data-semester="@course.SemesterId" data-valid="true">
                                                 <td class="text-center">
                                                     <div class="form-check">
                                                         <input class="form-check-input course-checkbox" type="checkbox" value="@course.CourseCode">
@@ -355,7 +495,34 @@
                                                     <span class="badge bg-info">@course.Credits</span>
                                                 </td>
                                                 <td class="text-center">
-                                                    <span class="badge bg-secondary">@course.Semester</span>
+                                                    @if (!string.IsNullOrEmpty(course.PrerequisitesString))
+                                                    {
+                                                        <div class="prerequisites-preview">
+                                                            @{
+                                                                var prereqCodes = course.PrerequisitesString
+                                                                .Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+                                                                .Select(p => p.Trim())
+                                                                .Where(p => !string.IsNullOrEmpty(p))
+                                                                .Take(3)
+                                                                .ToList();
+                                                            }
+                                                            @foreach (var code in prereqCodes)
+                                                            {
+                                                                <span class="badge bg-secondary me-1 mb-1">@code</span>
+                                                            }
+                                                            @if (course.PrerequisitesString.Split(new[] { ',', ';', '|' }).Length > 3)
+                                                            {
+                                                                <span class="badge bg-light text-dark">+@(course.PrerequisitesString.Split(new[] { ',', ';', '|' }).Length - 3) more</span>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">None</span>
+                                                    }
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-secondary">@course.SemesterId</span>
                                                 </td>
                                                 <td class="text-center">
                                                     <span class="badge bg-success"><i class="fas fa-check me-1"></i>Valid</span>
@@ -388,7 +555,7 @@
                                                 <td class="text-center">@invalid.RowNumber</td>
                                                 <td class="fw-bold">@invalid.CourseCode</td>
                                                 <td class="text-nowrap">@invalid.CourseName</td>
-                                                <td colspan="3">
+                                                <td colspan="5">
                                                     <small class="text-danger">
                                                         <i class="fas fa-exclamation-circle me-1"></i>
                                                         @invalid.ErrorMessage
@@ -441,10 +608,10 @@
                 <h4>No valid courses found to import.</h4>
                 <p class="text-muted">Please check your Excel file format and try again.</p>
                 <div class="mt-4">
-                    <a href="@Url.Action("Import")" class="btn btn-primary me-2">
+                    <a href="@Url.Action("Import", "CourseImport")" class="btn btn-primary me-2">
                         <i class="fas fa-upload me-2"></i>Upload Another File
                     </a>
-                    <a href="@Url.Action("DownloadTemplate")" class="btn btn-outline-info">
+                    <a href="@Url.Action("DownloadTemplate", "CourseImport")" class="btn btn-outline-info">
                         <i class="fas fa-download me-2"></i>Download Template
                     </a>
                 </div>
@@ -531,6 +698,10 @@
             .table-container::-webkit-scrollbar-thumb:hover {
                 background: #a8a8a8;
             }
+
+        .prerequisites-preview {
+            max-width: 200px;
+        }
     </style>
 }
 
@@ -542,6 +713,47 @@
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+
+            // Fix JavaScript syntax for Razor values
+            const hasMissingSemesters = @Json.Serialize(hasMissingSemesters);
+
+            // Semester handling functionality
+            const semesterCreationModeInput = document.getElementById('semesterCreationModeInput');
+            const semestersToCreateInput = document.getElementById('semestersToCreateInput');
+
+            if (semesterCreationModeInput && semestersToCreateInput) {
+                // Show/hide semester selection based on radio buttons
+                document.querySelectorAll('input[name="SemesterCreationMode"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        const semesterSelection = document.getElementById('semesterSelection');
+                        if (this.value === 'ask') {
+                            semesterSelection.style.display = 'block';
+                        } else {
+                            semesterSelection.style.display = 'none';
+                        }
+                        semesterCreationModeInput.value = this.value;
+                    });
+                });
+
+                // Update semesters to create when checkboxes change
+                document.querySelectorAll('.semester-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateSemestersToCreate);
+                });
+
+                function updateSemestersToCreate() {
+                    const selectedSemesters = Array.from(document.querySelectorAll('.semester-checkbox:checked'))
+                        .map(cb => cb.value)
+                        .join(',');
+                    semestersToCreateInput.value = selectedSemesters;
+                }
+
+                // Initialize
+                const defaultRadio = document.querySelector('input[name="SemesterCreationMode"]:checked');
+                if (defaultRadio) {
+                    defaultRadio.dispatchEvent(new Event('change'));
+                }
+                updateSemestersToCreate();
+            }
 
             // Selection functionality
             const selectAllValid = document.getElementById('selectAllValid');
@@ -590,7 +802,8 @@
 
             function selectAll(select) {
                 courseCheckboxes.forEach(checkbox => {
-                    if (checkbox.closest('tr').style.display !== 'none') {
+                    const row = checkbox.closest('tr');
+                    if (row && row.style.display !== 'none') {
                         checkbox.checked = select;
                     }
                 });
@@ -600,6 +813,8 @@
             function selectByType(type) {
                 courseCheckboxes.forEach(checkbox => {
                     const row = checkbox.closest('tr');
+                    if (!row) return;
+
                     const isValid = row.dataset.valid === 'true';
 
                     if (type === 'valid' && isValid) {
@@ -659,6 +874,67 @@
                 });
             }
 
+            // Import selected functionality
+            if (importSelectedBtn) {
+                importSelectedBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const selectedCourses = Array.from(document.querySelectorAll('.course-checkbox:checked'))
+                        .map(cb => cb.value)
+                        .filter(val => val); // Remove empty values
+
+                    if (selectedCourses.length === 0) {
+                        alert('Please select at least one course to import.');
+                        return;
+                    }
+
+                    // Use the properly serialized value
+                    const hasMissingSemesters = @Json.Serialize(hasMissingSemesters);
+                    const formId = hasMissingSemesters ? 'importFormWithOptions' : 'importForm';
+                    const form = document.getElementById(formId);
+
+                    if (form) {
+                        // Create hidden input for selected courses
+                        let selectedInput = document.getElementById('selectedCoursesInput');
+                        if (!selectedInput) {
+                            selectedInput = document.createElement('input');
+                            selectedInput.type = 'hidden';
+                            selectedInput.name = 'SelectedCourses';
+                            selectedInput.id = 'selectedCoursesInput';
+                            form.appendChild(selectedInput);
+                        }
+                        selectedInput.value = selectedCourses.join(',');
+
+                        form.submit();
+                    }
+                });
+            }
+
+            // Remove selected functionality
+            if (removeSelectedBtn) {
+                removeSelectedBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const selectedCheckboxes = document.querySelectorAll('.course-checkbox:checked');
+
+                    if (selectedCheckboxes.length === 0) {
+                        alert('Please select at least one course to remove.');
+                        return;
+                    }
+
+                    if (confirm(`Are you sure you want to remove ${selectedCheckboxes.length} selected course(s) from the import?`)) {
+                        selectedCheckboxes.forEach(checkbox => {
+                            const row = checkbox.closest('tr');
+                            if (row) {
+                                row.remove();
+                            }
+                        });
+
+                        // Update counts
+                        updateTableCounts();
+                        updateSelectedCount();
+                    }
+                });
+            }
+
             // Filtering functionality
             function applyTableFilters() {
                 const searchTerm = quickSearch?.value.toLowerCase() || '';
@@ -693,6 +969,7 @@
                     showingCount.textContent = visibleCount;
                 }
                 updatePagination();
+                updateSelectedCount(); // Update selection count after filtering
             }
 
             // Sorting functionality
@@ -725,6 +1002,10 @@
                         case 'credits':
                             aValue = parseInt(a.dataset.credits) || 0;
                             bValue = parseInt(b.dataset.credits) || 0;
+                            break;
+                        case 'prerequisites':
+                            aValue = a.cells[6]?.textContent || '';
+                            bValue = b.cells[6]?.textContent || '';
                             break;
                         case 'semester':
                             aValue = parseInt(a.dataset.semester) || 0;
@@ -765,7 +1046,7 @@
                 const totalPages = Math.ceil(visibleRows.length / pageSize);
 
                 if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
-                if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+                if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
 
                 // Show/hide rows based on current page
                 visibleRows.forEach((row, index) => {
@@ -775,8 +1056,24 @@
                 });
 
                 if (showingCount) {
-                    showingCount.textContent = Math.min(visibleRows.length, currentPage * pageSize);
+                    const startIndex = (currentPage - 1) * pageSize;
+                    const endIndex = Math.min(visibleRows.length, currentPage * pageSize);
+                    showingCount.textContent = `${startIndex + 1}-${endIndex}`;
                 }
+            }
+
+            // Update table counts
+            function updateTableCounts() {
+                const validCount = document.querySelectorAll('.course-row[data-valid="true"]').length;
+                const invalidCount = document.querySelectorAll('.course-row[data-valid="false"]').length;
+                const totalCount = validCount + invalidCount;
+
+                if (tableCount) tableCount.textContent = totalCount;
+                if (importCount) importCount.textContent = validCount;
+                if (showingCount) showingCount.textContent = totalCount;
+
+                // Update filtered courses array
+                filteredCourses = Array.from(document.querySelectorAll('.course-row'));
             }
 
             // Event listeners for filters and sorting
@@ -791,10 +1088,24 @@
                     if (creditsFilter) creditsFilter.value = '';
                     if (filterValid) filterValid.checked = true;
                     if (filterInvalid) filterInvalid.checked = false;
+                    currentPage = 1;
                     applyTableFilters();
                 });
             }
 
+            // Quick search with debounce
+            if (quickSearch) {
+                let searchTimeout;
+                quickSearch.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        currentPage = 1;
+                        applyTableFilters();
+                    }, 300);
+                });
+            }
+
+            // Sort links
             document.querySelectorAll('.sort-link').forEach(link => {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -828,16 +1139,58 @@
                 });
             }
 
-            // Initialize
-            updateSelectedCount();
-            applyTableFilters();
+            // Export functionality
+            if (exportTableBtn) {
+                exportTableBtn.addEventListener('click', function() {
+                    // Simple CSV export
+                    const rows = document.querySelectorAll('.course-row');
+                    let csvContent = "Course Code,Course Name,Department,Credits,Prerequisites,Semester,Status\n";
 
-            // View course details
-            document.querySelectorAll('.view-course').forEach(btn => {
-                btn.addEventListener('click', function () {
+                    rows.forEach(row => {
+                        if (row.style.display !== 'none') {
+                            const cells = row.querySelectorAll('td');
+                            const courseCode = cells[2]?.textContent || '';
+                            const courseName = cells[3]?.textContent || '';
+                            const department = cells[4]?.textContent || '';
+                            const credits = cells[5]?.textContent || '';
+                            const prerequisites = cells[6]?.textContent || '';
+                            const semester = cells[7]?.textContent || '';
+                            const status = cells[8]?.textContent || '';
+
+                            csvContent += `"${courseCode}","${courseName}","${department}","${credits}","${prerequisites}","${semester}","${status}"\n`;
+                        }
+                    });
+
+                    // Download CSV
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'courses-import-preview.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                });
+            }
+
+            // Refresh table
+            if (refreshTableBtn) {
+                refreshTableBtn.addEventListener('click', function() {
+                    location.reload();
+                });
+            }
+
+            // Course detail modals
+            document.querySelectorAll('.view-course').forEach(button => {
+                button.addEventListener('click', function() {
                     const row = this.closest('tr');
                     const courseCode = row.cells[2]?.textContent || '';
                     const courseName = row.cells[3]?.textContent || '';
+                    const department = row.cells[4]?.textContent || '';
+                    const credits = row.cells[5]?.textContent || '';
+                    const prerequisites = row.cells[6]?.textContent || '';
+                    const semester = row.cells[7]?.textContent || '';
 
                     const modalBody = document.getElementById('courseModalBody');
                     if (modalBody) {
@@ -850,52 +1203,59 @@
                                     <strong>Course Name:</strong> ${courseName}
                                 </div>
                             </div>
-                            <div class="row mt-3">
+                            <div class="row mt-2">
                                 <div class="col-md-6">
-                                    <strong>Department:</strong> ${row.cells[4]?.textContent || ''}
+                                    <strong>Department:</strong> ${department}
                                 </div>
                                 <div class="col-md-6">
-                                    <strong>Credits:</strong> ${row.cells[5]?.textContent || ''}
+                                    <strong>Credits:</strong> ${credits}
                                 </div>
                             </div>
-                            <div class="row mt-3">
+                            <div class="row mt-2">
                                 <div class="col-md-6">
-                                    <strong>Semester:</strong> ${row.cells[6]?.textContent || ''}
+                                    <strong>Prerequisites:</strong> ${prerequisites || 'None'}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Semester:</strong> ${semester}
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <strong>Status:</strong> <span class="badge bg-success">Valid</span>
                                 </div>
                             </div>
                         `;
                     }
 
-                    const modalElement = document.getElementById('courseModal');
-                    if (modalElement) {
-                        const modal = new bootstrap.Modal(modalElement);
-                        modal.show();
+                    const modal = new bootstrap.Modal(document.getElementById('courseModal'));
+                    modal.show();
+                });
+            });
+
+            // Error detail modals
+            document.querySelectorAll('.view-error').forEach(button => {
+                button.addEventListener('click', function() {
+                    const error = this.dataset.error;
+                    const modalBody = document.getElementById('courseModalBody');
+                    if (modalBody) {
+                        modalBody.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h6><i class="fas fa-exclamation-triangle me-2"></i>Import Error</h6>
+                                <p class="mb-0">${error}</p>
+                            </div>
+                        `;
                     }
+
+                    const modal = new bootstrap.Modal(document.getElementById('courseModal'));
+                    modal.show();
                 });
             });
 
-            // View error details
-            document.querySelectorAll('.view-error').forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const error = this.dataset.error || 'Unknown error';
-                    alert('Error: ' + error);
-                });
-            });
-
-            // Export functionality
-            if (exportTableBtn) {
-                exportTableBtn.addEventListener('click', function () {
-                    // Implement export logic here
-                    alert('Export functionality would be implemented here');
-                });
-            }
-
-            // Refresh table
-            if (refreshTableBtn) {
-                refreshTableBtn.addEventListener('click', function () {
-                    location.reload();
-                });
-            }
+            // Initialize table
+            updateTableCounts();
+            updateSelectedCount();
+            applyTableFilters();
+            updateSortIndicators(currentSort.field, currentSort.direction);
         });
     </script>
 }

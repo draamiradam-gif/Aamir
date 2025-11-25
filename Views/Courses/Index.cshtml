@@ -61,15 +61,15 @@
             <a href="@Url.Action("Create")" class="btn btn-primary">
                 <i class="fas fa-plus me-1"></i>New Course
             </a>
-            <a href="@Url.Action("Import")" class="btn btn-success">
+            <a href="@Url.Action("Import", "CourseImport")" class="btn btn-success">
                 <i class="fas fa-file-import me-1"></i>Import Excel
             </a>
             <a href="@Url.Action("Export")" class="btn btn-info">
                 <i class="fas fa-file-export me-1"></i>Export Excel
             </a>
-            <a class="nav-link" href="@Url.Action("Manage", "Grades")">
+            @*<a class="nav-link" href="@Url.Action("Manage", "Grades")">
                 <i class="fas fa-graduation-cap"></i> Grade Management
-            </a>
+            </a>*@
         </div>
     </div>
 
@@ -497,7 +497,7 @@
                             </div>
                         </td>
                         <td class="column-serial text-center">@serialNumber</td>
-                        <td class="column-code fw-bold">@course.CourseCode</td>
+                        <td class="column-code fw-bold text-nowrap">@course.CourseCode</td>
                         <td class="column-name text-nowrap">@course.CourseName</td>
                         <td class="column-description">
                             @if (!string.IsNullOrEmpty(course.Description))
@@ -531,22 +531,15 @@
                             }
                         </td>
                         <td class="column-prerequisites text-center">
-                            @if (!string.IsNullOrEmpty(course.PrerequisitesString))
+                            @if (course.Prerequisites != null && course.Prerequisites.Any())
                             {
                                 <div class="prerequisites-list">
                                     @{
-                                        // Fix for lambda expressions in prerequisites
-                                        var prereqArray = course.PrerequisitesString.Split(',');
-                                        var validPrereqCodes = new List<string>();
-                                        foreach (var prereq in prereqArray)
-                                        {
-                                            var trimmed = prereq.Trim();
-                                            if (!string.IsNullOrEmpty(trimmed))
-                                            {
-                                                validPrereqCodes.Add(trimmed);
-                                            }
-                                        }
-                                        var displayPrereqCodes = validPrereqCodes.Take(3).ToList();
+                                        var displayPrereqCodes = course.Prerequisites
+                                            .Where(p => p.PrerequisiteCourse != null)
+                                            .Select(p => p.PrerequisiteCourse!.CourseCode!)
+                                            .Take(3)
+                                            .ToList();
                                     }
                                     @foreach (var prereqCode in displayPrereqCodes)
                                     {
@@ -556,9 +549,9 @@
                                             @prereqCode
                                         </span>
                                     }
-                                    @if (validPrereqCodes.Count > 3)
+                                    @if (course.Prerequisites.Count > 3)
                                     {
-                                        <span class="badge bg-light text-dark">+@(validPrereqCodes.Count - 3) more</span>
+                                        <span class="badge bg-light text-dark">+@(course.Prerequisites.Count - 3) more</span>
                                     }
                                 </div>
                             }
@@ -783,7 +776,7 @@
         }
         .column-checkbox { width: 50px; min-width: 50px; max-width: 50px; }
         .column-serial { width: 70px; min-width: 70px; max-width: 70px; }
-        .column-code { width: 100px; min-width: 100px; max-width: 100px; }
+        .column-code { width: 120px; min-width: 100px; max-width: 120px; }
         .column-name { width: 200px; min-width: 200px; max-width: 200px; }
         .column-description { width: 200px; min-width: 200px; max-width: 200px; }
         .column-prerequisites { width: 150px; min-width: 150px; max-width: 150px; }
@@ -885,7 +878,7 @@
 <script>
 // Set server-side values for JavaScript
 const serverData = {
-    totalCourses: @totalCourses
+    totalCourses: @Json.Serialize(totalCourses)
 };
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1228,7 +1221,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-}); // <-- This closes the document.addEventListener function
-
+}); //This closes the document.addEventListener function
 </script>
 }

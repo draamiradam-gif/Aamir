@@ -73,6 +73,9 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IGradeService, GradeService>();
 builder.Services.AddScoped<ISemesterService, SemesterService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.AddScoped<EnrollmentService>();
+
+builder.Services.AddLogging();
 
 
 
@@ -99,6 +102,27 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
 
+app.UseExceptionHandler("/error");
+app.UseStatusCodePagesWithReExecute("/error/{0}");
+
+// Or add custom error handling
+//app.Use(async (context, next) =>
+//{
+//    try
+//    {
+//        await next();
+//    }
+//    catch (Exception ex)
+//    {
+//        context.Response.StatusCode = 500;
+//        await context.Response.WriteAsJsonAsync(new
+//        {
+//            error = "An internal server error occurred",
+//            message = ex.Message,
+//            stackTrace = app.Environment.IsDevelopment() ? ex.StackTrace : null
+//        });
+//    }
+//});
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
@@ -167,6 +191,18 @@ app.Use(async (context, next) =>
 } 
  */
 
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try
+    {
+        EnrollmentDataSeeder.SeedEnrollmentData(context);
+        Console.WriteLine("Enrollment data seeding completed successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Enrollment data seeding failed: {ex.Message}");
+    }
+}
 
-// Remove duplicate route registration
 app.Run();

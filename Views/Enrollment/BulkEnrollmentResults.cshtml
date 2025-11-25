@@ -159,16 +159,276 @@
 
 @section Scripts {
     <script>
-        // Auto-expand failed enrollments for quick review
-        document.addEventListener('DOMContentLoaded', function() {
-            const failedRows = document.querySelectorAll('tr:has(.bg-danger)');
-            failedRows.forEach(row => {
-                const collapseId = row.nextElementSibling?.id;
-                if (collapseId) {
-                    const collapse = new bootstrap.Collapse(document.getElementById(collapseId));
-                    collapse.show();
+        $(document).ready(function() {
+            let selectedStudentIds = [];
+            let selectedCourseIds = [];
+            let eligibilityResults = {};
+
+            // Initialize - FIXED: Use MVC endpoints for dropdown data
+            loadSemesters();
+            loadStudents();
+            loadCourses();
+
+            // Semester change event
+            $('#semesterSelect').on('change', function() {
+                const semesterId = $(this).val();
+                if (semesterId) {
+                    loadStudents(semesterId);
+                    loadCourses(semesterId);
                 }
             });
+
+            // Student selection
+            $('#selectAllStudentsCheckbox').on('change', function() {
+                $('.student-checkbox').prop('checked', this.checked);
+                updateStudentSelection();
+            });
+
+            // Course selection
+            $('#selectAllCoursesCheckbox').on('change', function() {
+                $('.course-checkbox').prop('checked', this.checked);
+                updateCourseSelection();
+            });
+
+            // Check eligibility - FIXED: Use MVC endpoint
+            $('#checkEligibilityBtn').on('click', function() {
+                checkEligibility();
+            });
+
+            // Form submission - FIXED: Use API endpoint
+            $('#bulkEnrollmentForm').on('submit', function(e) {
+                e.preventDefault();
+                startBulkEnrollment();
+            });
+
+            function loadSemesters() {
+                // Use MVC endpoint for dropdown data
+                $.get('@Url.Action("GetActiveSemesters", "Enrollment")')
+                    .done(function(semesters) {
+                        const select = $('#semesterSelect');
+                        semesters.forEach(semester => {
+                            select.append(`<option value="${semester.id}">${semester.name}</option>`);
+                        });
+                    });
+            }
+
+            function loadStudents(semesterId = null) {
+                const url = semesterId ?
+                    `@Url.Action("GetStudentsForSemester", "Enrollment")?semesterId=${semesterId}` :
+                    `@Url.Action("GetActiveStudents", "Enrollment")`;
+
+                $.get(url)
+                    .done(function(students) {
+                        const tbody = $('#studentsTableBody');
+                        tbody.empty();
+
+                        students.forEach(student => {
+                            const row = `
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input student-checkbox"
+                                               value="${student.id}" data-student-id="${student.id}">
+                                    </td>
+                                    <td>${student.studentId}</td>
+                                    <td>${student.name}</td>
+                                    <td>${student.department || 'N/A'}</td>
+                                    <td>${student.gpa}</td>
+                                    <td>${student.passedHours}</td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                </tr>
+                            `;
+                            tbody.append(row);
+                        });
+
+                        // Add change event to student checkboxes
+                        $('.student-checkbox').on('change', updateStudentSelection);
+                    });
+            }
+
+            function loadCourses(semesterId = null) {
+                const url = semesterId ?
+                    `@Url.Action("GetCoursesForSemester", "Enrollment")?semesterId=${semesterId}` :
+                    `@Url.Action("GetActiveCourses", "Enrollment")`;
+
+                $.get(url)
+                    .done(function(courses) {
+                        const tbody = $('#coursesTableBody');
+                        tbody.empty();
+
+                        courses.forEach(course => {
+                            const availableSeats = course.maxStudents - course.currentEnrollment;
+                            const utilization = course.maxStudents > 0 ?
+                                (course.currentEnrollment * 100 / course.maxStudents) : 0;
+
+                            const row = `
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input course-checkbox"
+                                               value="${course.id}" data-course-id="${course.id}">
+                                    </td>
+                                    <td>${course.courseCode}</td>
+                                    <td>${course.courseName}</td>
+                                    <td>${course.credits}</td>
+                                    <td>${course.department}</td>
+                                    <td>
+                                        <span class="badge ${availableSeats > 0 ? 'bg-success' : 'bg-danger'}">
+                                            ${availableSeats}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        ${course.prerequisites || 'None'}
+                                    </td>
+                                    <td>
+                                        ${utilization >= 90 ? '<span class="badge bg-danger">Full</span>' :
+                                          utilization >= 70 ? '<span class="badge bg-warning">High</span>' :
+                                          '<span class="badge bg-success">Available</span>'}
+                                    </td>
+                                </tr>
+                            `;
+                            tbody.append(row);
+                        });
+
+                        // Add change event to course checkboxes
+                        $('.course-checkbox').on('change', updateCourseSelection);
+                    });
+            }
+
+            function updateStudentSelection() {
+                selectedStudentIds = $('.student-checkbox:checked').map(function() {
+                    return $(this).data('student-id');
+                }).get();
+
+                $('#selectedStudentsCount').text(selectedStudentIds.length);
+                updateEnrollmentPreview();
+            }
+
+            function updateCourseSelection() {
+                selectedCourseIds = $('.course-checkbox:checked').map(function() {
+                    return $(this).data('course-id');
+                }).get();
+
+                $('#selectedCoursesCount').text(selectedCourseIds.length);
+                updateEnrollmentPreview();
+            }
+
+            function updateEnrollmentPreview() {
+                const studentCount = selectedStudentIds.length;
+                const courseCount = selectedCourseIds.length;
+                const semesterId = $('#semesterSelect').val();
+
+                if (studentCount > 0 && courseCount > 0 && semesterId) {
+                    const totalEnrollments = studentCount * courseCount;
+                    $('#enrollmentPreview').html(`
+                        <strong>Ready to process:</strong><br>
+                        • ${studentCount} students<br>
+                        • ${courseCount} courses<br>
+                        • ${totalEnrollments} potential enrollments
+                    `);
+                    $('#startEnrollmentBtn').prop('disabled', false);
+                } else {
+                    $('#enrollmentPreview').html('Select students and courses to see enrollment preview...');
+                    $('#startEnrollmentBtn').prop('disabled', true);
+                }
+            }
+
+            function checkEligibility() {
+                const semesterId = $('#semesterSelect').val();
+                if (!semesterId) {
+                    alert('Please select a semester first.');
+                    return;
+                }
+
+                if (selectedStudentIds.length === 0 || selectedCourseIds.length === 0) {
+                    alert('Please select at least one student and one course.');
+                    return;
+                }
+
+                $('#checkEligibilityBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Checking...');
+
+                const request = {
+                    semesterId: parseInt(semesterId),
+                    studentIds: selectedStudentIds,
+                    courseIds: selectedCourseIds
+                };
+
+                // Use MVC endpoint for eligibility check
+                $.post('@Url.Action("CheckBulkEligibility", "Enrollment")', request)
+                    .done(function(result) {
+                        eligibilityResults = result;
+                        displayEligibilityResults(result);
+                    })
+                    .fail(function() {
+                        alert('Error checking eligibility.');
+                    })
+                    .always(function() {
+                        $('#checkEligibilityBtn').prop('disabled', false).html('<i class="fas fa-search me-1"></i> Check Eligibility');
+                    });
+            }
+
+            function displayEligibilityResults(results) {
+                let html = '<strong>Eligibility Check Results:</strong><br>';
+
+                if (results.ineligibleStudents && results.ineligibleStudents.length > 0) {
+                    html += '<div class="alert alert-warning mt-2">';
+                    html += '<strong>Ineligible Students:</strong><br>';
+                    results.ineligibleStudents.forEach(student => {
+                        html += `• ${student.studentName}: ${student.reason}<br>`;
+                    });
+                    html += '</div>';
+                }
+
+                if (results.conflicts && results.conflicts.length > 0) {
+                    html += '<div class="alert alert-danger mt-2">';
+                    html += '<strong>Enrollment Conflicts:</strong><br>';
+                    results.conflicts.forEach(conflict => {
+                        html += `• ${conflict.description}<br>`;
+                    });
+                    html += '</div>';
+                }
+
+                if (results.estimatedSuccess > 0) {
+                    html += `<div class="alert alert-success mt-2">
+                        <strong>Estimated Success:</strong> ${results.estimatedSuccess} enrollments expected
+                    </div>`;
+                }
+
+                $('#enrollmentPreview').html(html);
+            }
+
+            function startBulkEnrollment() {
+                const semesterId = $('#semesterSelect').val();
+                const enrollmentType = $('#enrollmentType').val();
+
+                const request = {
+                    semesterId: parseInt(semesterId),
+                    studentIds: selectedStudentIds,
+                    courseIds: selectedCourseIds,
+                    type: parseInt(enrollmentType),
+                    requestedBy: 'Bulk Enrollment UI'
+                };
+
+                // Show progress modal
+                const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+                progressModal.show();
+
+                // Use API endpoint for bulk enrollment
+                $.post('/api/EnrollmentApi/bulk-enroll', request)  // CHANGED
+                    .done(function(result) {
+                        $('#progressBar').css('width', '100%').text('100%');
+                        $('#progressDetails').prepend(`
+                            <div class="alert alert-success">
+                                <strong>Bulk Enrollment Completed!</strong><br>
+                                Successfully enrolled: ${result.successfullyEnrolled} students<br>
+                                Failed: ${result.failedEnrollments} students
+                            </div>
+                        `);
+                    })
+                    .fail(function(xhr, status, error) {
+                        $('#progressDetails').prepend(`<div class="alert alert-danger">Error processing bulk enrollment: ${error}</div>`);
+                    });
+            }
         });
     </script>
 }

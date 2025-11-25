@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudentManagementSystem.Data;
 
@@ -11,9 +12,11 @@ using StudentManagementSystem.Data;
 namespace StudentManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251121213846_EnhanceEnrollmentSystem")]
+    partial class EnhanceEnrollmentSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -385,10 +388,7 @@ namespace StudentManagementSystem.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int?>("SemesterId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SemesterId1")
+                    b.Property<int>("SemesterId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -399,8 +399,6 @@ namespace StudentManagementSystem.Migrations
                     b.HasIndex("DepartmentId");
 
                     b.HasIndex("SemesterId");
-
-                    b.HasIndex("SemesterId1");
 
                     b.ToTable("Courses");
                 });
@@ -918,11 +916,6 @@ namespace StudentManagementSystem.Migrations
                     b.Property<int>("GradeLevel")
                         .HasColumnType("int");
 
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
                     b.Property<DateTime?>("ModifiedDate")
                         .HasColumnType("datetime2");
 
@@ -1212,7 +1205,7 @@ namespace StudentManagementSystem.Migrations
                     b.ToTable("Universities");
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.Models.WaitlistEntry", b =>
+            modelBuilder.Entity("WaitlistEntry", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1351,11 +1344,8 @@ namespace StudentManagementSystem.Migrations
                     b.HasOne("StudentManagementSystem.Models.Semester", "CourseSemester")
                         .WithMany()
                         .HasForeignKey("SemesterId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("StudentManagementSystem.Models.Semester", null)
-                        .WithMany("Courses")
-                        .HasForeignKey("SemesterId1");
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("CourseDepartment");
 
@@ -1564,7 +1554,7 @@ namespace StudentManagementSystem.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.Models.WaitlistEntry", b =>
+            modelBuilder.Entity("WaitlistEntry", b =>
                 {
                     b.HasOne("StudentManagementSystem.Models.Course", "Course")
                         .WithMany()
@@ -1628,11 +1618,6 @@ namespace StudentManagementSystem.Migrations
             modelBuilder.Entity("StudentManagementSystem.Models.QRCodeSession", b =>
                 {
                     b.Navigation("Attendances");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.Models.Semester", b =>
-                {
-                    b.Navigation("Courses");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.Models.Student", b =>

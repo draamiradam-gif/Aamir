@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudentManagementSystem.Data;
 
@@ -11,9 +12,11 @@ using StudentManagementSystem.Data;
 namespace StudentManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251124071206_FixSemesterForeignKeyConstraint")]
+    partial class FixSemesterForeignKeyConstraint
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -388,9 +391,6 @@ namespace StudentManagementSystem.Migrations
                     b.Property<int?>("SemesterId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("SemesterId1")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CourseCode")
@@ -399,8 +399,6 @@ namespace StudentManagementSystem.Migrations
                     b.HasIndex("DepartmentId");
 
                     b.HasIndex("SemesterId");
-
-                    b.HasIndex("SemesterId1");
 
                     b.ToTable("Courses");
                 });
@@ -1353,10 +1351,6 @@ namespace StudentManagementSystem.Migrations
                         .HasForeignKey("SemesterId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("StudentManagementSystem.Models.Semester", null)
-                        .WithMany("Courses")
-                        .HasForeignKey("SemesterId1");
-
                     b.Navigation("CourseDepartment");
 
                     b.Navigation("CourseSemester");
@@ -1628,11 +1622,6 @@ namespace StudentManagementSystem.Migrations
             modelBuilder.Entity("StudentManagementSystem.Models.QRCodeSession", b =>
                 {
                     b.Navigation("Attendances");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.Models.Semester", b =>
-                {
-                    b.Navigation("Courses");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.Models.Student", b =>

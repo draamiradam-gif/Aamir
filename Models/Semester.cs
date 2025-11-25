@@ -64,7 +64,7 @@ namespace StudentManagementSystem.Models
         [ForeignKey("SubBranchId")]
         public virtual Branch? SubBranch { get; set; }
 
-        
+        public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
 
         [NotMapped]
         public string FullPath

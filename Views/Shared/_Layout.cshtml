@@ -5,19 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Academic Management System</title>
 
-    <!-- Bootstrap CSS -->
+    <!-- CSS Bundles -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
     <style>
@@ -25,80 +18,514 @@
             --primary-color: #1a365d;
             --secondary-color: #2d3748;
             --accent-color: #3182ce;
+            --success-color: #38a169;
+            --warning-color: #dd6b20;
+            --danger-color: #e53e3e;
             --light-bg: #f7fafc;
+            --sidebar-width: 280px;
+            --header-height: 76px;
+            --sidebar-collapsed-width: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .navbar-main {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            height: var(--header-height);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            border-bottom: 3px solid var(--accent-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            transition: all 0.3s ease;
         }
 
         .navbar-brand {
             font-weight: 700;
-            font-size: 1.5rem;
+            transition: transform 0.3s ease;
         }
 
-        .sidebar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            min-height: calc(100vh - 76px);
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        }
-
-            .sidebar .nav-link {
-                color: #e2e8f0;
-                padding: 0.75rem 1rem;
-                margin: 0.2rem 0;
-                border-radius: 0.375rem;
-                transition: all 0.3s ease;
+            .navbar-brand:hover {
+                transform: scale(1.02);
             }
 
-                .sidebar .nav-link:hover {
-                    background-color: rgba(255,255,255,0.1);
-                    color: #fff;
-                    transform: translateX(5px);
-                }
-
-                .sidebar .nav-link.active {
-                    background-color: var(--accent-color);
-                    color: white;
-                }
-
-        .main-content {
-            background-color: white;
+        .nav-link {
+            position: relative;
+            padding: 0.5rem 1rem;
             border-radius: 0.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .page-header {
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .card-university {
-            border: none;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-            .card-university:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-            }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-color) 0%, #2c5aa0 100%);
-            border: none;
-            border-radius: 0.5rem;
+            transition: all 0.3s ease;
             font-weight: 500;
         }
 
-        .table th {
-            background-color: var(--light-bg);
+            .nav-link:hover {
+                background: rgba(255,255,255,0.1);
+                transform: translateY(-1px);
+            }
+
+            .nav-link::after {
+                content: '';
+                position: absolute;
+                bottom: -2px;
+                left: 50%;
+                width: 0;
+                height: 2px;
+                background: var(--accent-color);
+                transition: all 0.3s ease;
+                transform: translateX(-50%);
+            }
+
+            .nav-link:hover::after {
+                width: 80%;
+            }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: calc(100vh - var(--header-height));
+            width: var(--sidebar-width);
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            box-shadow: 3px 0 20px rgba(0,0,0,0.1);
+            z-index: 1020;
+            overflow-y: auto;
+            overflow-x: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+            .sidebar-collapsed .sidebar-section {
+                padding: 1rem 0.5rem;
+            }
+
+            .sidebar-collapsed .sidebar-title {
+                display: none;
+            }
+
+            .sidebar-collapsed .nav-link span:not(.nav-icon) {
+                display: none;
+            }
+
+            .sidebar-collapsed .nav-link {
+                justify-content: center;
+                padding: 0.75rem 0.5rem;
+            }
+
+            .sidebar-collapsed .nav-icon {
+                margin-right: 0;
+                font-size: 1.2rem;
+            }
+
+        .sidebar-section {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+            .sidebar-section:last-child {
+                border-bottom: none;
+            }
+
+        .sidebar-title {
+            color: #a0aec0;
+            font-size: 0.75rem;
             font-weight: 600;
-            color: var(--secondary-color);
-            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-nav .nav-link {
+            color: #e2e8f0;
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+            .sidebar-nav .nav-link::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0;
+                height: 100%;
+                width: 0;
+                background: var(--accent-color);
+                transition: width 0.3s ease;
+                z-index: -1;
+            }
+
+            .sidebar-nav .nav-link:hover::before,
+            .sidebar-nav .nav-link.active::before {
+                width: 4px;
+            }
+
+            .sidebar-nav .nav-link:hover,
+            .sidebar-nav .nav-link.active {
+                background: rgba(255,255,255,0.08);
+                color: white;
+                transform: translateX(5px);
+            }
+
+        .sidebar-nav .nav-icon {
+            width: 20px;
+            margin-right: 0.75rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Main Content */
+        .main-content-wrapper {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+            transition: all 0.3s ease;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content-expanded {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        .content-area {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 2rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .page-content {
+            padding: 2rem;
+            flex: 1;
+        }
+
+        /* Scrollbar Styling */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+            .sidebar::-webkit-scrollbar-thumb:hover {
+                background: #2c5aa0;
+            }
+
+        /* Alert Styles */
+        .alert {
+            border: none;
+            border-radius: 0.75rem;
+            border-left: 4px solid;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .alert-success {
+            border-left-color: var(--success-color);
+            background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+        }
+
+        .alert-danger {
+            border-left-color: var(--danger-color);
+            background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+        }
+
+        /* Card Styles */
+        .card-modern {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            border: 1px solid #f1f5f9;
+        }
+
+            .card-modern:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            }
+
+        .card-header-modern {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Button Styles */
+        .btn-modern {
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .btn-modern::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                transition: left 0.5s;
+            }
+
+            .btn-modern:hover::before {
+                left: 100%;
+            }
+
+        .btn-primary-modern {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #2c5aa0 100%);
+        }
+
+        .btn-success-modern {
+            background: linear-gradient(135deg, var(--success-color) 0%, #2f855a 100%);
+        }
+
+        .btn-warning-modern {
+            background: linear-gradient(135deg, var(--warning-color) 0%, #c05621 100%);
+        }
+
+        /* Table Styles */
+        .table-modern {
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+            .table-modern th {
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                font-weight: 600;
+                color: var(--secondary-color);
+                border: none;
+                padding: 1rem;
+            }
+
+            .table-modern td {
+                padding: 1rem;
+                border-color: #f1f5f9;
+                vertical-align: middle;
+            }
+
+        /* Footer */
+        .footer-main {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            border-top: 3px solid var(--accent-color);
+            margin-top: auto;
+            position: relative;
+            z-index: 1010;
+            margin-left: var(--sidebar-width);
+            transition: all 0.3s ease;
+        }
+
+        .footer-expanded {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        /* Toggle Sidebar Button */
+        .sidebar-toggle {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            margin-right: 1rem;
+        }
+
+            .sidebar-toggle:hover {
+                background: rgba(255,255,255,0.1);
+            }
+
+        /* Mobile Responsive */
+        @@media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 280px;
+            }
+
+                .sidebar.mobile-open {
+                    transform: translateX(0);
+                }
+
+            .main-content-wrapper {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .footer-main {
+                margin-left: 0;
+            }
+
+            .mobile-menu-btn {
+                display: block !important;
+            }
+
+            .sidebar-toggle {
+                display: none !important;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Badge Styles */
+        .badge-modern {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            padding: 0.35rem 0.75rem;
+        }
+
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+            .back-to-top:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            }
+
+        /* Quick Stats Cards */
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+            .stats-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            }
+
+        /* Dark Mode Support */
+        .dark-mode {
+            background: #1a202c;
+            color: #e2e8f0;
+        }
+
+            .dark-mode .content-area {
+                background: #2d3748;
+                color: #e2e8f0;
+            }
+
+            .dark-mode .card-modern {
+                background: #2d3748;
+                border-color: #4a5568;
+            }
+
+        /* Print Styles */
+        @@media print {
+            .sidebar, .navbar-main, .footer-main, .back-to-top {
+                display: none !important;
+            }
+
+            .main-content-wrapper {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .content-area {
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
+
+        /* Fix for missing graphics - ensure Font Awesome loads properly */
+        .fa, .fas, .far, .fal, .fab {
+            font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands' !important;
+            font-weight: 900;
+        }
+
+        /* Ensure all icons are visible */
+        .nav-icon::before {
+            display: inline-block;
+            text-rendering: auto;
+            -webkit-font-smoothing: antialiased;
         }
     </style>
 
@@ -107,35 +534,56 @@
 <body>
     <!-- Header -->
     <header>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <nav class="navbar navbar-main navbar-expand-lg">
             <div class="container-fluid">
-                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                <!-- Sidebar Toggle -->
+                <button class="sidebar-toggle d-none d-md-flex" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- Brand Logo -->
+                <a class="navbar-brand text-white d-flex align-items-center" asp-controller="Home" asp-action="Index">
                     <i class="fas fa-university me-3 fs-2"></i>
                     <div>
-                        <div class="fw-bold fs-4">Academic Management</div>
-                        <div class="small opacity-75">Student Management System</div>
+                        <div class="fw-bold fs-4">AcademicPro</div>
+                        <div class="small opacity-75">Management System</div>
                     </div>
                 </a>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <!-- Mobile Menu Button -->
+                <button class="navbar-toggler mobile-menu-btn d-md-none" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#mobileSidebar">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
+                <!-- Main Navigation -->
                 <div class="collapse navbar-collapse" id="navbarMain">
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index">
+                            <a class="nav-link text-white" asp-controller="Home" asp-action="Index">
                                 <i class="fas fa-home me-1"></i> Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Hierarchy">
-                                <i class="fas fa-sitemap me-2"></i>Academic Hierarchy
+                            <a class="nav-link text-white" asp-controller="Home" asp-action="Hierarchy">
+                                <i class="fas fa-sitemap me-1"></i> Hierarchy
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Dashboard" asp-action="Index">
+                            <a class="nav-link text-white" asp-controller="Dashboard" asp-action="Index">
                                 <i class="fas fa-chart-bar me-1"></i> Analytics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" asp-controller="Enrollment" asp-action="Available"
+                               asp-route-semesterId="1">
+                                <i class="fas fa-book me-1"></i>Available Courses
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" asp-controller="Enrollment" asp-action="MyEnrollments"
+                               asp-route-semesterId="1">
+                                <i class="fas fa-list me-1"></i>My Enrollments
                             </a>
                         </li>
                         <partial name="_LoginPartial" />
@@ -145,114 +593,740 @@
         </nav>
     </header>
 
+    <!-- Desktop Sidebar -->
+    <aside class="sidebar d-none d-md-block" id="desktopSidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">Academic Structure</div>
+            <nav class="sidebar-nav">
+                <a class="nav-link" asp-controller="University" asp-action="Index">
+                    <i class="nav-icon fas fa-building"></i>
+                    <span>Universities</span>
+                </a>
+                <a class="nav-link" asp-controller="Colleges" asp-action="Index">
+                    <i class="nav-icon fas fa-school"></i>
+                    <span>Colleges</span>
+                </a>
+                <a class="nav-link" asp-controller="Departments" asp-action="Index">
+                    <i class="nav-icon fas fa-building-user"></i>
+                    <span>Departments</span>
+                </a>
+                <a class="nav-link" asp-controller="Branches" asp-action="Index">
+                    <i class="nav-icon fas fa-code-branch"></i>
+                    <span>Branches</span>
+                </a>
+                <a class="nav-link" asp-controller="Semesters" asp-action="Index">
+                    <i class="nav-icon fas fa-calendar-alt"></i>
+                    <span>Semesters</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Student Management</div>
+            <nav class="sidebar-nav">
+                <a class="nav-link" asp-controller="Students" asp-action="Index">
+                    <i class="nav-icon fas fa-user-graduate"></i>
+                    <span>Students</span>
+                </a>
+                <a class="nav-link" asp-controller="Courses" asp-action="Index">
+                    <i class="nav-icon fas fa-book"></i>
+                    <span>Courses</span>
+                </a>
+                <a class="nav-link" asp-controller="Enrollment" asp-action="Dashboard">
+                    <i class="nav-icon fas fa-graduation-cap"></i>
+                    <span>Enrollment</span>
+                </a>
+                <a class="nav-link" href="@Url.Action("Manage", "Grades")">
+                    <i class="nav-icon fas fa-award"></i>
+                    <span>Grade Management</span>
+                </a>
+                <a class="nav-link" asp-controller="QRCode" asp-action="Index">
+                    <i class="nav-icon fas fa-qrcode"></i>
+                    <span>QR Attendance</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Quick Actions</div>
+            <nav class="sidebar-nav">
+                <a class="nav-link" asp-controller="Enrollment" asp-action="BulkEnrollment">
+                    <i class="nav-icon fas fa-users"></i>
+                    <span>Bulk Enrollment</span>
+                </a>
+                <a class="nav-link" asp-controller="Enrollment" asp-action="WaitlistManagement">
+                    <i class="nav-icon fas fa-clock"></i>
+                    <span>Waitlists</span>
+                </a>
+                <a class="nav-link" asp-controller="Reports" asp-action="Index">
+                    <i class="nav-icon fas fa-chart-pie"></i>
+                    <span>Reports</span>
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Mobile Sidebar -->
+    <aside class="sidebar d-md-none" id="mobileSidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">Academic Structure</div>
+            <nav class="sidebar-nav">
+                <a class="nav-link" asp-controller="University" asp-action="Index">
+                    <i class="nav-icon fas fa-building"></i>
+                    <span>Universities</span>
+                </a>
+                <a class="nav-link" asp-controller="Colleges" asp-action="Index">
+                    <i class="nav-icon fas fa-school"></i>
+                    <span>Colleges</span>
+                </a>
+                <a class="nav-link" asp-controller="Departments" asp-action="Index">
+                    <i class="nav-icon fas fa-building-user"></i>
+                    <span>Departments</span>
+                </a>
+                <a class="nav-link" asp-controller="Branches" asp-action="Index">
+                    <i class="nav-icon fas fa-code-branch"></i>
+                    <span>Branches</span>
+                </a>
+                <a class="nav-link" asp-controller="Semesters" asp-action="Index">
+                    <i class="nav-icon fas fa-calendar-alt"></i>
+                    <span>Semesters</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Student Management</div>
+            <nav class="sidebar-nav">
+                <a class="nav-link" asp-controller="Students" asp-action="Index">
+                    <i class="nav-icon fas fa-user-graduate"></i>
+                    <span>Students</span>
+                </a>
+                <a class="nav-link" asp-controller="Courses" asp-action="Index">
+                    <i class="nav-icon fas fa-book"></i>
+                    <span>Courses</span>
+                </a>
+                <a class="nav-link" asp-controller="Enrollment" asp-action="Dashboard">
+                    <i class="nav-icon fas fa-graduation-cap"></i>
+                    <span>Enrollment</span>
+                </a>
+                <a class="nav-link" href="@Url.Action("Manage", "Grades")">
+                    <i class="nav-icon fas fa-award"></i>
+                    <span>Grade Management</span>
+                </a>
+                <a class="nav-link" asp-controller="QRCode" asp-action="Index">
+                    <i class="nav-icon fas fa-qrcode"></i>
+                    <span>QR Attendance</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Quick Actions</div>
+            <nav class="sidebar-nav">
+                <a class="nav-link" asp-controller="Enrollment" asp-action="BulkEnrollment">
+                    <i class="nav-icon fas fa-users"></i>
+                    <span>Bulk Enrollment</span>
+                </a>
+                <a class="nav-link" asp-controller="Enrollment" asp-action="WaitlistManagement">
+                    <i class="nav-icon fas fa-clock"></i>
+                    <span>Waitlists</span>
+                </a>
+                <a class="nav-link" asp-controller="Reports" asp-action="Index">
+                    <i class="nav-icon fas fa-chart-pie"></i>
+                    <span>Reports</span>
+                </a>
+            </nav>
+        </div>
+    </aside>
+
     <!-- Main Content -->
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-2 col-md-3 d-none d-md-block sidebar p-0">
-                <nav class="nav flex-column p-3">
-                    <div class="text-white fw-bold small text-uppercase mb-2 mt-2 opacity-75">Academic Structure</div>
-                    <a class="nav-link" asp-controller="University" asp-action="Index">
-                        <i class="fas fa-building me-2"></i>Universities
-                    </a>
-                    <a class="nav-link" asp-controller="Colleges" asp-action="Index">
-                        <i class="fas fa-school me-2"></i>Colleges
-                    </a>
-                    <a class="nav-link" asp-controller="Departments" asp-action="Index">
-                        <i class="fas fa-department me-2"></i>Departments
-                    </a>
-                    <a class="nav-link" asp-controller="Branches" asp-action="Index">
-                        <i class="fas fa-code-branch me-2"></i>Branches
-                    </a>
-                    <a class="nav-link" asp-controller="Semesters" asp-action="Index">
-                        <i class="fas fa-calendar-alt me-2"></i>Semesters
-                    </a>
-
-                    <div class="text-white fw-bold small text-uppercase mb-2 mt-4 opacity-75">Student Management</div>
-                    <a class="nav-link" asp-controller="Students" asp-action="Index">
-                        <i class="fas fa-user-graduate me-2"></i>Students
-                    </a>
-                    <a class="nav-link" asp-controller="Courses" asp-action="Index">
-                        <i class="fas fa-book me-2"></i>Courses
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Manage", "Grades")">
-                        <i class="fas fa-graduation-cap"></i> Grade Management
-                    </a>
-                    <a class="nav-link" asp-controller="QRCode" asp-action="Index">
-                        <i class="fas fa-qrcode me-2"></i>QR Attendance
-                    </a>
-                </nav>
-            </div>
-
-            <!-- Content Area -->
-            <div class="col-lg-10 col-md-9 ms-sm-auto px-4 py-4">
-                <!-- Alert Messages -->
+    <main class="main-content-wrapper" id="mainContent">
+        <div class="content-area">
+            <!-- Alert Messages -->
+            <div class="container-fluid p-0">
                 @if (TempData["SuccessMessage"] != null)
                 {
-                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
-                        <i class="fas fa-check-circle me-2 fs-5"></i>
-                        <div class="flex-grow-1">
-                            <strong>Success!</strong> @TempData["SuccessMessage"]
+                    <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle me-2 fs-5"></i>
+                            <div class="flex-grow-1">
+                                <strong>Success!</strong> @TempData["SuccessMessage"]
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 }
                 @if (TempData["ErrorMessage"] != null)
                 {
-                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
-                        <i class="fas fa-exclamation-circle me-2 fs-5"></i>
-                        <div class="flex-grow-1">
-                            <strong>Error!</strong> @TempData["ErrorMessage"]
+                    <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-circle me-2 fs-5"></i>
+                            <div class="flex-grow-1">
+                                <strong>Error!</strong> @TempData["ErrorMessage"]
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 }
+            </div>
 
-                <!-- Page Content -->
-                <div class="main-content p-4">
-                    @RenderBody()
-                </div>
+            <!-- Page Content -->
+            <div class="page-content">
+                @RenderBody()
             </div>
         </div>
-    </div>
+    </main>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop">
+        <i class="fas fa-chevron-up"></i>
+    </button>
 
     <!-- Footer -->
-    <footer class="bg-dark text-light py-4 mt-5">
+    <footer class="footer-main text-white py-4" id="mainFooter">
         <div class="container-fluid">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h6 class="mb-2"><i class="fas fa-university me-2"></i>Academic Management System</h6>
-                    <p class="mb-0 text-light opacity-75 small">Comprehensive platform for managing universities, colleges, and student data</p>
+                    <h6 class="mb-2">
+                        <i class="fas fa-university me-2"></i>AcademicPro Management System
+                    </h6>
+                    <p class="mb-0 opacity-75 small">
+                        Comprehensive platform for modern academic institution management
+                    </p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <p class="mb-0 text-light opacity-75 small">&copy; 2024 Academic Management System</p>
+                    <p class="mb-0 opacity-75 small">
+                        &copy; 2024 AcademicPro System v2.0
+                    </p>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- JavaScript - ALL SCRIPTS IN ONE PLACE, NO DUPLICATES -->
-    <!-- jQuery FIRST -->
-    <!-- In _Layout.cshtml - Replace the entire scripts section at the bottom -->
-    <!-- JavaScript - ALL SCRIPTS IN ONE PLACE -->
+    <!-- JavaScript -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <!-- jQuery Validation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
-
-    <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- DataTables -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-
-    <!-- Custom Scripts -->
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    <!-- ONLY ONE RenderSectionAsync CALL -->
-    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        // Advanced Layout Management System
+        class LayoutManager {
+            constructor() {
+                this.sidebar = document.getElementById('desktopSidebar');
+                this.mainContent = document.getElementById('mainContent');
+                this.footer = document.getElementById('mainFooter');
+                this.sidebarToggle = document.getElementById('sidebarToggle');
+                this.mobileSidebar = document.getElementById('mobileSidebar');
+                this.mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+                this.backToTop = document.getElementById('backToTop');
+                this.isSidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
 
+                this.init();
+            }
+
+            init() {
+                this.initializeSidebar();
+                this.initializeMobileMenu();
+                this.initializeBackToTop();
+                this.initializeActiveLinks();
+                this.initializeAutoAlerts();
+                this.initializeKeyboardShortcuts();
+                this.initializePerformanceOptimizations();
+                this.initializeThemeSupport();
+                this.initializePrintOptimizations();
+                this.initializeAnalytics();
+
+                console.log('🎯 Layout Manager initialized successfully');
+            }
+
+            initializeSidebar() {
+                if (!this.sidebarToggle || !this.sidebar) return;
+
+                // Set initial state
+                if (this.isSidebarCollapsed) {
+                    this.collapseSidebar();
+                }
+
+                // Toggle functionality
+                this.sidebarToggle.addEventListener('click', () => this.toggleSidebar());
+
+                // Hover effects for sidebar items
+                this.initializeSidebarHoverEffects();
+            }
+
+            toggleSidebar() {
+                this.sidebar.classList.toggle('sidebar-collapsed');
+                this.mainContent.classList.toggle('main-content-expanded');
+                this.footer.classList.toggle('footer-expanded');
+
+                this.updateSidebarIcon();
+                this.saveSidebarState();
+                this.dispatchSidebarEvent();
+            }
+
+            collapseSidebar() {
+                this.sidebar.classList.add('sidebar-collapsed');
+                this.mainContent.classList.add('main-content-expanded');
+                this.footer.classList.add('footer-expanded');
+                this.updateSidebarIcon();
+            }
+
+            expandSidebar() {
+                this.sidebar.classList.remove('sidebar-collapsed');
+                this.mainContent.classList.remove('main-content-expanded');
+                this.footer.classList.remove('footer-expanded');
+                this.updateSidebarIcon();
+            }
+
+            updateSidebarIcon() {
+                const icon = this.sidebarToggle.querySelector('i');
+                if (this.sidebar.classList.contains('sidebar-collapsed')) {
+                    icon.className = 'fas fa-chevron-right';
+                } else {
+                    icon.className = 'fas fa-bars';
+                }
+            }
+
+            saveSidebarState() {
+                const isCollapsed = this.sidebar.classList.contains('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
+            }
+
+            initializeSidebarHoverEffects() {
+                const sidebarItems = document.querySelectorAll('.sidebar-nav .nav-link');
+
+                sidebarItems.forEach(item => {
+                    item.addEventListener('mouseenter', () => {
+                        if (this.sidebar.classList.contains('sidebar-collapsed')) {
+                            this.showTooltip(item);
+                        }
+                    });
+
+                    item.addEventListener('mouseleave', () => {
+                        this.hideTooltip();
+                    });
+                });
+            }
+
+            showTooltip(element) {
+                // Remove existing tooltip
+                this.hideTooltip();
+
+                // Create new tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'sidebar-tooltip';
+                tooltip.textContent = element.querySelector('span').textContent;
+                tooltip.style.cssText = `
+                    position: absolute;
+                    background: #2d3748;
+                    color: white;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    white-space: nowrap;
+                    z-index: 9999;
+                    left: 70px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                `;
+
+                element.style.position = 'relative';
+                element.appendChild(tooltip);
+            }
+
+            hideTooltip() {
+                const existingTooltip = document.querySelector('.sidebar-tooltip');
+                if (existingTooltip) {
+                    existingTooltip.remove();
+                }
+            }
+
+            initializeMobileMenu() {
+                if (!this.mobileMenuBtn || !this.mobileSidebar) return;
+
+                this.mobileMenuBtn.addEventListener('click', () => this.toggleMobileMenu());
+
+                // Close when clicking outside
+                document.addEventListener('click', (event) => {
+                    if (this.mobileSidebar.classList.contains('mobile-open') &&
+                        !this.mobileSidebar.contains(event.target) &&
+                        !this.mobileMenuBtn.contains(event.target)) {
+                        this.closeMobileMenu();
+                    }
+                });
+
+                // Close on escape key
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape' && this.mobileSidebar.classList.contains('mobile-open')) {
+                        this.closeMobileMenu();
+                    }
+                });
+            }
+
+            toggleMobileMenu() {
+                this.mobileSidebar.classList.toggle('mobile-open');
+            }
+
+            closeMobileMenu() {
+                this.mobileSidebar.classList.remove('mobile-open');
+            }
+
+            initializeBackToTop() {
+                if (!this.backToTop) return;
+
+                window.addEventListener('scroll', () => {
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    this.backToTop.style.display = scrollTop > 300 ? 'flex' : 'none';
+                });
+
+                this.backToTop.addEventListener('click', () => {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
+
+                // Progressive enhancement: Add scroll progress indicator
+                this.initializeScrollProgress();
+            }
+
+            initializeScrollProgress() {
+                const progressBar = document.createElement('div');
+                progressBar.className = 'scroll-progress';
+                progressBar.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    height: 3px;
+                    background: linear-gradient(90deg, #3182ce, #805ad5);
+                    z-index: 9999;
+                    transition: width 0.1s ease;
+                `;
+                document.body.appendChild(progressBar);
+
+                window.addEventListener('scroll', () => {
+                    const winHeight = document.documentElement.scrollHeight - window.innerHeight;
+                    const progress = (window.pageYOffset / winHeight) * 100;
+                    progressBar.style.width = progress + '%';
+                });
+            }
+
+            initializeActiveLinks() {
+                const currentPath = window.location.pathname;
+                const navLinks = document.querySelectorAll('.sidebar-nav .nav-link, .navbar-nav .nav-link');
+
+                navLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href === currentPath || currentPath.startsWith(href)) {
+                        link.classList.add('active');
+
+                        // Add aria-current for accessibility
+                        link.setAttribute('aria-current', 'page');
+                    }
+                });
+
+                // Update active link on navigation
+                this.initializeNavigationTracking();
+            }
+
+            initializeNavigationTracking() {
+                // Track page views and navigation
+                document.addEventListener('click', (event) => {
+                    const link = event.target.closest('a');
+                    if (link && link.href && !link.target) {
+                        this.trackNavigation(link.href);
+                    }
+                });
+            }
+
+            initializeAutoAlerts() {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    const dismissDelay = alert.dataset.autoDismiss || 5000;
+
+                    setTimeout(() => {
+                        if (alert.isConnected) { // Check if alert still exists
+                            const bsAlert = new bootstrap.Alert(alert);
+                            bsAlert.close();
+                        }
+                    }, parseInt(dismissDelay));
+                });
+
+                // Enhanced alert system with sounds
+                this.initializeAlertSounds();
+            }
+
+            initializeAlertSounds() {
+                // Play subtle sound for important alerts
+                const playAlertSound = (type) => {
+                    // Could integrate with Web Audio API for custom sounds
+                    console.log(`Alert sound for: ${type}`);
+                };
+
+                // Monitor for new alerts
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === 1 && node.classList && node.classList.contains('alert-danger')) {
+                                playAlertSound('error');
+                            }
+                        });
+                    });
+                });
+
+                observer.observe(document.body, { childList: true, subtree: true });
+            }
+
+            initializeKeyboardShortcuts() {
+                document.addEventListener('keydown', (event) => {
+                    // Ctrl/Cmd + B: Toggle sidebar
+                    if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
+                        event.preventDefault();
+                        if (this.sidebarToggle) this.sidebarToggle.click();
+                    }
+
+                    // Ctrl/Cmd + K: Focus search
+                    if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+                        event.preventDefault();
+                        this.focusSearch();
+                    }
+
+                    // Escape: Close modals, mobile menu
+                    if (event.key === 'Escape') {
+                        this.handleEscapeKey();
+                    }
+
+                    // Alt + 1-9: Quick navigation
+                    if (event.altKey && event.key >= '1' && event.key <= '9') {
+                        this.quickNavigate(parseInt(event.key));
+                    }
+                });
+            }
+
+            focusSearch() {
+                const searchInput = document.querySelector('input[type="search"], input[placeholder*="search" i]');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+
+            handleEscapeKey() {
+                // Close mobile menu
+                if (this.mobileSidebar) {
+                    this.closeMobileMenu();
+                }
+
+                // Close any open modals
+                const openModals = document.querySelectorAll('.modal.show');
+                openModals.forEach(modal => {
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                });
+
+                // Close any open dropdowns
+                const openDropdowns = document.querySelectorAll('.dropdown-menu.show');
+                openDropdowns.forEach(dropdown => {
+                    const dropdownInstance = bootstrap.Dropdown.getInstance(dropdown);
+                    if (dropdownInstance) {
+                        dropdownInstance.hide();
+                    }
+                });
+            }
+
+            quickNavigate(number) {
+                const quickLinks = [
+                    '/', // Home
+                    '/Students', // Students
+                    '/Courses', // Courses
+                    '/Semesters', // Semesters
+                    '/Enrollment', // Enrollment
+                    '/Reports', // Reports
+                    '/University', // University
+                    '/Departments', // Departments
+                    '/Branches' // Branches
+                ];
+
+                if (quickLinks[number - 1]) {
+                    window.location.href = quickLinks[number - 1];
+                }
+            }
+
+            initializePerformanceOptimizations() {
+                // Lazy loading for images
+                if ('IntersectionObserver' in window) {
+                    const imageObserver = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const img = entry.target;
+                                img.src = img.dataset.src;
+                                img.classList.remove('lazy');
+                                imageObserver.unobserve(img);
+                            }
+                        });
+                    });
+
+                    document.querySelectorAll('img.lazy').forEach(img => {
+                        imageObserver.observe(img);
+                    });
+                }
+
+                // Preload critical resources
+                this.preloadCriticalResources();
+            }
+
+            preloadCriticalResources() {
+                // Preload critical CSS and fonts
+                const criticalResources = [
+                    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+                ];
+
+                criticalResources.forEach(resource => {
+                    const link = document.createElement('link');
+                    link.rel = 'preload';
+                    link.href = resource;
+                    link.as = 'style';
+                    document.head.appendChild(link);
+                });
+            }
+
+            initializeThemeSupport() {
+                // Dark/light theme support
+                const themeToggle = document.createElement('button');
+                themeToggle.className = 'btn btn-sm btn-outline-secondary theme-toggle';
+                themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                themeToggle.style.marginLeft = '10px';
+
+                themeToggle.addEventListener('click', () => {
+                    document.body.classList.toggle('dark-mode');
+                    const isDark = document.body.classList.contains('dark-mode');
+                    themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                });
+
+                // Add to navbar if desired
+                // document.querySelector('.navbar-nav').appendChild(themeToggle);
+
+                // Load saved theme
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                }
+            }
+
+            initializePrintOptimizations() {
+                // Your existing CSS already handles print styles
+                // No need to duplicate in JavaScript
+                console.log('Print optimizations handled by CSS');
+
+                // Optional: Add print button functionality only
+                this.initializePrintButtons();
+            }
+
+            initializePrintButtons() {
+                // Create print button if needed
+                const printButton = document.createElement('button');
+                printButton.className = 'btn btn-sm btn-outline-secondary no-print';
+                printButton.innerHTML = '<i class="fas fa-print"></i> Print';
+                printButton.style.marginLeft = '10px';
+
+                printButton.addEventListener('click', () => {
+                    window.print();
+                });
+
+                // Add to UI where appropriate
+                // document.querySelector('.navbar-nav').appendChild(printButton);
+            }
+
+            initializeAnalytics() {
+                // Basic analytics tracking
+                this.trackPageView();
+                this.trackUserInteractions();
+            }
+
+            trackPageView() {
+                const pageData = {
+                    url: window.location.href,
+                    title: document.title,
+                    timestamp: new Date().toISOString(),
+                    referrer: document.referrer
+                };
+
+                console.log('📊 Page View:', pageData);
+                // Integrate with your analytics service here
+            }
+
+            trackUserInteractions() {
+                // Track clicks on important elements
+                document.addEventListener('click', (event) => {
+                    const element = event.target;
+                    const interactionData = {
+                        type: 'click',
+                        element: element.tagName,
+                        text: element.textContent?.trim().substring(0, 50),
+                        href: element.href,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    // Log important interactions
+                    if (element.classList.contains('btn-primary') ||
+                        element.classList.contains('nav-link') ||
+                        element.tagName === 'BUTTON') {
+                        console.log('🎯 User Interaction:', interactionData);
+                    }
+                });
+            }
+
+            dispatchSidebarEvent() {
+                // Dispatch custom event for sidebar state changes
+                const event = new CustomEvent('sidebarStateChange', {
+                    detail: {
+                        collapsed: this.sidebar.classList.contains('sidebar-collapsed'),
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                document.dispatchEvent(event);
+            }
+
+            trackNavigation(url) {
+                console.log('🧭 Navigation:', url);
+                // Add your navigation tracking logic here
+            }
+        }
+
+        // Initialize the layout manager when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            window.layoutManager = new LayoutManager();
+
+            // Global utility functions
+            window.confirmDelete = function(message = 'Are you sure you want to delete this item?') {
+                return confirm(message);
+            };
+
+            window.showLoading = function() {
+                document.body.classList.add('loading');
+            };
+
+            window.hideLoading = function() {
+                document.body.classList.remove('loading');
+            };
+
+            console.log('🚀 Advanced Layout System Ready');
+        });
+
+        // Error boundary for the layout system
+        window.addEventListener('error', function(event) {
+            console.error('🎯 Layout System Error:', event.error);
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

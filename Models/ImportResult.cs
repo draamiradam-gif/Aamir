@@ -14,6 +14,8 @@ public class ImportResult
     public int ErrorCount { get; set; }
     public List<Student> ValidStudents { get; set; } = new List<Student>();
     public List<InvalidStudent> InvalidStudents { get; set; } = new List<InvalidStudent>();
+    public int PrerequisitesProcessed { get; set; }
+    public List<string> PrerequisiteErrors { get; set; } = new List<string>();
 
 
 }
