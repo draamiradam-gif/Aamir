@@ -11,7 +11,11 @@
     var hasInvalidCourses = invalidCoursesCount > 0;
     var message = Model.ImportResult?.Message ?? "No import data available.";
     var errorCount = Model.ImportResult?.Errors?.Count ?? 0;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
     // Semester handling
     var hasMissingSemesters = Model.MissingSemesterIds?.Any() == true;
     var missingSemesterIds = Model.MissingSemesterIds ?? new List<int>();
@@ -112,11 +116,19 @@
                     The import contains courses assigned to semesters that don't exist in the system:
                     <strong>@string.Join(", ", missingSemesterIds)</strong>
                 </p>
+<<<<<<< HEAD
 
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="radio" name="SemesterCreationMode"
+=======
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="SemesterCreationMode" 
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                    id="optionAsk" value="ask" checked>
                             <label class="form-check-label fw-bold" for="optionAsk">
                                 Ask Me Which Semesters to Create
@@ -125,9 +137,15 @@
                                 You'll select which semesters to create from the list below
                             </small>
                         </div>
+<<<<<<< HEAD
 
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="radio" name="SemesterCreationMode"
+=======
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="SemesterCreationMode" 
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                    id="optionAuto" value="auto">
                             <label class="form-check-label fw-bold" for="optionAuto">
                                 Automatically Create All Missing Semesters
@@ -136,9 +154,15 @@
                                 System will create semesters: @string.Join(", ", missingSemesterIds)
                             </small>
                         </div>
+<<<<<<< HEAD
 
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="radio" name="SemesterCreationMode"
+=======
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="SemesterCreationMode" 
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                    id="optionIgnore" value="ignore">
                             <label class="form-check-label fw-bold" for="optionIgnore">
                                 Keep Semester IDs for Manual Creation Later
@@ -148,14 +172,22 @@
                             </small>
                         </div>
                     </div>
+<<<<<<< HEAD
 
+=======
+                    
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                     <div class="col-md-6">
                         <div id="semesterSelection">
                             <h6>Select Semesters to Create:</h6>
                             @foreach (var semesterId in missingSemesterIds)
                             {
                                 <div class="form-check">
+<<<<<<< HEAD
                                     <input class="form-check-input semester-checkbox" type="checkbox"
+=======
+                                    <input class="form-check-input semester-checkbox" type="checkbox" 
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                            value="@semesterId" id="semester-@semesterId" checked>
                                     <label class="form-check-label" for="semester-@semesterId">
                                         Semester @semesterId
@@ -300,7 +332,11 @@
                         <!-- Form for imports WITH semester options -->
                         @if (hasMissingSemesters)
                         {
+<<<<<<< HEAD
                             <form id="importFormWithOptions" asp-action="ImportExecuteWithOptions" asp-controller="CourseImport" method="post">
+=======
+                            <form id="importFormWithOptions" asp-action="ImportExecuteWithOptions" method="post">
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                 <!-- Hidden fields for semester options -->
                                 <input type="hidden" name="SelectedCourses" id="selectedCoursesInput" value="">
                                 <input type="hidden" name="options.SemesterCreationMode" id="semesterCreationModeInput" value="ask">
@@ -338,6 +374,10 @@
                                     @if (hasMissingSemesters)
                                     {
                                         <br>
+<<<<<<< HEAD
+=======
+                            
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                         <span class="text-warning">Note: This import includes semester creation options.</span>
                                     }
                                 </div>
@@ -352,7 +392,11 @@
                         else
                         {
                             <!-- Form for imports WITHOUT semester options -->
+<<<<<<< HEAD
                             <form id="importForm" asp-action="ImportExecute" asp-controller="CourseImport" method="post">
+=======
+                            <form id="importForm" asp-action="ImportExecute" method="post">
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                 <input type="hidden" name="SelectedCourses" id="selectedCoursesInput" value="">
 
                                 @if (Model.ImportSettings != null)
@@ -430,13 +474,21 @@
                                                 <input class="form-check-input" type="checkbox" id="tableSelectAll">
                                             </div>
                                         </th>
+<<<<<<< HEAD
                                         <th width="70" class="text-center text-nowrap">
+=======
+                                        <th width="70" class="text-center text-nowrap" ">
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="serial">
                                                 #
                                                 <i class="fas fa-sort ms-1"></i>
                                             </a>
                                         </th>
+<<<<<<< HEAD
                                         <th width="150" class="text-center text-nowrap">
+=======
+                                        <th width="150"  class="text-center text-nowrap">
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="courseCode">
                                                 Course Code
                                                 <i class="fas fa-sort ms-1"></i>
@@ -460,12 +512,15 @@
                                                 <i class="fas fa-sort ms-1"></i>
                                             </a>
                                         </th>
+<<<<<<< HEAD
                                         <th width="150" class="text-center text-nowrap">
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="prerequisites">
                                                 Prerequisites
                                                 <i class="fas fa-sort ms-1"></i>
                                             </a>
                                         </th>
+=======
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                         <th width="250" class="text-center text-nowrap">
                                             <a href="#" class="sort-link text-white text-decoration-none" data-sort="semester">
                                                 Semester
@@ -495,6 +550,7 @@
                                                     <span class="badge bg-info">@course.Credits</span>
                                                 </td>
                                                 <td class="text-center">
+<<<<<<< HEAD
                                                     @if (!string.IsNullOrEmpty(course.PrerequisitesString))
                                                     {
                                                         <div class="prerequisites-preview">
@@ -522,6 +578,8 @@
                                                     }
                                                 </td>
                                                 <td class="text-center">
+=======
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                                     <span class="badge bg-secondary">@course.SemesterId</span>
                                                 </td>
                                                 <td class="text-center">
@@ -714,9 +772,12 @@
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
 
+<<<<<<< HEAD
             // Fix JavaScript syntax for Razor values
             const hasMissingSemesters = @Json.Serialize(hasMissingSemesters);
 
+=======
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
             // Semester handling functionality
             const semesterCreationModeInput = document.getElementById('semesterCreationModeInput');
             const semestersToCreateInput = document.getElementById('semestersToCreateInput');
@@ -875,6 +936,10 @@
             }
 
             // Import selected functionality
+<<<<<<< HEAD
+=======
+                    // Import selected functionality
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
             if (importSelectedBtn) {
                 importSelectedBtn.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -887,8 +952,13 @@
                         return;
                     }
 
+<<<<<<< HEAD
                     // Use the properly serialized value
                     const hasMissingSemesters = @Json.Serialize(hasMissingSemesters);
+=======
+                    // Determine which form to use based on whether we have missing semesters
+                    const hasMissingSemesters = @hasMissingSemesters.ToString().ToLower();
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                     const formId = hasMissingSemesters ? 'importFormWithOptions' : 'importForm';
                     const form = document.getElementById(formId);
 
@@ -1144,7 +1214,11 @@
                 exportTableBtn.addEventListener('click', function() {
                     // Simple CSV export
                     const rows = document.querySelectorAll('.course-row');
+<<<<<<< HEAD
                     let csvContent = "Course Code,Course Name,Department,Credits,Prerequisites,Semester,Status\n";
+=======
+                    let csvContent = "Course Code,Course Name,Department,Credits,Semester,Status\n";
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
 
                     rows.forEach(row => {
                         if (row.style.display !== 'none') {
@@ -1153,11 +1227,18 @@
                             const courseName = cells[3]?.textContent || '';
                             const department = cells[4]?.textContent || '';
                             const credits = cells[5]?.textContent || '';
+<<<<<<< HEAD
                             const prerequisites = cells[6]?.textContent || '';
                             const semester = cells[7]?.textContent || '';
                             const status = cells[8]?.textContent || '';
 
                             csvContent += `"${courseCode}","${courseName}","${department}","${credits}","${prerequisites}","${semester}","${status}"\n`;
+=======
+                            const semester = cells[6]?.textContent || '';
+                            const status = cells[7]?.textContent || '';
+
+                            csvContent += `"${courseCode}","${courseName}","${department}","${credits}","${semester}","${status}"\n`;
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                         }
                     });
 
@@ -1189,8 +1270,12 @@
                     const courseName = row.cells[3]?.textContent || '';
                     const department = row.cells[4]?.textContent || '';
                     const credits = row.cells[5]?.textContent || '';
+<<<<<<< HEAD
                     const prerequisites = row.cells[6]?.textContent || '';
                     const semester = row.cells[7]?.textContent || '';
+=======
+                    const semester = row.cells[6]?.textContent || '';
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
 
                     const modalBody = document.getElementById('courseModalBody');
                     if (modalBody) {
@@ -1213,6 +1298,7 @@
                             </div>
                             <div class="row mt-2">
                                 <div class="col-md-6">
+<<<<<<< HEAD
                                     <strong>Prerequisites:</strong> ${prerequisites || 'None'}
                                 </div>
                                 <div class="col-md-6">
@@ -1221,6 +1307,11 @@
                             </div>
                             <div class="row mt-2">
                                 <div class="col-md-12">
+=======
+                                    <strong>Semester:</strong> ${semester}
+                                </div>
+                                <div class="col-md-6">
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
                                     <strong>Status:</strong> <span class="badge bg-success">Valid</span>
                                 </div>
                             </div>

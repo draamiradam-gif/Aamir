@@ -132,8 +132,17 @@ namespace StudentManagementSystem.Models
         public int Semester
         {
             get => SemesterId ?? 0; // Handle null case
+<<<<<<< HEAD
             //set => SemesterId = value;
             set => SemesterId = value == 0 ? null : value;
+=======
+<<<<<<< HEAD
+            //set => SemesterId = value;
+            set => SemesterId = value == 0 ? null : value;
+=======
+            set => SemesterId = value;
+>>>>>>> b719770a87085740b760d958104cdbb206173fc7
+>>>>>>> 2510eef0503cd1f13788ed842e48bf72c263f9b3
         }
 
         [ForeignKey("SemesterId")]
@@ -158,6 +167,8 @@ namespace StudentManagementSystem.Models
             (HasAvailableSeats ? "Active" : "Full") : "Inactive";
 
     }
+
+
 
     public class CoursePrerequisite : BaseEntity
     {
