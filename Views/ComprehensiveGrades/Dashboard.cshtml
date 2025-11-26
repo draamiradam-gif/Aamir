@@ -1,0 +1,160 @@
+﻿@using StudentManagementSystem.ViewModels
+@model GradingDashboardViewModel
+@{
+    ViewData["Title"] = "Grading Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Quick Stats -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Quick Stats</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-box mb-3">
+                        <span class="info-box-icon bg-info"><i class="fas fa-chalkboard-teacher"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Active Courses</span>
+                            <span class="info-box-number">@(Model.RecentEvaluations.GroupBy(e => e.CourseId).Count())</span>
+                        </div>
+                    </div>
+                    <div class="info-box mb-3">
+                        <span class="info-box-icon bg-success"><i class="fas fa-tasks"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Pending Grading</span>
+                            <span class="info-box-number">@(Model.RecentEvaluations.Count(e => !e.IsGraded))</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Quick Actions</h3>
+                </div>
+                <div class="card-body">
+                    <a href="@Url.Action("CourseEvaluations", new { courseId = 0 })" class="btn btn-primary btn-block mb-2">
+                        <i class="fas fa-plus"></i> Create Evaluation
+                    </a>
+                    <a href="@Url.Action("ImportGrades", new { evaluationId = 0 })" class="btn btn-success btn-block mb-2">
+                        <i class="fas fa-file-import"></i> Import Grades
+                    </a>
+                    <a href="@Url.Action("CourseFinalGrades", new { courseId = 0 })" class="btn btn-info btn-block">
+                        <i class="fas fa-calculator"></i> Calculate Final Grades
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <!-- Recent Evaluations -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Recent Evaluations</h3>
+                </div>
+                <div class="card-body">
+                    @if (Model.RecentEvaluations.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Course</th>
+                                        <th>Evaluation</th>
+                                        <th>Type</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var evaluation in Model.RecentEvaluations)
+                                    {
+                                        <tr>
+                                            <td>@evaluation.Course?.CourseName</td>
+                                            <td>@evaluation.Title</td>
+                                            <td>@evaluation.EvaluationType?.Name</td>
+                                            <td>@evaluation.EvaluationDate?.ToString("MMM dd, yyyy")</td>
+                                            <td>
+                                                <span class="badge badge-@(evaluation.IsGraded ? "success" : "warning")">
+                                                    @(evaluation.IsGraded ? "Graded" : "Pending")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="@Url.Action("GradeEvaluation", new { evaluationId = evaluation.Id })"
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-edit"></i> Grade
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> No Recent Evaluations</h5>
+                            <p>Create your first evaluation to get started with grading.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Upcoming Evaluations -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">Upcoming Evaluations</h3>
+                </div>
+                <div class="card-body">
+                    @if (Model.UpcomingEvaluations.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Course</th>
+                                        <th>Evaluation</th>
+                                        <th>Type</th>
+                                        <th>Due Date</th>
+                                        <th>Weight</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var evaluation in Model.UpcomingEvaluations)
+                                    {
+                                        <tr>
+                                            <td>@evaluation.Course?.CourseName</td>
+                                            <td>@evaluation.Title</td>
+                                            <td>@evaluation.EvaluationType?.Name</td>
+                                            <td>@evaluation.DueDate?.ToString("MMM dd, yyyy")</td>
+                                            <td>@evaluation.Weight%</td>
+                                            <td>
+                                                <a href="@Url.Action("GradeEvaluation", new { evaluationId = evaluation.Id })"
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> No Upcoming Evaluations</h5>
+                            <p>All evaluations are completed or no upcoming evaluations scheduled.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

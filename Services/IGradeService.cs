@@ -18,5 +18,10 @@ namespace StudentManagementSystem.Services
         Task<List<CourseEnrollment>> GetStudentEnrollmentsAsync(int studentId);
         Task<List<CourseEnrollment>> GetCourseEnrollmentsAsync(int courseId);
         Task<bool> EnrollStudentInCourseAsync(int studentId, int courseId);
+
+        Task<GradeStatistics> GetCourseGradeStatisticsAsync(int courseId);
+        Task<List<AcademicWarning>> GetAcademicWarningsAsync(decimal minGPA = 2.0m);
+        Task<bool> BulkAssignGradesAsync(Dictionary<int, decimal> enrollmentGrades);
+
     }
 }

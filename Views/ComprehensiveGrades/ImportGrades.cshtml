@@ -1,0 +1,72 @@
+﻿@using StudentManagementSystem.ViewModels
+@model ImportGradesViewModel
+@{
+    ViewData["Title"] = "Import Grades";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Import Grades - @Model.EvaluationName</h3>
+                    <p class="card-subtitle">Course: @Model.CourseName</p>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle"></i> Excel Format Requirements</h5>
+                        <ul class="mb-0">
+                            <li>First column: Student ID</li>
+                            <li>Second column: Score</li>
+                            <li>Optional third column: Comments</li>
+                            <li>First row should be headers</li>
+                        </ul>
+                    </div>
+
+                    <form asp-action="ImportGrades" method="post" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="EvaluationId" />
+
+                        <div class="form-group">
+                            <label asp-for="ExcelFile">Excel File</label>
+                            <input type="file" asp-for="ExcelFile" class="form-control-file" accept=".xlsx,.xls" required />
+                            <small class="form-text text-muted">Select Excel file with grades data</small>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-file-import"></i> Import Grades
+                            </button>
+                            <a href="@Url.Action("GradeEvaluation", new { evaluationId = Model.EvaluationId })"
+                               class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+
+                    <div class="mt-4">
+                        <h5>Sample Excel Format:</h5>
+                        <table class="table table-bordered table-sm">
+                            <thead>
+                                <tr>
+                                    <th>StudentID</th>
+                                    <th>Score</th>
+                                    <th>Comments</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>S001</td>
+                                    <td>85.5</td>
+                                    <td>Excellent work</td>
+                                </tr>
+                                <tr>
+                                    <td>S002</td>
+                                    <td>92.0</td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

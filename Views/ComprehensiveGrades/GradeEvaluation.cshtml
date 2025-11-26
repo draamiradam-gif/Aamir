@@ -1,0 +1,95 @@
+﻿@using StudentManagementSystem.ViewModels
+@model GradeEvaluationViewModel
+@{
+    ViewData["Title"] = $"Grade - {Model.Evaluation.Title}";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Grading: @Model.Evaluation.Title</h3>
+                    <p class="card-subtitle">Course: @Model.Evaluation.Course?.CourseName | Type: @Model.Evaluation.EvaluationType?.Name</p>
+                </div>
+                <div class="card-body">
+                    <form asp-action="SaveGrades" method="post">
+                        <input type="hidden" name="evaluationId" value="@Model.Evaluation.Id" />
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Student ID</th>
+                                        <th>Score</th>
+                                        <th>Max Score</th>
+                                        <th>Comments</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.Students.Count; i++)
+                                    {
+                                        var student = Model.Students[i];
+                                        <tr>
+                                            <td>
+                                                @student.StudentName
+                                                <input type="hidden" name="grades[@i].StudentId" value="@student.StudentId" />
+                                            </td>
+                                            <td>@student.StudentNumber</td>
+                                            <td>
+                                                <input type="number" name="grades[@i].Score"
+                                                       class="form-control form-control-sm"
+                                                       value="@(student.ExistingGrade?.Score.ToString() ?? "0")"
+                                                       min="0" max="@Model.Evaluation.MaxScore" step="0.1" />
+                                            </td>
+                                            <td>
+                                                <input type="number" name="grades[@i].MaxScore"
+                                                       class="form-control form-control-sm"
+                                                       value="@Model.Evaluation.MaxScore"
+                                                       min="0" max="1000" step="0.1" />
+                                            </td>
+                                            <td>
+                                                <input type="text" name="grades[@i].Comments"
+                                                       class="form-control form-control-sm"
+                                                       value="@student.ExistingGrade?.Comments"
+                                                       placeholder="Optional comments" />
+                                            </td>
+                                            <td>
+                                                <div class="form-check">
+                                                    <input type="checkbox" name="grades[@i].IsAbsent"
+                                                           class="form-check-input"
+                                                           @(student.ExistingGrade?.IsAbsent == true ? "checked" : "") />
+                                                    <label class="form-check-label">Absent</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input type="checkbox" name="grades[@i].IsExcused"
+                                                           class="form-check-input"
+                                                           @(student.ExistingGrade?.IsExcused == true ? "checked" : "") />
+                                                    <label class="form-check-label">Excused</label>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save All Grades
+                            </button>
+                            <a href="@Url.Action("ImportGrades", new { evaluationId = Model.Evaluation.Id })"
+                               class="btn btn-primary">
+                                <i class="fas fa-file-import"></i> Import from Excel
+                            </a>
+                            <a href="@Url.Action("CourseEvaluations", new { courseId = Model.Evaluation.CourseId })"
+                               class="btn btn-secondary">Back to Evaluations</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

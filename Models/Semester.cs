@@ -27,26 +27,19 @@ namespace StudentManagementSystem.Models
         public int? BranchId { get; set; }
         public int? SubBranchId { get; set; }
 
+        [Display(Name = "Start Date")]
+        public DateTime StartDate { get; set; } = DateTime.Now;
+
         [Display(Name = "End Date")]
         [CustomValidation(typeof(Semester), "ValidateEndDate")]
         public DateTime EndDate { get; set; } = DateTime.Now.AddMonths(4);
 
-        [Display(Name = "Registration End Date")]
-        [CustomValidation(typeof(Semester), "ValidateRegistrationEndDate")]
-        public DateTime RegistrationEndDate { get; set; } = DateTime.Now.AddDays(14);
-
-
-        [Display(Name = "Start Date")]
-        public DateTime StartDate { get; set; } = DateTime.Now;
-
-        //[Display(Name = "End Date")]
-        //public DateTime EndDate { get; set; } = DateTime.Now.AddMonths(4);
-
         [Display(Name = "Registration Start Date")]
         public DateTime RegistrationStartDate { get; set; } = DateTime.Now.AddDays(-7);
 
-        //[Display(Name = "Registration End Date")]
-        //public DateTime RegistrationEndDate { get; set; } = DateTime.Now.AddDays(14);
+        [Display(Name = "Registration End Date")]
+        [CustomValidation(typeof(Semester), "ValidateRegistrationEndDate")]
+        public DateTime RegistrationEndDate { get; set; } = DateTime.Now.AddDays(14);
 
         [Display(Name = "Active")]
         public bool IsActive { get; set; } = true;
@@ -56,6 +49,13 @@ namespace StudentManagementSystem.Models
 
         [Display(Name = "Registration Open")]
         public bool IsRegistrationOpen { get; set; } = true;
+
+        // ✅ NEW: Database properties for registration and grading periods
+        [Display(Name = "Is Registration Period")]
+        public bool IsRegistrationPeriod { get; set; } = false;
+
+        [Display(Name = "Is Grading Period")]
+        public bool IsGradingPeriod { get; set; } = false;
 
         // Navigation properties
         public virtual Department? Department { get; set; }
@@ -81,16 +81,19 @@ namespace StudentManagementSystem.Models
             }
         }
 
+        // ✅ FIXED: Renamed computed property to avoid conflict
         [NotMapped]
-        public bool IsRegistrationPeriod =>
-        DateTime.Now >= RegistrationStartDate && DateTime.Now <= RegistrationEndDate;
+        [Display(Name = "Within Registration Dates")]
+        public bool IsWithinRegistrationDates =>
+            DateTime.Now >= RegistrationStartDate && DateTime.Now <= RegistrationEndDate;
 
-
-
-
+        // ✅ FIXED: Add computed property for grading period
+        [NotMapped]
+        [Display(Name = "Within Grading Dates")]
+        public bool IsWithinGradingDates =>
+            DateTime.Now >= StartDate && DateTime.Now <= EndDate.AddDays(30); // Allow 30 days after semester end for grading
 
         // Validation methods
-        // Add these validation methods to your Semester class
         public static ValidationResult? ValidateEndDate(DateTime endDate, ValidationContext context)
         {
             var instance = context.ObjectInstance as Semester;
@@ -117,7 +120,30 @@ namespace StudentManagementSystem.Models
             return ValidationResult.Success;
         }
 
+        // ✅ NEW: Helper methods for semester management
+        [NotMapped]
+        public string Status
+        {
+            get
+            {
+                if (!IsActive) return "Inactive";
+                if (IsCurrent) return "Current";
+                if (DateTime.Now < StartDate) return "Upcoming";
+                if (DateTime.Now > EndDate) return "Completed";
+                return "Active";
+            }
+        }
 
+        [NotMapped]
+        public int DaysUntilStart => (StartDate - DateTime.Now).Days;
+
+        [NotMapped]
+        public int DaysUntilEnd => (EndDate - DateTime.Now).Days;
+
+        [NotMapped]
+        public bool CanRegister => IsActive && IsRegistrationOpen && IsWithinRegistrationDates;
+
+        [NotMapped]
+        public bool CanGrade => IsActive && IsGradingPeriod && IsWithinGradingDates;
     }
-        
 }

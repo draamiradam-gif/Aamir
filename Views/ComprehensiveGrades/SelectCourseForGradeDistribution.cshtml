@@ -1,0 +1,45 @@
+﻿@model List<Course>
+@{
+    ViewData["Title"] = "Select Course for Grade Distribution";
+    var courses = Model ?? new List<Course>();
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Select Course for Grade Distribution</h3>
+                    <p class="card-subtitle">Choose a course to view grade distribution analytics</p>
+                </div>
+                <div class="card-body">
+                    @if (courses.Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var course in courses)
+                            {
+                                <a href="@Url.Action("GradeDistribution", new { courseId = course.Id })"
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">@course.CourseName</h5>
+                                        <small>@course.CourseCode</small>
+                                    </div>
+                                    <p class="mb-1">@course.Department</p>
+                                    <small>@course.CurrentEnrollment students enrolled</small>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-exclamation-triangle"></i> No Courses Available</h5>
+                            <p>There are no active courses available.</p>
+                            <a href="@Url.Action("Index", "Courses")" class="btn btn-primary">Go to Courses</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

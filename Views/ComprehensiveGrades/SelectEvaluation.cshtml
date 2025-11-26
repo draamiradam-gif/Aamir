@@ -1,0 +1,45 @@
+﻿@model List<CourseEvaluation>
+@{
+    ViewData["Title"] = "Select Evaluation";
+    var evaluations = Model ?? new List<CourseEvaluation>();
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Select Evaluation</h3>
+                    <p class="card-subtitle">Choose an evaluation to import grades</p>
+                </div>
+                <div class="card-body">
+                    @if (evaluations.Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var evaluation in evaluations)
+                            {
+                                <a href="@Url.Action("ImportGrades", new { evaluationId = evaluation.Id })"
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">@evaluation.Title</h5>
+                                        <small>@evaluation.EvaluationType?.Name</small>
+                                    </div>
+                                    <p class="mb-1">@evaluation.Course?.CourseName</p>
+                                    <small>Due: @evaluation.DueDate?.ToString("MMM dd, yyyy") | Weight: @evaluation.Weight%</small>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-exclamation-triangle"></i> No Evaluations Available</h5>
+                            <p>There are no evaluations to import grades for. Please create evaluations first.</p>
+                            <a href="@Url.Action("Dashboard")" class="btn btn-primary">Go to Dashboard</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

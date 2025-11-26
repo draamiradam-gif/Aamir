@@ -127,59 +127,6 @@ git push -u origin main
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Completed Features:
 Advanced Student Management with sorting, filtering, and serial numbers
 
@@ -242,3 +189,39 @@ Implement real-time features?
 Or something else entirely?
 
 
+If you prefer, you can create just one migration that includes all changes:
+
+bash
+dotnet ef migrations add EnhancedAcademicSystem
+Then run:
+
+bash
+dotnet ef database update
+
+# Create migration for new entities
+dotnet ef migrations add AddGradeRevisionWorkflow
+
+# Update database
+dotnet ef database update
+
+# Run tests
+dotnet test
+
+
+# Create separate test project (run this later)
+dotnet new xunit -n StudentManagementSystem.Tests
+cd StudentManagementSystem.Tests
+dotnet add reference ../StudentManagementSystem.csproj
+dotnet add package Moq
+dotnet add package Microsoft.EntityFrameworkCore.InMemory
+
+
+View files for all these controllers
+
+Excel import/export functionality
+
+Real-time grade analytics
+
+Automated grade calculations
+
+Grade approval workflows

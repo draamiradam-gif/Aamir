@@ -157,6 +157,9 @@ namespace StudentManagementSystem.Models
         public string StatusText => IsActive ?
             (HasAvailableSeats ? "Active" : "Full") : "Inactive";
 
+        public virtual ICollection<CourseEvaluation> CourseEvaluations { get; set; } = new List<CourseEvaluation>();
+
+
     }
 
     public class CoursePrerequisite : BaseEntity

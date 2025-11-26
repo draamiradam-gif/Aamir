@@ -1,0 +1,123 @@
+﻿@model ExportReportsViewModel
+@{
+    ViewData["Title"] = "Export Reports";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Export Reports</h3>
+                    <p class="card-subtitle">Generate and download various academic reports</p>
+                </div>
+                <div class="card-body">
+                    <form asp-action="GenerateReport" method="post" id="exportForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Report Type</label>
+                                    <select name="ReportTypeId" class="form-control" id="reportType" required>
+                                        <option value="">Select Report Type</option>
+                                        @foreach (var reportType in Model.ReportTypes)
+                                        {
+                                            <option value="@reportType.Id" data-description="@reportType.Description">
+                                                @reportType.Name
+                                            </option>
+                                        }
+                                    </select>
+                                    <small class="form-text text-muted" id="reportDescription"></small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Format</label>
+                                    <select name="Format" class="form-control" required>
+                                        <option value="Excel" selected>Excel (.xlsx)</option>
+                                        <option value="PDF">PDF (.pdf)</option>
+                                        <option value="CSV">CSV (.csv)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3" id="courseSelection" style="display: none;">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Select Course</label>
+                                    <select name="CourseId" class="form-control">
+                                        <option value="">Select Course</option>
+                                        @foreach (var course in Model.Courses)
+                                        {
+                                            <option value="@course.Id">@course.CourseCode - @course.CourseName</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3" id="studentSelection" style="display: none;">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Select Student</label>
+                                    <select name="StudentId" class="form-control">
+                                        <option value="">Select Student</option>
+                                        <!-- Students would be loaded dynamically based on selected course -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-file-export"></i> Generate Report
+                            </button>
+                            <a href="@Url.Action("Dashboard")" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+
+                    <div class="mt-4">
+                        <h5>Available Reports:</h5>
+                        <div class="row">
+                            @foreach (var reportType in Model.ReportTypes)
+                            {
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="card-title">@reportType.Name</h6>
+                                            <p class="card-text text-muted small">@reportType.Description</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('reportType').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const description = selectedOption.getAttribute('data-description');
+            document.getElementById('reportDescription').textContent = description || '';
+
+            // Show/hide selection fields based on report type
+            const reportTypeId = parseInt(this.value);
+            const courseSelection = document.getElementById('courseSelection');
+            const studentSelection = document.getElementById('studentSelection');
+
+            courseSelection.style.display = 'none';
+            studentSelection.style.display = 'none';
+
+            if (reportTypeId === 4) { // Student Transcript
+                studentSelection.style.display = 'block';
+            } else if ([1, 2, 3].includes(reportTypeId)) { // Course-based reports
+                courseSelection.style.display = 'block';
+            }
+        });
+    </script>
+}

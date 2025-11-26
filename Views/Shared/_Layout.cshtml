@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
     <style>
@@ -22,9 +23,13 @@
             --warning-color: #dd6b20;
             --danger-color: #e53e3e;
             --light-bg: #f7fafc;
-            --sidebar-width: 280px;
+            --sidebar-width: 250px;
             --header-height: 76px;
             --sidebar-collapsed-width: 70px;
+
+            --content-bg: #f8fafc; /* Light gray for main area */
+            --card-bg: #ffffff; /* White for cards */
+            --surface-bg: #f1f5f9; /* Light gray for surfaces */
         }
 
         * {
@@ -39,29 +44,48 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
         }
 
-        /* Header Styles */
+        /* Enhanced Header Styles */
         .navbar-main {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             height: var(--header-height);
-            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             border-bottom: 3px solid var(--accent-color);
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 1030;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Removed backdrop-filter to improve performance */
         }
 
         .navbar-brand {
             font-weight: 700;
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
+            .navbar-brand::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                transition: left 0.6s;
+            }
+
+            .navbar-brand:hover::before {
+                left: 100%;
+            }
+
             .navbar-brand:hover {
-                transform: scale(1.02);
+                transform: translateY(-2px);
             }
 
         .nav-link {
@@ -70,30 +94,31 @@
             border-radius: 0.5rem;
             transition: all 0.3s ease;
             font-weight: 500;
+            overflow: hidden;
         }
 
-            .nav-link:hover {
-                background: rgba(255,255,255,0.1);
-                transform: translateY(-1px);
-            }
-
-            .nav-link::after {
+            .nav-link::before {
                 content: '';
                 position: absolute;
-                bottom: -2px;
-                left: 50%;
-                width: 0;
-                height: 2px;
-                background: var(--accent-color);
-                transition: all 0.3s ease;
-                transform: translateX(-50%);
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+                transition: left 0.5s;
             }
 
-            .nav-link:hover::after {
-                width: 80%;
+            .nav-link:hover::before {
+                left: 100%;
             }
 
-        /* Sidebar Styles */
+            .nav-link:hover {
+                background: rgba(255,255,255,0.15);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+
+        /* Enhanced Sidebar Styles */
         .sidebar {
             background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             min-height: calc(100vh - var(--header-height));
@@ -101,15 +126,17 @@
             position: fixed;
             top: var(--header-height);
             left: 0;
-            box-shadow: 3px 0 20px rgba(0,0,0,0.1);
+            box-shadow: 4px 0 25px rgba(0,0,0,0.15);
             z-index: 1020;
             overflow-y: auto;
             overflow-x: hidden;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Removed backdrop-filter to improve performance */
         }
 
         .sidebar-collapsed {
             width: var(--sidebar-collapsed-width);
+            transform: translateX(0);
         }
 
             .sidebar-collapsed .sidebar-section {
@@ -117,11 +144,13 @@
             }
 
             .sidebar-collapsed .sidebar-title {
-                display: none;
+                opacity: 0;
+                transform: translateX(-20px);
             }
 
             .sidebar-collapsed .nav-link span:not(.nav-icon) {
-                display: none;
+                opacity: 0;
+                transform: translateX(-10px);
             }
 
             .sidebar-collapsed .nav-link {
@@ -131,14 +160,32 @@
 
             .sidebar-collapsed .nav-icon {
                 margin-right: 0;
-                font-size: 1.2rem;
+                font-size: 1.3rem;
+                transform: scale(1.1);
             }
 
         .sidebar-section {
             padding: 1.5rem;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
+
+            .sidebar-section::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+                transition: left 0.6s;
+            }
+
+            .sidebar-section:hover::before {
+                left: 100%;
+            }
 
             .sidebar-section:last-child {
                 border-bottom: none;
@@ -152,19 +199,36 @@
             letter-spacing: 0.5px;
             margin-bottom: 1rem;
             transition: all 0.3s ease;
+            position: relative;
+        }
+
+            .sidebar-title::after {
+                content: '';
+                position: absolute;
+                bottom: -5px;
+                left: 0;
+                width: 30px;
+                height: 2px;
+                background: var(--accent-color);
+                transition: width 0.3s ease;
+            }
+
+        .sidebar-section:hover .sidebar-title::after {
+            width: 50px;
         }
 
         .sidebar-nav .nav-link {
             color: #e2e8f0;
             padding: 0.75rem 1rem;
             margin: 0.25rem 0;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             display: flex;
             align-items: center;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
             white-space: nowrap;
+            /* Removed backdrop-filter to improve performance */
         }
 
             .sidebar-nav .nav-link::before {
@@ -179,16 +243,37 @@
                 z-index: -1;
             }
 
+            .sidebar-nav .nav-link::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                right: 1rem;
+                transform: translateY(-50%);
+                width: 6px;
+                height: 6px;
+                background: var(--accent-color);
+                border-radius: 50%;
+                opacity: 0;
+                transition: all 0.3s ease;
+            }
+
             .sidebar-nav .nav-link:hover::before,
             .sidebar-nav .nav-link.active::before {
                 width: 4px;
             }
 
+            .sidebar-nav .nav-link:hover::after,
+            .sidebar-nav .nav-link.active::after {
+                opacity: 1;
+                transform: translateY(-50%) scale(1.2);
+            }
+
             .sidebar-nav .nav-link:hover,
             .sidebar-nav .nav-link.active {
-                background: rgba(255,255,255,0.08);
+                background: rgba(255,255,255,0.12);
                 color: white;
-                transform: translateX(5px);
+                transform: translateX(8px);
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             }
 
         .sidebar-nav .nav-icon {
@@ -196,18 +281,166 @@
             margin-right: 0.75rem;
             text-align: center;
             transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
         }
 
-        /* Main Content */
+        /* Enhanced Dropdown Styles for Sidebar */
+        .sidebar-nav .dropdown {
+            position: relative;
+        }
+
+        .sidebar-nav .dropdown-toggle {
+            cursor: pointer;
+        }
+
+            .sidebar-nav .dropdown-toggle::after {
+                position: absolute;
+                right: 1rem;
+                top: 50%;
+                transform: translateY(-50%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar-nav .dropdown-toggle.show::after {
+                transform: translateY(-50%) rotate(180deg);
+            }
+
+        .sidebar-nav .dropdown-menu {
+            position: fixed !important;
+            left: var(--sidebar-width) !important;
+            top: auto !important;
+            width: 280px !important;
+            max-height: 70vh !important;
+            overflow-y: auto !important;
+            z-index: 1060 !important;
+            margin-top: 0 !important;
+            margin-left: 0 !important;
+            transform: none !important;
+            animation: dropdownSlideIn 0.3s ease !important;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+            border: 1px solid rgba(255,255,255,0.15) !important;
+            border-radius: 12px !important;
+            padding: 0.5rem !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1) !important;
+            /* Reduced blur for better performance */
+            backdrop-filter: blur(10px) !important;
+        }
+
+        .sidebar-collapsed .dropdown-menu {
+            left: var(--sidebar-collapsed-width) !important;
+        }
+
+        @@keyframes dropdownFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @@keyframes dropdownSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .sidebar-nav .dropdown-item {
+            color: #e2e8f0;
+            padding: 0.75rem 1.25rem !important;
+            margin: 0.125rem 0.25rem !important;
+            border-radius: 8px !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+            .sidebar-nav .dropdown-item::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+                transition: left 0.5s;
+            }
+
+            .sidebar-nav .dropdown-item:hover::before {
+                left: 100%;
+            }
+
+            .sidebar-nav .dropdown-item:hover {
+                background: var(--accent-color) !important;
+                color: white !important;
+                transform: translateX(8px) !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+            }
+
+            .sidebar-nav .dropdown-item i {
+                width: 20px;
+                margin-right: 0.75rem;
+            }
+
+        .sidebar-nav .dropdown-divider {
+            border-color: rgba(255,255,255,0.1);
+            margin: 0.75rem 0.5rem !important;
+        }
+
+        .dropdown-header {
+            color: #a0aec0 !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+            padding: 0.75rem 1.25rem !important;
+            margin: 0.25rem 0.5rem !important;
+            font-size: 0.75rem !important;
+        }
+
+        /* Ensure dropdown is visible when sidebar is collapsed */
+        .sidebar-collapsed .dropdown-menu {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        /* Enhanced dropdown states */
+        .dropdown-open-expanded .nav-link {
+            background: rgba(255,255,255,0.15) !important;
+            transform: translateX(8px) !important;
+        }
+
+        .dropdown-open-collapsed .nav-link {
+            background: rgba(255,255,255,0.2) !important;
+        }
+
+        /* Enhanced Main Content */
         .main-content-wrapper {
             margin-left: var(--sidebar-width);
             margin-top: var(--header-height);
             padding: 2rem;
             min-height: calc(100vh - var(--header-height));
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             flex: 1;
             display: flex;
             flex-direction: column;
+            /* Add these for larger main area */
+            width: calc(100% - var(--sidebar-width));
+            max-width: none; /* Remove any max-width constraints */
         }
 
         .main-content-expanded {
@@ -215,53 +448,125 @@
         }
 
         .content-area {
+            background: var(--content-bg) !important;
             background: white;
-            border-radius: 1rem;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.12);
             overflow: hidden;
-            border: 1px solid #e2e8f0;
+            border: 1px solid rgba(255,255,255,0.2);
             flex: 1;
             display: flex;
             flex-direction: column;
+            animation: fadeInUp 0.6s ease;
+            /* Add these for larger content area */
+            min-height: 80vh; /* Increase minimum height */
+            width: 100%; /* Take full width of wrapper */
         }
+
+
+
+        /* Enhanced dashboard grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .dashboard-main-section {
+            grid-column: 1 / -1; /* Take full width */
+            min-height: 400px;
+        }
+
+        /* Larger stats cards */
+        .dashboard-stats .stats-card {
+            padding: 2.5rem;
+            min-height: 180px;
+        }
+
+
 
         .page-header {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            padding: 2rem;
+            padding: 2.5rem;
             border-bottom: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
         }
 
-        .page-content {
-            padding: 2rem;
-            flex: 1;
-        }
-
-        /* Scrollbar Styling */
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: var(--accent-color);
-            border-radius: 3px;
-        }
-
-            .sidebar::-webkit-scrollbar-thumb:hover {
-                background: #2c5aa0;
+            .page-header::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 100%;
+                background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+                opacity: 0.03;
+                z-index: 1;
             }
 
-        /* Alert Styles */
+        .page-content {
+            padding: 2.5rem;
+            flex: 1;
+            position: relative;
+            z-index: 2;
+            /* Add these for more spacious content */
+            padding: 3rem; /* Increase padding */
+            min-height: 600px; /* Set minimum height */
+        }
+
+        /* Enhanced Animations */
+        @@keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @@keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Enhanced Alert Styles */
         .alert {
             border: none;
-            border-radius: 0.75rem;
-            border-left: 4px solid;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 1rem;
+            border-left: 5px solid;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            /* Removed backdrop-filter to improve performance */
+            animation: slideInLeft 0.5s ease;
+            position: relative;
+            overflow: hidden;
         }
+
+            .alert::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                transition: left 0.6s;
+            }
+
+            .alert:hover::before {
+                left: 100%;
+            }
 
         .alert-success {
             border-left-color: var(--success-color);
@@ -273,37 +578,70 @@
             background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
         }
 
-        /* Card Styles */
+        /* Enhanced Card Styles */
         .card-modern {
             border: none;
-            border-radius: 1rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
             border: 1px solid #f1f5f9;
+            /* Removed backdrop-filter to improve performance */
+            animation: fadeInUp 0.6s ease;
+            position: relative;
+            background: var(--card-bg) !important;
         }
 
+            .card-modern::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+                transition: left 0.6s;
+            }
+
+            .card-modern:hover::before {
+                left: 100%;
+            }
+
             .card-modern:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+                transform: translateY(-8px) scale(1.02);
+                box-shadow: 0 20px 50px rgba(0,0,0,0.2);
             }
 
         .card-header-modern {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             border-bottom: 1px solid #e2e8f0;
-            padding: 1.5rem;
+            padding: 1.75rem;
             font-weight: 600;
-        }
-
-        /* Button Styles */
-        .btn-modern {
-            border: none;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+        }
+
+            .card-header-modern::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 100%;
+                background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+                opacity: 0.03;
+            }
+
+        /* Enhanced Button Styles */
+        .btn-modern {
+            border: none;
+            border-radius: 0.875rem;
+            padding: 0.875rem 1.75rem;
+            font-weight: 600;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            /* Removed backdrop-filter to improve performance */
         }
 
             .btn-modern::before {
@@ -313,31 +651,78 @@
                 left: -100%;
                 width: 100%;
                 height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-                transition: left 0.5s;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                transition: left 0.6s;
             }
 
             .btn-modern:hover::before {
                 left: 100%;
             }
 
+            .btn-modern:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            }
+
+            .btn-modern:active {
+                transform: translateY(-1px);
+            }
+
         .btn-primary-modern {
             background: linear-gradient(135deg, var(--accent-color) 0%, #2c5aa0 100%);
+            color: white;
         }
 
         .btn-success-modern {
             background: linear-gradient(135deg, var(--success-color) 0%, #2f855a 100%);
+            color: white;
         }
 
         .btn-warning-modern {
             background: linear-gradient(135deg, var(--warning-color) 0%, #c05621 100%);
+            color: white;
         }
 
-        /* Table Styles */
-        .table-modern {
-            border-radius: 0.75rem;
+        /* Quick Stats Cards */
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 1.25rem;
+            padding: 2rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            /* Removed backdrop-filter to improve performance */
+            animation: fadeInUp 0.6s ease;
+        }
+
+            .stats-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                transition: left 0.6s;
+            }
+
+            .stats-card:hover::before {
+                left: 100%;
+            }
+
+            .stats-card:hover {
+                transform: translateY(-8px) scale(1.03);
+                box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            }
+
+        /* Enhanced Table Styles */
+        .table-modern {
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            /* Removed backdrop-filter to improve performance */
+            animation: fadeInUp 0.6s ease;
         }
 
             .table-modern th {
@@ -345,16 +730,51 @@
                 font-weight: 600;
                 color: var(--secondary-color);
                 border: none;
-                padding: 1rem;
+                padding: 1.25rem;
+                position: relative;
+                overflow: hidden;
             }
+
+                .table-modern th::before {
+                    content: '';
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 0;
+                    height: 2px;
+                    background: var(--accent-color);
+                    transition: width 0.3s ease;
+                }
+
+                .table-modern th:hover::before {
+                    width: 100%;
+                }
 
             .table-modern td {
-                padding: 1rem;
+                padding: 1.25rem;
                 border-color: #f1f5f9;
                 vertical-align: middle;
+                transition: all 0.3s ease;
+                position: relative;
             }
 
-        /* Footer */
+                .table-modern td::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 0;
+                    height: 100%;
+                    background: var(--accent-color);
+                    opacity: 0.05;
+                    transition: width 0.3s ease;
+                }
+
+            .table-modern tr:hover td::before {
+                width: 100%;
+            }
+
+        /* Enhanced Footer */
         .footer-main {
             background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
             border-top: 3px solid var(--accent-color);
@@ -362,35 +782,241 @@
             position: relative;
             z-index: 1010;
             margin-left: var(--sidebar-width);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Removed backdrop-filter to improve performance */
         }
 
         .footer-expanded {
             margin-left: var(--sidebar-collapsed-width);
         }
 
-        /* Toggle Sidebar Button */
+        /* Enhanced Toggle Sidebar Button */
         .sidebar-toggle {
             background: transparent;
             border: none;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
             transition: all 0.3s ease;
             margin-right: 1rem;
+            position: relative;
+            overflow: hidden;
         }
 
-            .sidebar-toggle:hover {
-                background: rgba(255,255,255,0.1);
+            .sidebar-toggle::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                transition: left 0.6s;
             }
 
-        /* Mobile Responsive */
+            .sidebar-toggle:hover::before {
+                left: 100%;
+            }
+
+            .sidebar-toggle:hover {
+                background: rgba(255,255,255,0.15);
+                transform: rotate(90deg);
+            }
+
+        /* Enhanced Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, var(--accent-color) 0%, #2c5aa0 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            /* Removed backdrop-filter to improve performance */
+            animation: bounceIn 0.6s ease;
+        }
+
+            .back-to-top:hover {
+                transform: translateY(-5px) scale(1.1);
+                box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            }
+
+        /* Quick Actions Grid */
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .quick-action-card {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            border: 1px solid #f1f5f9;
+            /* Removed backdrop-filter to improve performance */
+            position: relative;
+            overflow: hidden;
+        }
+
+            .quick-action-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+                transition: left 0.6s;
+            }
+
+            .quick-action-card:hover::before {
+                left: 100%;
+            }
+
+            .quick-action-card:hover {
+                transform: translateY(-8px) scale(1.03);
+                box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            }
+
+        .quick-action-icon-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-color) 0%, #2c5aa0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quick-action-icon {
+            font-size: 2rem;
+            color: white;
+            transition: transform 0.3s ease;
+        }
+
+        .quick-action-card:hover .quick-action-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Enhanced Badge Styles */
+        .badge-modern {
+            border-radius: 0.75rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            /* Removed backdrop-filter to improve performance */
+            transition: all 0.3s ease;
+        }
+
+            .badge-modern:hover {
+                transform: scale(1.05);
+            }
+
+        /* Particle Background */
+        .particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--accent-color);
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @@keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+        }
+
+        @@keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+
+            70% {
+                transform: scale(0.9);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @@keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Enhanced Mobile Responsive */
         @@media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
-                transition: transform 0.3s ease;
+                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                 width: 280px;
             }
 
@@ -414,89 +1040,36 @@
             .sidebar-toggle {
                 display: none !important;
             }
-        }
 
-        /* Loading Animation */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--accent-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @@keyframes spin {
-            0% {
-                transform: rotate(0deg);
+            .quick-actions-grid {
+                grid-template-columns: 1fr;
+            }
+            /* Ensure dropdowns work properly in mobile */
+            .sidebar-nav .dropdown-menu {
+                position: static !important;
+                width: auto !important;
+                max-height: none !important;
+                margin-left: 2rem !important;
+                margin-top: 0.5rem !important;
+                backdrop-filter: none !important;
             }
 
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Badge Styles */
-        .badge-modern {
-            border-radius: 0.5rem;
-            font-weight: 500;
-            padding: 0.35rem 0.75rem;
-        }
-
-        /* Back to Top Button */
-        .back-to-top {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-
-            .back-to-top:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            .sidebar-collapsed .dropdown-menu {
+                left: auto !important;
             }
 
-        /* Quick Stats Cards */
-        .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
+            @@keyframes mobileDropdownSlide {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
         }
-
-            .stats-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            }
-
-        /* Dark Mode Support */
-        .dark-mode {
-            background: #1a202c;
-            color: #e2e8f0;
-        }
-
-            .dark-mode .content-area {
-                background: #2d3748;
-                color: #e2e8f0;
-            }
-
-            .dark-mode .card-modern {
-                background: #2d3748;
-                border-color: #4a5568;
-            }
 
         /* Print Styles */
         @@media print {
@@ -515,23 +1088,62 @@
             }
         }
 
-        /* Fix for missing graphics - ensure Font Awesome loads properly */
+        /* Fix for missing graphics */
         .fa, .fas, .far, .fal, .fab {
             font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands' !important;
             font-weight: 900;
         }
 
-        /* Ensure all icons are visible */
         .nav-icon::before {
             display: inline-block;
             text-rendering: auto;
             -webkit-font-smoothing: antialiased;
         }
+
+        /* Ensure dropdown doesn't get cut off by container */
+        .sidebar {
+            overflow: visible !important;
+        }
+
+        .sidebar-section {
+            overflow: visible !important;
+        }
+
+        .sidebar-nav {
+            overflow: visible !important;
+        }
+
+        /* Individual dropdown positioning */
+        #gradeManagementDropdown .dropdown-menu {
+            top: calc(var(--header-height) + 180px) !important;
+        }
+
+        /* Dropdown scrollbar styling */
+        .dropdown-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .dropdown-menu::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .dropdown-menu::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+            .dropdown-menu::-webkit-scrollbar-thumb:hover {
+                background: #2c5aa0;
+            }
     </style>
 
     @RenderSection("Styles", required: false)
 </head>
 <body>
+    <!-- Particle Background -->
+    <div class="particles-container" id="particlesContainer"></div>
+
     <!-- Header -->
     <header>
         <nav class="navbar navbar-main navbar-expand-lg">
@@ -596,7 +1208,12 @@
     <!-- Desktop Sidebar -->
     <aside class="sidebar d-none d-md-block" id="desktopSidebar">
         <div class="sidebar-section">
-            <div class="sidebar-title">Academic Structure</div>
+            <div class="sidebar-title">
+                <span>Academic Structure</span>
+                <small class="sidebar-collapse-indicator ms-2" title="Click to expand">
+                    <i class="fas fa-chevron-right"></i>
+                </small>
+            </div>
             <nav class="sidebar-nav">
                 <a class="nav-link" asp-controller="University" asp-action="Index">
                     <i class="nav-icon fas fa-building"></i>
@@ -618,6 +1235,64 @@
                     <i class="nav-icon fas fa-calendar-alt"></i>
                     <span>Semesters</span>
                 </a>
+                <!-- Enhanced Grading System Dropdown with Overflow -->
+                <div class="nav-item dropdown" id="gradeManagementDropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false"
+                       data-title="Grade Management">
+                        <i class="nav-icon fas fa-award"></i>
+                        <span>Grade Management</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-scrollable" aria-labelledby="gradeManagementDropdown">
+                        <h6 class="dropdown-header text-warning">
+                            <i class="fas fa-star me-2"></i>Comprehensive Grading
+                        </h6>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="Dashboard">
+                            <i class="fas fa-tachometer-alt me-2"></i>Grading Dashboard
+                        </a>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="CourseEvaluations">
+                            <i class="fas fa-tasks me-2"></i>Manage Evaluations
+                        </a>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="CourseFinalGrades">
+                            <i class="fas fa-calculator me-2"></i>Final Grades
+                        </a>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="ImportGrades">
+                            <i class="fas fa-file-import me-2"></i>Import Grades
+                        </a>
+
+                        <div class="dropdown-divider"></div>
+
+                        <h6 class="dropdown-header text-info">
+                            <i class="fas fa-cog me-2"></i>Basic Grading
+                        </h6>
+                        <a class="dropdown-item" asp-controller="Grades" asp-action="Manage">
+                            <i class="fas fa-edit me-2"></i>Simple Grading
+                        </a>
+                        <a class="dropdown-item" asp-controller="Grades" asp-action="AcademicWarnings">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Academic Warnings
+                        </a>
+                        <a class="dropdown-item" asp-controller="Grades" asp-action="Scale">
+                            <i class="fas fa-sliders-h me-2"></i>Grade Scale
+                        </a>
+
+                        <!-- Additional items to demonstrate scrolling -->
+                        <div class="dropdown-divider"></div>
+
+                        <!-- Analytics Section - NOW WORKING -->
+                        <h6 class="dropdown-header text-success">
+                            <i class="fas fa-chart-line me-2"></i>Analytics
+                        </h6>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="GradeDistribution">
+                            <i class="fas fa-chart-bar me-2"></i>Grade Distribution
+                        </a>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="EvaluationStatistics">
+                            <i class="fas fa-trending-up me-2"></i>Performance Trends
+                        </a>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="ExportReports">
+                            <i class="fas fa-file-export me-2"></i>Export Reports
+                        </a>
+                    </div>
+                </div>
             </nav>
         </div>
 
@@ -635,10 +1310,6 @@
                 <a class="nav-link" asp-controller="Enrollment" asp-action="Dashboard">
                     <i class="nav-icon fas fa-graduation-cap"></i>
                     <span>Enrollment</span>
-                </a>
-                <a class="nav-link" href="@Url.Action("Manage", "Grades")">
-                    <i class="nav-icon fas fa-award"></i>
-                    <span>Grade Management</span>
                 </a>
                 <a class="nav-link" asp-controller="QRCode" asp-action="Index">
                     <i class="nav-icon fas fa-qrcode"></i>
@@ -709,10 +1380,40 @@
                     <i class="nav-icon fas fa-graduation-cap"></i>
                     <span>Enrollment</span>
                 </a>
-                <a class="nav-link" href="@Url.Action("Manage", "Grades")">
-                    <i class="nav-icon fas fa-award"></i>
-                    <span>Grade Management</span>
-                </a>
+
+                <!-- Mobile Dropdown -->
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="nav-icon fas fa-award"></i>
+                        <span>Grade Management</span>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="Dashboard">
+                            <i class="fas fa-tachometer-alt me-2"></i>Grading Dashboard
+                        </a>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="CourseEvaluations">
+                            <i class="fas fa-tasks me-2"></i>Manage Evaluations
+                        </a>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="CourseFinalGrades">
+                            <i class="fas fa-calculator me-2"></i>Final Grades
+                        </a>
+                        <a class="dropdown-item" asp-controller="ComprehensiveGrades" asp-action="ImportGrades">
+                            <i class="fas fa-file-import me-2"></i>Import Grades
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" asp-controller="Grades" asp-action="Manage">
+                            <i class="fas fa-edit me-2"></i>Simple Grading
+                        </a>
+                        <a class="dropdown-item" asp-controller="Grades" asp-action="AcademicWarnings">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Academic Warnings
+                        </a>
+                        <a class="dropdown-item" asp-controller="Grades" asp-action="Scale">
+                            <i class="fas fa-cog me-2"></i>Grade Scale
+                        </a>
+                    </div>
+                </div>
+
                 <a class="nav-link" asp-controller="QRCode" asp-action="Index">
                     <i class="nav-icon fas fa-qrcode"></i>
                     <span>QR Attendance</span>
@@ -742,38 +1443,245 @@
     <!-- Main Content -->
     <main class="main-content-wrapper" id="mainContent">
         <div class="content-area">
-            <!-- Alert Messages -->
+            <!-- Enhanced Alert System -->
             <div class="container-fluid p-0">
-                @if (TempData["SuccessMessage"] != null)
-                {
-                    <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-check-circle me-2 fs-5"></i>
-                            <div class="flex-grow-1">
-                                <strong>Success!</strong> @TempData["SuccessMessage"]
+                <div id="dynamicAlerts">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show m-3" role="alert" data-auto-dismiss="5000">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-2 fs-5"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Success!</strong> @TempData["SuccessMessage"]
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                    </div>
-                }
-                @if (TempData["ErrorMessage"] != null)
-                {
-                    <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-exclamation-circle me-2 fs-5"></i>
-                            <div class="flex-grow-1">
-                                <strong>Error!</strong> @TempData["ErrorMessage"]
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show m-3" role="alert" data-auto-dismiss="8000">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle me-2 fs-5"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Error!</strong> @TempData["ErrorMessage"]
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                    </div>
-                }
+                    }
+                </div>
             </div>
 
-            <!-- Page Content -->
-            <div class="page-content">
-                @RenderBody()
-            </div>
+            <!-- Quick Actions Dashboard -->
+            @if (ViewContext.RouteData.Values["action"]?.ToString() == "Index" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home")
+            {
+                <div class="page-header">
+                    <div class="container-fluid">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h1 class="display-5 fw-bold mb-2">Academic Dashboard</h1>
+                                <p class="lead mb-0">Welcome to your comprehensive academic management system</p>
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                <div class="btn-group">
+                                    <button class="btn btn-primary-modern btn-modern" id="refreshDashboard">
+                                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                                    </button>
+                                    <button class="btn btn-success-modern btn-modern" id="quickStats">
+                                        <i class="fas fa-chart-line me-2"></i>Analytics
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="page-content">
+                    <!-- Quick Stats -->
+                    <div class="row mb-5">
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="stats-card animate__animated animate__fadeInUp">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="display-6 fw-bold mb-1" id="totalStudents">1,247</h3>
+                                        <p class="mb-0 opacity-85">Total Students</p>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-user-graduate fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <span class="badge bg-success bg-opacity-25 text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>12% increase
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="stats-card animate__animated animate__fadeInUp animate__delay-1s">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="display-6 fw-bold mb-1" id="totalCourses">156</h3>
+                                        <p class="mb-0 opacity-85">Active Courses</p>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-book fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <span class="badge bg-warning bg-opacity-25 text-warning">
+                                        <i class="fas fa-clock me-1"></i>3 new this week
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="stats-card animate__animated animate__fadeInUp animate__delay-2s">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="display-6 fw-bold mb-1" id="pendingGrades">42</h3>
+                                        <p class="mb-0 opacity-85">Pending Grades</p>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-award fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <span class="badge bg-danger bg-opacity-25 text-danger">
+                                        <i class="fas fa-exclamation me-1"></i>Needs attention
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="stats-card animate__animated animate__fadeInUp animate__delay-3s">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="display-6 fw-bold mb-1" id="enrollmentRate">94%</h3>
+                                        <p class="mb-0 opacity-85">Enrollment Rate</p>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <span class="badge bg-success bg-opacity-25 text-success">
+                                        <i class="fas fa-check me-1"></i>On target
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Grid -->
+                    <div class="row mb-5">
+                        <div class="col-12">
+                            <h3 class="h4 mb-4 fw-bold">Quick Actions</h3>
+                            <div class="quick-actions-grid">
+                                <div class="quick-action-card animate__animated animate__zoomIn">
+                                    <div class="quick-action-icon-wrapper">
+                                        <i class="quick-action-icon fas fa-tachometer-alt"></i>
+                                    </div>
+                                    <h5 class="fw-bold mb-2">Grading Dashboard</h5>
+                                    <p class="text-muted mb-3">Comprehensive grade management and analytics</p>
+                                    <a href="@Url.Action("Dashboard", "ComprehensiveGrades")"
+                                       class="btn btn-primary-modern btn-modern btn-sm">
+                                        Access Dashboard
+                                    </a>
+                                </div>
+                                <div class="quick-action-card animate__animated animate__zoomIn animate__delay-1s">
+                                    <div class="quick-action-icon-wrapper">
+                                        <i class="quick-action-icon fas fa-tasks"></i>
+                                    </div>
+                                    <h5 class="fw-bold mb-2">Create Evaluation</h5>
+                                    <p class="text-muted mb-3">Set up exams, assignments, and projects</p>
+                                    <a href="@Url.Action("CourseEvaluations", "ComprehensiveGrades")"
+                                       class="btn btn-success-modern btn-modern btn-sm">
+                                        Manage Evaluations
+                                    </a>
+                                </div>
+                                <div class="quick-action-card animate__animated animate__zoomIn animate__delay-2s">
+                                    <div class="quick-action-icon-wrapper">
+                                        <i class="quick-action-icon fas fa-calculator"></i>
+                                    </div>
+                                    <h5 class="fw-bold mb-2">Final Grades</h5>
+                                    <p class="text-muted mb-3">Calculate and review final course grades</p>
+                                    <a href="@Url.Action("CourseFinalGrades", "ComprehensiveGrades")"
+                                       class="btn btn-warning-modern btn-modern btn-sm">
+                                        View Grades
+                                    </a>
+                                </div>
+                                <div class="quick-action-card animate__animated animate__zoomIn animate__delay-3s">
+                                    <div class="quick-action-icon-wrapper">
+                                        <i class="quick-action-icon fas fa-file-import"></i>
+                                    </div>
+                                    <h5 class="fw-bold mb-2">Import Data</h5>
+                                    <p class="text-muted mb-3">Bulk import grades and student data</p>
+                                    <a href="@Url.Action("ImportGrades", "ComprehensiveGrades")"
+                                       class="btn btn-info btn-modern btn-sm">
+                                        Import Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card-modern">
+                                <div class="card-header-modern">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-history me-2"></i>Recent Activity
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-modern table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Activity</th>
+                                                    <th>User</th>
+                                                    <th>Time</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr class="animate__animated animate__fadeIn">
+                                                    <td>Grade submission - CS101</td>
+                                                    <td>Dr. Smith</td>
+                                                    <td>2 minutes ago</td>
+                                                    <td><span class="badge bg-success bg-opacity-25 text-success">Completed</span></td>
+                                                </tr>
+                                                <tr class="animate__animated animate__fadeIn animate__delay-1s">
+                                                    <td>New course enrollment</td>
+                                                    <td>System</td>
+                                                    <td>15 minutes ago</td>
+                                                    <td><span class="badge bg-info bg-opacity-25 text-info">Processed</span></td>
+                                                </tr>
+                                                <tr class="animate__animated animate__fadeIn animate__delay-2s">
+                                                    <td>Grade revision request</td>
+                                                    <td>John Doe</td>
+                                                    <td>1 hour ago</td>
+                                                    <td><span class="badge bg-warning bg-opacity-25 text-warning">Pending</span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Standard Page Content -->
+                <div class="page-content">
+                    @RenderBody()
+                </div>
+            }
         </div>
     </main>
 
@@ -803,18 +1711,21 @@
         </div>
     </footer>
 
-    <!-- JavaScript -->
+    <!-- Enhanced JavaScript -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.js"></script>
+    <!-- SignalR Client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
-        // Advanced Layout Management System
-        class LayoutManager {
+        // Enhanced Layout Manager with Advanced Features
+        class EnhancedLayoutManager {
             constructor() {
                 this.sidebar = document.getElementById('desktopSidebar');
                 this.mainContent = document.getElementById('mainContent');
@@ -823,7 +1734,9 @@
                 this.mobileSidebar = document.getElementById('mobileSidebar');
                 this.mobileMenuBtn = document.querySelector('.mobile-menu-btn');
                 this.backToTop = document.getElementById('backToTop');
+                this.particlesContainer = document.getElementById('particlesContainer');
                 this.isSidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                this.currentTheme = localStorage.getItem('theme') || 'light';
 
                 this.init();
             }
@@ -839,8 +1752,13 @@
                 this.initializeThemeSupport();
                 this.initializePrintOptimizations();
                 this.initializeAnalytics();
+                this.initializeParticles();
+                this.initializeDashboardFeatures();
+                this.initializeRealTimeUpdates();
+                this.initializeSmoothAnimations();
+                this.initializeDropdowns();
 
-                console.log('🎯 Layout Manager initialized successfully');
+                console.log('🚀 Enhanced Layout Manager initialized successfully');
             }
 
             initializeSidebar() {
@@ -946,6 +1864,223 @@
                 }
             }
 
+            initializeDropdowns() {
+                const dropdowns = this.sidebar.querySelectorAll('.dropdown');
+
+                dropdowns.forEach(dropdown => {
+                    const toggle = dropdown.querySelector('.dropdown-toggle');
+                    const menu = dropdown.querySelector('.dropdown-menu');
+
+                    // Handle Bootstrap dropdown events
+                    dropdown.addEventListener('show.bs.dropdown', () => {
+                        this.handleDropdownOpen(dropdown);
+                    });
+
+                    dropdown.addEventListener('hide.bs.dropdown', () => {
+                        this.handleDropdownClose(dropdown);
+                    });
+
+                    // Position dropdown on open
+                    dropdown.addEventListener('shown.bs.dropdown', () => {
+                        this.positionDropdown(dropdown);
+                    });
+                });
+
+                // Reposition on window resize
+                window.addEventListener('resize', () => {
+                    const openDropdowns = this.sidebar.querySelectorAll('.dropdown.show');
+                    openDropdowns.forEach(dropdown => {
+                        this.positionDropdown(dropdown);
+                    });
+                });
+            }
+
+            // In your LayoutManager class, update the positionDropdown method:
+            positionDropdown(dropdown) {
+                const menu = dropdown.querySelector('.dropdown-menu');
+                const toggle = dropdown.querySelector('.dropdown-toggle');
+                const toggleRect = toggle.getBoundingClientRect();
+
+                // Calculate position based on toggle element
+                let topPosition = toggleRect.bottom;
+                let leftPosition = this.sidebar.classList.contains('sidebar-collapsed')
+                    ? parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-collapsed-width').replace('px', ''))
+                    : parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width').replace('px', ''));
+
+                // Adjust for header height
+                const headerHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height').replace('px', ''));
+                topPosition = Math.max(topPosition, headerHeight + 10);
+
+                // Ensure it doesn't go off screen
+                const viewportHeight = window.innerHeight;
+                const menuHeight = menu.scrollHeight;
+
+                if (topPosition + menuHeight > viewportHeight - 20) {
+                    // Position above if not enough space below
+                    topPosition = toggleRect.top - menuHeight - 10;
+                }
+
+                // Apply positioning
+                menu.style.top = `${topPosition}px`;
+                menu.style.left = `${leftPosition}px`;
+                menu.style.width = '280px';
+                menu.style.maxHeight = '70vh';
+            }
+
+            expandSidebarTemporarily() {
+                if (this.sidebar.classList.contains('sidebar-collapsed')) {
+                    this.sidebar.classList.add('sidebar-temp-expanded');
+                    this.sidebar.style.width = 'var(--sidebar-width)';
+
+                    // Update all sidebar elements for expanded state
+                    this.updateSidebarForExpansion();
+
+                    // Update main content and footer
+                    this.mainContent.style.marginLeft = 'var(--sidebar-width)';
+                    this.footer.style.marginLeft = 'var(--sidebar-width)';
+
+                    console.log('Sidebar temporarily expanded for dropdown');
+                }
+            }
+
+            collapseSidebarWithDelay() {
+                // Small delay to ensure smooth transition
+                setTimeout(() => {
+                    if (this.sidebar.classList.contains('sidebar-temp-expanded') &&
+                        !this.isAnyDropdownOpen()) {
+                        this.collapseSidebar();
+                    }
+                }, 300);
+            }
+
+            isAnyDropdownOpen() {
+                const dropdowns = this.sidebar.querySelectorAll('.dropdown');
+                return Array.from(dropdowns).some(dropdown =>
+                    dropdown.classList.contains('show')
+                );
+            }
+
+            updateSidebarForExpansion() {
+                // Update sidebar sections
+                const sections = this.sidebar.querySelectorAll('.sidebar-section');
+                sections.forEach(section => {
+                    section.style.padding = '1.5rem';
+                });
+
+                // Update sidebar titles
+                const titles = this.sidebar.querySelectorAll('.sidebar-title');
+                titles.forEach(title => {
+                    title.style.opacity = '1';
+                    title.style.transform = 'translateX(0)';
+                });
+
+                // Update nav links
+                const navLinks = this.sidebar.querySelectorAll('.nav-link');
+                navLinks.forEach(link => {
+                    const span = link.querySelector('span:not(.nav-icon)');
+                    if (span) {
+                        span.style.opacity = '1';
+                        span.style.transform = 'translateX(0)';
+                    }
+                    link.style.justifyContent = 'flex-start';
+                    link.style.padding = '0.75rem 1rem';
+                });
+
+                // Update nav icons
+                const navIcons = this.sidebar.querySelectorAll('.nav-icon');
+                navIcons.forEach(icon => {
+                    icon.style.marginRight = '0.75rem';
+                    icon.style.fontSize = '1rem';
+                    icon.style.transform = 'scale(1)';
+                });
+            }
+
+            handleDropdownOpen(dropdown) {
+                const menu = dropdown.querySelector('.dropdown-menu');
+
+                // Create backdrop
+                this.createDropdownBackdrop();
+
+                // Add animation
+                menu.classList.add('animate__animated', 'animate__fadeIn');
+
+                console.log('Dropdown opened with overflow');
+            }
+
+            handleDropdownClose(dropdown) {
+                const menu = dropdown.querySelector('.dropdown-menu');
+
+                // Remove animation
+                menu.classList.remove('animate__animated', 'animate__fadeIn');
+
+                // Remove backdrop
+                this.removeDropdownBackdrop();
+            }
+
+            // Update the existing collapseSidebar method
+            collapseSidebar() {
+                this.sidebar.classList.remove('sidebar-temp-expanded');
+                this.sidebar.classList.add('sidebar-collapsed');
+                this.sidebar.style.width = 'var(--sidebar-collapsed-width)';
+
+                this.mainContent.classList.add('main-content-expanded');
+                this.footer.classList.add('footer-expanded');
+
+                this.updateSidebarIcon();
+                this.saveSidebarState();
+                this.dispatchSidebarEvent();
+            }
+
+            // Update the existing expandSidebar method
+            expandSidebar() {
+                this.sidebar.classList.remove('sidebar-collapsed', 'sidebar-temp-expanded');
+                this.sidebar.style.width = 'var(--sidebar-width)';
+
+                this.mainContent.classList.remove('main-content-expanded');
+                this.footer.classList.remove('footer-expanded');
+
+                this.updateSidebarIcon();
+                this.saveSidebarState();
+                this.dispatchSidebarEvent();
+            }
+
+            createDropdownBackdrop() {
+                if (!document.querySelector('.dropdown-backdrop')) {
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'dropdown-backdrop';
+                    backdrop.addEventListener('click', () => {
+                        this.closeAllDropdowns();
+                    });
+                    document.body.appendChild(backdrop);
+                }
+            }
+
+            removeDropdownBackdrop() {
+                const backdrop = document.querySelector('.dropdown-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+            }
+
+            closeAllDropdowns() {
+                const dropdowns = this.sidebar.querySelectorAll('.dropdown');
+                dropdowns.forEach(dropdown => {
+                    const toggle = dropdown.querySelector('.dropdown-toggle');
+                    const bsDropdown = bootstrap.Dropdown.getInstance(toggle);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                });
+            }
+
+            positionCollapsedDropdown(dropdown) {
+                const menu = dropdown.querySelector('.dropdown-menu');
+                const rect = dropdown.getBoundingClientRect();
+
+                menu.style.left = `${rect.width + 10}px`;
+                menu.style.top = `${rect.top}px`;
+            }            
+
             initializeMobileMenu() {
                 if (!this.mobileMenuBtn || !this.mobileSidebar) return;
 
@@ -980,7 +2115,7 @@
                 if (!this.backToTop) return;
 
                 window.addEventListener('scroll', () => {
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    const scrollTop = window.scrollY || document.documentElement.scrollTop;
                     this.backToTop.style.display = scrollTop > 300 ? 'flex' : 'none';
                 });
 
@@ -1003,7 +2138,7 @@
                     top: 0;
                     left: 0;
                     height: 3px;
-                    background: linear-gradient(90deg, #3182ce, #805ad5);
+                    background: linear-gradient(90deg, var(--accent-color), #805ad5);
                     z-index: 9999;
                     transition: width 0.1s ease;
                 `;
@@ -1011,8 +2146,137 @@
 
                 window.addEventListener('scroll', () => {
                     const winHeight = document.documentElement.scrollHeight - window.innerHeight;
-                    const progress = (window.pageYOffset / winHeight) * 100;
+                    const progress = ((window.scrollY || document.documentElement.scrollTop) / winHeight) * 100;
                     progressBar.style.width = progress + '%';
+                });
+            }
+
+            initializeParticles() {
+                if (!this.particlesContainer) return;
+
+                const particleCount = 15;
+                for (let i = 0; i < particleCount; i++) {
+                    this.createParticle();
+                }
+            }
+
+            createParticle() {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                const size = Math.random() * 60 + 10;
+                const posX = Math.random() * 100;
+                const posY = Math.random() * 100;
+                const delay = Math.random() * 5;
+                const duration = Math.random() * 10 + 5;
+
+                particle.style.cssText = `
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${posX}%;
+                    top: ${posY}%;
+                    animation-delay: ${delay}s;
+                    animation-duration: ${duration}s;
+                    opacity: ${Math.random() * 0.1 + 0.05};
+                    background: var(--accent-color);
+                `;
+
+                this.particlesContainer.appendChild(particle);
+            }
+
+            initializeDashboardFeatures() {
+                // Refresh dashboard animation
+                const refreshBtn = document.getElementById('refreshDashboard');
+                if (refreshBtn) {
+                    refreshBtn.addEventListener('click', () => {
+                        refreshBtn.querySelector('i').className = 'fas fa-spinner fa-spin me-2';
+
+                        // Simulate refresh
+                        setTimeout(() => {
+                            refreshBtn.querySelector('i').className = 'fas fa-sync-alt me-2';
+                            this.showNotification('Dashboard refreshed successfully', 'success');
+                        }, 1000);
+                    });
+                }
+
+                // Animated counter for stats
+                this.initializeAnimatedCounters();
+            }
+
+            initializeAnimatedCounters() {
+                const counters = document.querySelectorAll('.stats-card h3');
+                counters.forEach(counter => {
+                    const target = parseInt(counter.textContent);
+                    const increment = target / 50;
+                    let current = 0;
+
+                    const updateCounter = () => {
+                        if (current < target) {
+                            current += increment;
+                            counter.textContent = Math.ceil(current);
+                            setTimeout(updateCounter, 25);
+                        } else {
+                            counter.textContent = target;
+                        }
+                    };
+
+                    // Start counter when element is in viewport
+                    const observer = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                updateCounter();
+                                observer.unobserve(entry.target);
+                            }
+                        });
+                    });
+
+                    observer.observe(counter);
+                });
+            }
+
+            initializeRealTimeUpdates() {
+                // Simulate real-time updates
+                setInterval(() => {
+                    this.updateLiveStats();
+                }, 30000); // Update every 30 seconds
+            }
+
+            updateLiveStats() {
+                // Simulate live data updates
+                const stats = ['totalStudents', 'totalCourses', 'pendingGrades', 'enrollmentRate'];
+                stats.forEach(stat => {
+                    const element = document.getElementById(stat);
+                    if (element) {
+                        const current = parseInt(element.textContent.replace(/,/g, ''));
+                        const change = Math.floor(Math.random() * 10) - 2; // Random change between -2 and +7
+                        const newValue = Math.max(0, current + change);
+
+                        element.textContent = newValue.toLocaleString();
+                        element.classList.add('animate__pulse');
+                        setTimeout(() => element.classList.remove('animate__pulse'), 1000);
+                    }
+                });
+            }
+
+            initializeSmoothAnimations() {
+                // Add intersection observer for scroll animations
+                const observerOptions = {
+                    threshold: 0.1,
+                    rootMargin: '0px 0px -50px 0px'
+                };
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('animate__animated', 'animate__fadeInUp');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, observerOptions);
+
+                // Observe all cards and tables
+                document.querySelectorAll('.card-modern, .table-modern').forEach(el => {
+                    observer.observe(el);
                 });
             }
 
@@ -1223,7 +2487,6 @@
 
             initializePrintOptimizations() {
                 // Your existing CSS already handles print styles
-                // No need to duplicate in JavaScript
                 console.log('Print optimizations handled by CSS');
 
                 // Optional: Add print button functionality only
@@ -1299,32 +2562,136 @@
                 console.log('🧭 Navigation:', url);
                 // Add your navigation tracking logic here
             }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type} alert-dismissible fade show m-3`;
+                notification.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-${this.getNotificationIcon(type)} me-2 fs-5"></i>
+                        <div class="flex-grow-1">${message}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+
+                document.getElementById('dynamicAlerts').appendChild(notification);
+
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+
+            getNotificationIcon(type) {
+                const icons = {
+                    success: 'check-circle',
+                    error: 'exclamation-circle',
+                    warning: 'exclamation-triangle',
+                    info: 'info-circle'
+                };
+                return icons[type] || 'info-circle';
+            }
         }
 
-        // Initialize the layout manager when DOM is ready
+        // Initialize enhanced layout manager
         document.addEventListener('DOMContentLoaded', function() {
-            window.layoutManager = new LayoutManager();
+            window.enhancedLayoutManager = new EnhancedLayoutManager();
 
             // Global utility functions
-            window.confirmDelete = function(message = 'Are you sure you want to delete this item?') {
-                return confirm(message);
+            window.confirmAction = function(message = 'Are you sure you want to proceed?', type = 'warning') {
+                return new Promise((resolve) => {
+                    // You can integrate SweetAlert2 here for better modals
+                    resolve(confirm(message));
+                });
             };
 
-            window.showLoading = function() {
-                document.body.classList.add('loading');
+            window.showLoading = function(container = document.body) {
+                const spinner = document.createElement('div');
+                spinner.className = 'loading-overlay';
+                spinner.innerHTML = `
+                    <div class="loading-spinner-large">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Processing...</p>
+                    </div>
+                `;
+                container.appendChild(spinner);
             };
 
-            window.hideLoading = function() {
-                document.body.classList.remove('loading');
+            window.hideLoading = function(container = document.body) {
+                const spinner = container.querySelector('.loading-overlay');
+                if (spinner) spinner.remove();
             };
 
-            console.log('🚀 Advanced Layout System Ready');
+            // Add CSS for loading overlay
+            const loadingStyles = document.createElement('style');
+            loadingStyles.textContent = `
+                .loading-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(255,255,255,0.9);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                    backdrop-filter: blur(5px);
+                }
+                .loading-spinner-large {
+                    text-align: center;
+                }
+            `;
+            document.head.appendChild(loadingStyles);
         });
 
-        // Error boundary for the layout system
+        // Error boundary with enhanced logging
         window.addEventListener('error', function(event) {
             console.error('🎯 Layout System Error:', event.error);
+            // You can integrate with error tracking service here
         });
+    </script>
+
+    <!-- SignalR Client for Real-time Features -->
+    <script>
+        // Only initialize SignalR if the library is loaded
+        if (typeof signalR !== 'undefined') {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/gradeHub")
+                .build();
+
+            connection.on("ReceiveGradeUpdate", (studentId, courseName, grade) => {
+                showToast(`Grade updated: ${courseName} - ${grade}`, 'success');
+            });
+
+            connection.on("ReceiveGradeRevisionUpdate", (revisionId, status) => {
+                showToast(`Grade revision ${status} for ID: ${revisionId}`, 'info');
+            });
+
+            connection.start().catch(err => console.error('SignalR connection error:', err));
+        }
+
+        function showToast(message, type) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 5000);
+        }
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)

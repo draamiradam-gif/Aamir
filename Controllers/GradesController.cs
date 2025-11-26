@@ -4,6 +4,7 @@ using StudentManagementSystem.Data;
 using StudentManagementSystem.Models;
 using StudentManagementSystem.Services;
 using StudentManagementSystem.ViewModels;
+using System.Text;
 
 namespace StudentManagementSystem.Controllers
 {
@@ -194,6 +195,72 @@ namespace StudentManagementSystem.Controllers
             ViewBag.TotalCourses = await _context.Courses.CountAsync();
 
             return View(enrollments);
+        }
+
+        ///////////
+        ///
+        // GET: Grades/Statistics/5
+        public async Task<IActionResult> Statistics(int courseId)
+        {
+            var course = await _context.Courses.FindAsync(courseId);
+            if (course == null)
+            {
+                TempData["Error"] = "Course not found";
+                return RedirectToAction(nameof(Manage));
+            }
+
+            var statistics = await _gradeService.GetCourseGradeStatisticsAsync(courseId);
+            ViewBag.CourseName = course.CourseName;
+
+            return View(statistics);
+        }
+
+        // GET: Grades/AcademicWarnings
+        public async Task<IActionResult> AcademicWarnings()
+        {
+            var warnings = await _gradeService.GetAcademicWarningsAsync();
+            return View(warnings);
+        }
+
+        // POST: Grades/BulkAssign
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkAssign(List<BulkGradeModel> grades)
+        {
+            if (grades == null || !grades.Any())
+            {
+                TempData["Error"] = "No grades provided";
+                return RedirectToAction(nameof(Manage));
+            }
+
+            var gradeDict = grades.ToDictionary(g => g.EnrollmentId, g => g.Mark);
+            var success = await _gradeService.BulkAssignGradesAsync(gradeDict);
+
+            if (success)
+                TempData["Success"] = $"Bulk grades assigned for {grades.Count} enrollments";
+            else
+                TempData["Error"] = "Failed to assign bulk grades";
+
+            return RedirectToAction(nameof(Manage));
+        }
+
+        // GET: Grades/Export/5
+        public async Task<IActionResult> Export(int courseId)
+        {
+            var enrollments = await _gradeService.GetCourseEnrollmentsAsync(courseId);
+            var course = await _context.Courses.FindAsync(courseId);
+
+            // Generate CSV
+            var csv = new StringBuilder();
+            csv.AppendLine("StudentID,StudentName,Grade,GradeLetter,GradePoints,Status");
+
+            foreach (var enrollment in enrollments)
+            {
+                csv.AppendLine($"\"{enrollment.Student?.StudentId}\",\"{enrollment.Student?.Name}\",{enrollment.Grade},{enrollment.GradeLetter},{enrollment.GradePoints},{enrollment.GradeStatus}");
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"{course?.CourseCode}_grades_{DateTime.Now:yyyyMMdd}.csv");
         }
     }
 }

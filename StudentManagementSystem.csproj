@@ -14,9 +14,10 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0" />
     <PackageReference Include="EPPlus" Version="8.2.1" />
     <PackageReference Include="QuestPDF" Version="2025.7.4" />
-
-     
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="7.0.0" />
+    
+    <!-- REMOVED TEST PACKAGES FOR NOW -->
+    <!-- We'll add these back when setting up a separate test project -->
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,32 @@
+﻿@model CourseFinalGradesViewModel
+@{
+    ViewData["Title"] = "Final Grades";
+    var course = ViewBag.Course as Course;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Final Grades - @course?.CourseName</h3>
+                    <div class="card-tools">
+                        <form method="post" asp-action="CalculateFinalGrades">
+                            <input type="hidden" name="courseId" value="@Model.CourseId" />
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-calculator"></i> Calculate Final Grades
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Final grades content will go here -->
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle"></i> Final Grades Calculation</h5>
+                        <p>Final grades are calculated based on all evaluations and their weights.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

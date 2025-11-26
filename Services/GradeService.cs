@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using StudentManagementSystem.Data;
 using StudentManagementSystem.Models;
+using Microsoft.AspNetCore.SignalR;
+using StudentManagementSystem.Hubs;
 
 namespace StudentManagementSystem.Services
 {
@@ -8,11 +10,13 @@ namespace StudentManagementSystem.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<GradeService> _logger;
+        private readonly IHubContext<GradeHub> _hubContext; // ✅ ADD THIS
 
-        public GradeService(ApplicationDbContext context, ILogger<GradeService> logger)
+        public GradeService(ApplicationDbContext context, ILogger<GradeService> logger, IHubContext<GradeHub> hubContext)
         {
             _context = context;
             _logger = logger;
+            _hubContext = hubContext; // ✅ ADD THIS
         }
 
         public async Task<bool> AssignGradeAsync(int enrollmentId, decimal mark)
@@ -27,11 +31,18 @@ namespace StudentManagementSystem.Services
                 if (enrollment == null)
                     return false;
 
-                // Use the CalculateGrade method from CourseEnrollment
                 enrollment.Grade = mark;
-                enrollment.CalculateGrade(); // This uses your existing logic
+                enrollment.CalculateGrade();
+                enrollment.LastActivityDate = DateTime.Now;
 
                 await _context.SaveChangesAsync();
+
+                // ✅ REAL-TIME NOTIFICATION
+                await _hubContext.Clients.All.SendAsync("ReceiveGradeUpdate",
+                    enrollment.StudentId,
+                    enrollment.Course?.CourseName ?? "Unknown Course",
+                    mark);
+
                 return true;
             }
             catch (Exception ex)
@@ -232,6 +243,94 @@ namespace StudentManagementSystem.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error enrolling student {StudentId} in course {CourseId}", studentId, courseId);
+                return false;
+            }
+        }
+
+        ////////////
+        ///
+        
+        public async Task<GradeStatistics> GetCourseGradeStatisticsAsync(int courseId)
+        {
+            var statistics = new GradeStatistics();
+
+            var enrollments = await _context.CourseEnrollments
+                .Include(e => e.Student)
+                .Where(e => e.CourseId == courseId && e.Grade.HasValue)
+                .ToListAsync();
+
+            if (!enrollments.Any())
+                return statistics;
+
+            statistics.TotalStudents = enrollments.Count;
+
+            // FIX: Handle nullable values properly
+            statistics.AverageGrade = enrollments.Average(e => e.Grade!.Value);
+            statistics.HighestGrade = enrollments.Max(e => e.Grade!.Value);
+            statistics.LowestGrade = enrollments.Min(e => e.Grade!.Value);
+
+            // Grade distribution
+            statistics.GradeDistribution = enrollments
+                .GroupBy(e => e.GradeLetter ?? "Ungraded")
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            return statistics;
+        }
+
+        public async Task<List<AcademicWarning>> GetAcademicWarningsAsync(decimal minGPA = 2.0m)
+        {
+            var warnings = new List<AcademicWarning>();
+
+            var students = await _context.Students
+                .Include(s => s.CourseEnrollments)
+                .Where(s => s.IsActive)
+                .ToListAsync();
+
+            foreach (var student in students)
+            {
+                var gpa = await CalculateStudentGPAAsync(student.Id);
+
+                if (gpa < minGPA)
+                {
+                    warnings.Add(new AcademicWarning
+                    {
+                        StudentId = student.Id,
+                        StudentName = student.Name,
+                        CurrentGPA = gpa,
+                        RequiredGPA = minGPA,
+                        WarningType = "Academic Probation",
+                        Severity = gpa < 1.5m ? "High" : "Medium"
+                    });
+                }
+            }
+
+            return warnings;
+        }
+
+        public async Task<bool> BulkAssignGradesAsync(Dictionary<int, decimal> enrollmentGrades)
+        {
+            try
+            {
+                var enrollmentIds = enrollmentGrades.Keys.ToList();
+                var enrollments = await _context.CourseEnrollments
+                    .Where(e => enrollmentIds.Contains(e.Id))
+                    .ToListAsync();
+
+                foreach (var enrollment in enrollments)
+                {
+                    if (enrollmentGrades.TryGetValue(enrollment.Id, out decimal mark))
+                    {
+                        enrollment.Grade = mark;
+                        enrollment.CalculateGrade();
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in bulk grade assignment");
                 return false;
             }
         }

@@ -1,0 +1,57 @@
+﻿@model List<CourseEnrollment>
+@{
+    ViewData["Title"] = "Student Enrollments";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Student Enrollments</h3>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Course</th>
+                                        <th>Enrollment Date</th>
+                                        <th>Status</th>
+                                        <th>Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var enrollment in Model)
+                                    {
+                                        <tr>
+                                            <td>@enrollment.Student?.Name</td>
+                                            <td>@enrollment.Course?.CourseName</td>
+                                            <td>@enrollment.EnrollmentDate.ToString("MMM dd, yyyy")</td>
+                                            <td>
+                                                <span class="badge badge-@(enrollment.IsActive ? "success" : "secondary")">
+                                                    @(enrollment.IsActive ? "Active" : "Inactive")
+                                                </span>
+                                            </td>
+                                            <td>@enrollment.Grade</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> No Enrollments Found</h5>
+                            <p>No student enrollments found for the specified criteria.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

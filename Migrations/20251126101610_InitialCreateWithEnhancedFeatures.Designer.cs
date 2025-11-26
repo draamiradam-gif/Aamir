@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudentManagementSystem.Data;
 
@@ -11,9 +12,11 @@ using StudentManagementSystem.Data;
 namespace StudentManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251126101610_InitialCreateWithEnhancedFeatures")]
+    partial class InitialCreateWithEnhancedFeatures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -582,73 +585,6 @@ namespace StudentManagementSystem.Migrations
                         });
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.Models.CourseEvaluation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CourseId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("EvaluationDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EvaluationTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsGraded")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsPublished")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<decimal>("MaxScore")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Semester")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<decimal>("Weight")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EvaluationTypeId");
-
-                    b.HasIndex("CourseId", "Title")
-                        .IsUnique();
-
-                    b.ToTable("CourseEvaluations");
-                });
-
             modelBuilder.Entity("StudentManagementSystem.Models.CoursePrerequisite", b =>
                 {
                     b.Property<int>("Id")
@@ -752,166 +688,6 @@ namespace StudentManagementSystem.Migrations
                     b.HasIndex("UniversityId");
 
                     b.ToTable("Departments");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.Models.EvaluationType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("DefaultWeight")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("EvaluationTypes");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Category = "Examination",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(516),
-                            DefaultWeight = 40m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Final Exam",
-                            Order = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Category = "Examination",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(661),
-                            DefaultWeight = 20m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Midterm Exam",
-                            Order = 2
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Category = "Quiz",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(667),
-                            DefaultWeight = 10m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Quiz",
-                            Order = 3
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Category = "Assignment",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(671),
-                            DefaultWeight = 15m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Assignment",
-                            Order = 4
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Category = "Project",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(675),
-                            DefaultWeight = 25m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Project",
-                            Order = 5
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Category = "Laboratory",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(683),
-                            DefaultWeight = 20m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Laboratory Work",
-                            Order = 6
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Category = "Participation",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(706),
-                            DefaultWeight = 5m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Class Participation",
-                            Order = 7
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Category = "Attendance",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(710),
-                            DefaultWeight = 5m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Attendance",
-                            Order = 8
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Category = "Project",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(723),
-                            DefaultWeight = 15m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Presentation",
-                            Order = 9
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Category = "Project",
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(728),
-                            DefaultWeight = 30m,
-                            Description = "",
-                            IsActive = true,
-                            Name = "Research Paper",
-                            Order = 10
-                        });
                 });
 
             modelBuilder.Entity("StudentManagementSystem.Models.FeePayment", b =>
@@ -1021,7 +797,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(960),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1216),
                             Description = "Exceptional",
                             GradeLetter = "A+",
                             GradePoints = 4.0m,
@@ -1033,7 +809,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1101),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1337),
                             Description = "Excellent",
                             GradeLetter = "A",
                             GradePoints = 4.0m,
@@ -1045,7 +821,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 3,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1120),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1343),
                             Description = "Excellent",
                             GradeLetter = "A-",
                             GradePoints = 3.7m,
@@ -1057,7 +833,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 4,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1128),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1348),
                             Description = "Good",
                             GradeLetter = "B+",
                             GradePoints = 3.3m,
@@ -1069,7 +845,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 5,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1135),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1352),
                             Description = "Good",
                             GradeLetter = "B",
                             GradePoints = 3.0m,
@@ -1081,7 +857,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 6,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1280),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1361),
                             Description = "Good",
                             GradeLetter = "B-",
                             GradePoints = 2.7m,
@@ -1093,7 +869,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 7,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1289),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1381),
                             Description = "Satisfactory",
                             GradeLetter = "C+",
                             GradePoints = 2.3m,
@@ -1105,7 +881,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 8,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1295),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1385),
                             Description = "Satisfactory",
                             GradeLetter = "C",
                             GradePoints = 2.0m,
@@ -1117,7 +893,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 9,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1299),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1409),
                             Description = "Satisfactory",
                             GradeLetter = "C-",
                             GradePoints = 1.7m,
@@ -1129,7 +905,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 10,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1305),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1416),
                             Description = "Poor",
                             GradeLetter = "D+",
                             GradePoints = 1.3m,
@@ -1141,7 +917,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 11,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1320),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1425),
                             Description = "Poor",
                             GradeLetter = "D",
                             GradePoints = 1.0m,
@@ -1153,7 +929,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 12,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1324),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1430),
                             Description = "Poor",
                             GradeLetter = "D-",
                             GradePoints = 0.7m,
@@ -1165,7 +941,7 @@ namespace StudentManagementSystem.Migrations
                         new
                         {
                             Id = 13,
-                            CreatedDate = new DateTime(2025, 11, 26, 13, 50, 59, 910, DateTimeKind.Local).AddTicks(1329),
+                            CreatedDate = new DateTime(2025, 11, 26, 12, 16, 8, 930, DateTimeKind.Local).AddTicks(1434),
                             Description = "Failure",
                             GradeLetter = "F",
                             GradePoints = 0.0m,
@@ -1174,99 +950,6 @@ namespace StudentManagementSystem.Migrations
                             MaxPercentage = 59m,
                             MinPercentage = 0m
                         });
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.Models.GradingTemplate", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Department")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDefault")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("GradingTemplates");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.Models.GradingTemplateItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EvaluationTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GradingTemplateId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsRequired")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<decimal>("MaxScore")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Weight")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EvaluationTypeId");
-
-                    b.HasIndex("GradingTemplateId");
-
-                    b.ToTable("GradingTemplateItems");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.Models.QRAttendance", b =>
@@ -1731,76 +1414,6 @@ namespace StudentManagementSystem.Migrations
                     b.ToTable("StudentEnrollment");
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.Models.StudentGrade", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<int>("CourseEvaluationId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ExcuseReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("GradeLetter")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("GradedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("GradedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<bool>("IsAbsent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsExcused")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<decimal?>("MaxScore")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("Score")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<int>("StudentId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("SubmissionDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CourseEvaluationId");
-
-                    b.HasIndex("StudentId", "CourseEvaluationId")
-                        .IsUnique();
-
-                    b.ToTable("StudentGrades");
-                });
-
             modelBuilder.Entity("StudentManagementSystem.Models.University", b =>
                 {
                     b.Property<int>("Id")
@@ -2044,25 +1657,6 @@ namespace StudentManagementSystem.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.Models.CourseEvaluation", b =>
-                {
-                    b.HasOne("StudentManagementSystem.Models.Course", "Course")
-                        .WithMany("CourseEvaluations")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("StudentManagementSystem.Models.EvaluationType", "EvaluationType")
-                        .WithMany()
-                        .HasForeignKey("EvaluationTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-
-                    b.Navigation("EvaluationType");
-                });
-
             modelBuilder.Entity("StudentManagementSystem.Models.CoursePrerequisite", b =>
                 {
                     b.HasOne("StudentManagementSystem.Models.Course", "Course")
@@ -2107,25 +1701,6 @@ namespace StudentManagementSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Student");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.Models.GradingTemplateItem", b =>
-                {
-                    b.HasOne("StudentManagementSystem.Models.EvaluationType", "EvaluationType")
-                        .WithMany()
-                        .HasForeignKey("EvaluationTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("StudentManagementSystem.Models.GradingTemplate", "GradingTemplate")
-                        .WithMany("Items")
-                        .HasForeignKey("GradingTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("EvaluationType");
-
-                    b.Navigation("GradingTemplate");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.Models.QRAttendance", b =>
@@ -2257,25 +1832,6 @@ namespace StudentManagementSystem.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.Models.StudentGrade", b =>
-                {
-                    b.HasOne("StudentManagementSystem.Models.CourseEvaluation", "CourseEvaluation")
-                        .WithMany("StudentGrades")
-                        .HasForeignKey("CourseEvaluationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("StudentManagementSystem.Models.Student", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CourseEvaluation");
-
-                    b.Navigation("Student");
-                });
-
             modelBuilder.Entity("StudentManagementSystem.Models.WaitlistEntry", b =>
                 {
                     b.HasOne("StudentManagementSystem.Models.Course", "Course")
@@ -2321,16 +1877,9 @@ namespace StudentManagementSystem.Migrations
                 {
                     b.Navigation("CourseEnrollments");
 
-                    b.Navigation("CourseEvaluations");
-
                     b.Navigation("Prerequisites");
 
                     b.Navigation("RequiredFor");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.Models.CourseEvaluation", b =>
-                {
-                    b.Navigation("StudentGrades");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.Models.Department", b =>
@@ -2342,11 +1891,6 @@ namespace StudentManagementSystem.Migrations
                     b.Navigation("Semesters");
 
                     b.Navigation("Students");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.Models.GradingTemplate", b =>
-                {
-                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.Models.QRCodeSession", b =>

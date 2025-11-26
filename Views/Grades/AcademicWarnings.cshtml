@@ -1,0 +1,78 @@
+﻿@model List<AcademicWarning>
+@{
+    ViewData["Title"] = "Academic Warnings";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Academic Warnings & Probation</h3>
+                    <div class="card-tools">
+                        <span class="badge badge-danger">@Model.Count Students</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (!Model.Any())
+                    {
+                        <div class="alert alert-success">
+                            <h5><i class="fas fa-check-circle"></i> No Academic Warnings</h5>
+                            <p>All students are meeting academic requirements.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Current GPA</th>
+                                        <th>Required GPA</th>
+                                        <th>Warning Type</th>
+                                        <th>Severity</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var warning in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@warning.StudentName</strong><br>
+                                                <small class="text-muted">ID: @warning.StudentId</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-@(warning.CurrentGPA >= 2.0m ? "success" : "danger")">
+                                                    @warning.CurrentGPA.ToString("0.00")
+                                                </span>
+                                            </td>
+                                            <td>@warning.RequiredGPA.ToString("0.00")</td>
+                                            <td>@warning.WarningType</td>
+                                            <td>
+                                                <span class="badge badge-@(warning.Severity == "High" ? "danger" : warning.Severity == "Medium" ? "warning" : "info")">
+                                                    @warning.Severity
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="@Url.Action("Transcript", new { studentId = warning.StudentId })"
+                                                   class="btn btn-info btn-sm">
+                                                    <i class="fas fa-file-alt"></i> Transcript
+                                                </a>
+                                                <a href="@Url.Action("StudentEnrollments", new { studentId = warning.StudentId })"
+                                                   class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-book"></i> Courses
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

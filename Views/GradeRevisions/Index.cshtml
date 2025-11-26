@@ -1,0 +1,96 @@
+﻿@model List<CourseEnrollment>
+@{
+    ViewData["Title"] = "Pending Grade Revisions";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Pending Grade Revisions</h3>
+                </div>
+                <div class="card-body">
+                    @if (!Model.Any())
+                    {
+                        <div class="alert alert-success">
+                            <h5><i class="fas fa-check-circle"></i> No Pending Revisions</h5>
+                            <p>All grade revision requests have been processed.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Course</th>
+                                        <th>Current Grade</th>
+                                        <th>Revision Reason</th>
+                                        <th>Request Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var enrollment in Model)
+                                    {
+                                        <tr>
+                                            <td>@enrollment.Student?.Name</td>
+                                            <td>@enrollment.Course?.CourseName</td>
+                                            <td>@enrollment.Grade</td>
+                                            <td>@enrollment.GradeRevisionReason</td>
+                                            <td>@enrollment.LastActivityDate.ToString("MMM dd, yyyy")</td>
+                                            <td>
+                                                <form method="post" asp-action="Approve" class="d-inline">
+                                                    <input type="hidden" name="enrollmentId" value="@enrollment.Id" />
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-check"></i> Approve
+                                                    </button>
+                                                </form>
+                                                <button type="button" class="btn btn-danger btn-sm"
+                                                        data-toggle="modal" data-target="#rejectModal-@enrollment.Id">
+                                                    <i class="fas fa-times"></i> Reject
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- ✅ FIXED: Move modals OUTSIDE the table -->
+                        @foreach (var enrollment in Model)
+                        {
+                            <!-- Reject Modal -->
+                            <div class="modal fade" id="rejectModal-@enrollment.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Reject Grade Revision</h5>
+                                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                        </div>
+                                        <form method="post" asp-action="Reject">
+                                            <input type="hidden" name="enrollmentId" value="@enrollment.Id" />
+                                            <div class="modal-body">
+                                                <div class="form-group">
+                                                    <label>Comments:</label>
+                                                    <textarea name="comments" class="form-control" rows="3"
+                                                      placeholder="Reason for rejection..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-danger">Reject Revision</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

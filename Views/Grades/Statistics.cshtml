@@ -1,0 +1,135 @@
+﻿@model GradeStatistics
+@{
+    ViewData["Title"] = "Grade Statistics";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Grade Statistics - @ViewBag.CourseName</h3>
+                    <div class="card-tools">
+                        <a href="@Url.Action("Export", new { courseId = ViewBag.CourseId })" class="btn btn-success btn-sm">
+                            <i class="fas fa-download"></i> Export CSV
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fas fa-users"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Students</span>
+                                    <span class="info-box-number">@Model.TotalStudents</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="fas fa-chart-line"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Average Grade</span>
+                                    <span class="info-box-number">@Model.AverageGrade.ToString("0.00")</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning"><i class="fas fa-arrow-up"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Highest Grade</span>
+                                    <span class="info-box-number">@Model.HighestGrade.ToString("0.00")</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-danger"><i class="fas fa-arrow-down"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Lowest Grade</span>
+                                    <span class="info-box-number">@Model.LowestGrade.ToString("0.00")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Grade Distribution</h3>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr><th>Grade</th><th>Count</th><th>Percentage</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var dist in Model.GradeDistribution)
+                                            {
+                                                <tr>
+                                                    <td>@dist.Key</td>
+                                                    <td>@dist.Value</td>
+                                                    <td>@((dist.Value * 100.0 / Model.TotalStudents).ToString("0.00"))%</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Performance Chart</h3>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="gradeChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('gradeChart').getContext('2d');
+        const gradeChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [@Html.Raw(string.Join(", ", Model.GradeDistribution.Keys.Select(k => $"\"{k}\"")))],
+                datasets: [{
+                    label: 'Number of Students',
+                    data: [@string.Join(", ", Model.GradeDistribution.Values)],
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Students'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Grades'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}
