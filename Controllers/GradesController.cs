@@ -11,12 +11,16 @@ namespace StudentManagementSystem.Controllers
     public class GradesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IComprehensiveGradeService _comprehensiveGradeService;
         private readonly IGradeService _gradeService;
+        private readonly ILogger<GradeService> _logger;
 
-        public GradesController(ApplicationDbContext context, IGradeService gradeService)
+        public GradesController(ApplicationDbContext context, IComprehensiveGradeService comprehensiveGradeService, IGradeService gradeService, ILogger<GradeService> logger)
         {
             _context = context;
+            _comprehensiveGradeService = comprehensiveGradeService;
             _gradeService = gradeService;
+            _logger = logger;
         }
 
         // GET: Grades/Manage
@@ -41,20 +45,45 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignGrade(int enrollmentId, decimal mark)
         {
-            if (mark < 0 || mark > 100)
+            try
             {
-                TempData["Error"] = "Mark must be between 0 and 100";
+                var enrollment = await _context.CourseEnrollments
+                    .Include(e => e.Student)
+                    .Include(e => e.Course)
+                    .FirstOrDefaultAsync(e => e.Id == enrollmentId);
+
+                if (enrollment == null)
+                {
+                    TempData["Error"] = "Enrollment not found";
+                    return RedirectToAction(nameof(Manage));
+                }
+
+                if (mark < 0 || mark > 100)
+                {
+                    TempData["Error"] = "Mark must be between 0 and 100";
+                    return RedirectToAction(nameof(Manage));
+                }
+
+                // Update the grade
+                enrollment.Grade = mark;
+
+                // Calculate grade letter and points
+                enrollment.CalculateGrade(); // Make sure this method exists!
+
+                enrollment.GradeStatus = GradeStatus.Completed;
+                enrollment.LastActivityDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = $"Grade assigned to {enrollment.Student?.Name} for {enrollment.Course?.CourseName}";
                 return RedirectToAction(nameof(Manage));
             }
-
-            var success = await _gradeService.AssignGradeAsync(enrollmentId, mark);
-
-            if (success)
-                TempData["Success"] = "Grade assigned successfully";
-            else
-                TempData["Error"] = "Failed to assign grade";
-
-            return RedirectToAction(nameof(Manage));
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error assigning grade for enrollment {EnrollmentId}", enrollmentId);
+                TempData["Error"] = $"Error assigning grade: {ex.Message}";
+                return RedirectToAction(nameof(Manage));
+            }
         }
 
         // GET: Grades/Transcript/5

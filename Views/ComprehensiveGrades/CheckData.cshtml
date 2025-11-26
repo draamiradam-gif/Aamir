@@ -1,0 +1,69 @@
+﻿@{
+    ViewData["Title"] = "Data Check";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Database Data Check</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h5>@ViewBag.DataCheck.TotalCourses</h5>
+                                    <p>Total Courses</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h5>@ViewBag.DataCheck.TotalStudents</h5>
+                                    <p>Total Students</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h5>@ViewBag.DataCheck.TotalEnrollments</h5>
+                                    <p>Total Enrollments</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h5>@ViewBag.DataCheck.ActiveEnrollments</h5>
+                                    <p>Active Enrollments</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body">
+                                    <h5>@ViewBag.DataCheck.TotalEvaluations</h5>
+                                    <p>Total Evaluations</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark text-white">
+                                <div class="card-body">
+                                    <h5>@ViewBag.DataCheck.TotalStudentGrades</h5>
+                                    <p>Student Grades</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

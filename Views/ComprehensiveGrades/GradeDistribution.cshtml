@@ -1,0 +1,140 @@
+﻿@model GradeDistributionViewModel
+
+@{
+    ViewData["Title"] = "Grade Distribution - " + Model.Course.CourseName;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Grade Distribution - @Model.Course.CourseName</h3>
+                    <div class="card-tools">
+                        <a asp-action="GradeDistribution" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Course Selection
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fas fa-users"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Students</span>
+                                    <span class="info-box-number">@Model.Distribution.TotalStudents</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Pass Rate</span>
+                                    <span class="info-box-number">@Model.Distribution.PassRate.ToString("0.00")%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-danger"><i class="fas fa-times-circle"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Fail Rate</span>
+                                    <span class="info-box-number">@Model.Distribution.FailRate.ToString("0.00")%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning"><i class="fas fa-chart-pie"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Graded</span>
+                                    <span class="info-box-number">@Model.Distribution.TotalStudents</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grade Distribution Chart -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Grade Distribution</h3>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="gradeDistributionChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Distribution Details</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Grade</th>
+                                                    <th>Count</th>
+                                                    <th>Percentage</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var grade in Model.Distribution.Distribution)
+                                                {
+                                                    var percentage = Model.Distribution.TotalStudents > 0 ?
+                                                    (grade.Value * 100.0 / Model.Distribution.TotalStudents) : 0;
+                                                    <tr>
+                                                        <td>@grade.Key</td>
+                                                        <td>@grade.Value</td>
+                                                        <td>@percentage.ToString("0.00")%</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Wait for page to load
+        window.addEventListener('load', function() {
+            // Simple chart initialization
+            try {
+                var ctx = document.getElementById('gradeDistributionChart').getContext('2d');
+
+                // Hardcoded data for testing
+                var labels = ['A', 'B', 'C', 'D', 'F'];
+                var data = [10, 15, 8, 5, 2];
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Students',
+                            data: data,
+                            backgroundColor: ['#28a745', '#20c997', '#17a2b8', '#ffc107', '#dc3545']
+                        }]
+                    }
+                });
+            } catch (e) {
+                console.log('Chart error:', e);
+            }
+        });
+    </script>
+}

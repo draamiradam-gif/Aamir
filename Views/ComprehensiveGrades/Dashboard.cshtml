@@ -27,6 +27,32 @@
                             <span class="info-box-number">@(Model.RecentEvaluations.Count(e => !e.IsGraded))</span>
                         </div>
                     </div>
+                    <!-- In Views/ComprehensiveGrades/Dashboard.cshtml -->
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="CreateSampleEvaluations" class="btn btn-info btn-block">
+                            <i class="fas fa-plus me-2"></i>Create Sample Evaluations
+                        </a>
+                    </div>
+                    <!-- Simple form to create evaluations -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Quick Create Evaluations</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" asp-action="CreateEvaluationsForCourse">
+                                <div class="form-group">
+                                    <label>Select Course:</label>
+                                    <select name="courseId" class="form-control" required>
+                                        @foreach (var course in ViewBag.Courses ?? new List<Course>())
+                                        {
+                                            <option value="@course.Id">@course.CourseName</option>
+                                        }
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Create Sample Evaluations</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
 

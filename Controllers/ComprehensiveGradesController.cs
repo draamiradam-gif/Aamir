@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OfficeOpenXml.Table.PivotTable;
 using StudentManagementSystem.Data;
 using StudentManagementSystem.Models;
@@ -14,15 +15,17 @@ namespace StudentManagementSystem.Controllers
         private readonly IComprehensiveGradeService _comprehensiveGradeService;
         private readonly IComprehensiveGradeService _gradeService;
         private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<ComprehensiveGradeService> _logger;
 
         public ComprehensiveGradesController(ApplicationDbContext context, IComprehensiveGradeService comprehensiveGradeService,
                                            IComprehensiveGradeService gradeService,
-                                           IWebHostEnvironment environment)
+                                           IWebHostEnvironment environment, ILogger<ComprehensiveGradeService> logger)
         {
             _context = context;
             _comprehensiveGradeService = comprehensiveGradeService;
             _gradeService = gradeService;
             _environment = environment;
+            _logger = logger;
         }
 
         // GET: Main grading dashboard
@@ -62,14 +65,27 @@ namespace StudentManagementSystem.Controllers
         [Route("ComprehensiveGrades/CourseEvaluations")]
         public async Task<IActionResult> CourseEvaluations()
         {
-            // Show course selection if no course specified
-            var courses = await _context.Courses
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.CourseName)
-                .ToListAsync();
+            try
+            {
+                var courses = await _context.Courses
+                    .AsNoTracking()  // Add this
+                    .Where(c => c.IsActive && c.Id > 0)  // Ensure valid IDs
+                    .OrderBy(c => c.CourseName)
+                    .ToListAsync();
 
-            ViewBag.Courses = courses;
-            return View("SelectCourse");
+                if (!courses.Any())
+                {
+                    TempData["Warning"] = "No active courses found with valid IDs";
+                }
+
+                return View("SelectCourse", courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading courses");
+                TempData["Error"] = "Error loading courses";
+                return View("SelectCourse", new List<Course>());
+            }
         }
 
         // GET: Course evaluations for specific course
@@ -96,21 +112,53 @@ namespace StudentManagementSystem.Controllers
             return View("CourseEvaluationsList", course.CourseEvaluations.ToList());
         }
 
+
+        // GET: ComprehensiveGrades/CourseFinalGrades
+        public async Task<IActionResult> CourseFinalGrades(int? courseId)
+        {
+            if (courseId.HasValue)
+            {
+                await _gradeService.CalculateAllFinalGradesAsync(courseId.Value);
+                var enrollments = await _context.CourseEnrollments
+                    .Include(e => e.Student)
+                    .Include(e => e.Course)
+                    .Where(e => e.CourseId == courseId.Value && e.IsActive)
+                    .ToListAsync();
+
+                ViewBag.Course = await _context.Courses.FindAsync(courseId.Value);
+                return View(enrollments);
+            }
+
+            var courses = await _context.Courses
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.CourseName)
+                .ToListAsync();
+            return View("SelectCourseForFinalGrades", courses);
+        }
+
+
         // GET: Import grades selection
         [HttpGet]
         [Route("ComprehensiveGrades/ImportGrades")]
         public async Task<IActionResult> ImportGrades()
         {
-            // Show evaluation selection if no evaluation specified
-            var evaluations = await _context.CourseEvaluations
-                .Include(e => e.Course)
-                .Include(e => e.EvaluationType)
-                .Where(e => !e.IsGraded)
-                .OrderBy(e => e.DueDate)
-                .ToListAsync();
+            try
+            {
+                var evaluations = await _context.CourseEvaluations
+                    .Include(e => e.Course)
+                    .Include(e => e.EvaluationType)
+                    .Where(e => !e.IsGraded)
+                    .OrderBy(e => e.DueDate)
+                    .ToListAsync();
 
-            ViewBag.Evaluations = evaluations;
-            return View("SelectEvaluation");
+                return View("SelectEvaluation", evaluations);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading evaluations for import");
+                TempData["Error"] = "Error loading evaluations. Please try again.";
+                return View("SelectEvaluation", new List<CourseEvaluation>());
+            }
         }
 
         // GET: Import grades for specific evaluation
@@ -142,14 +190,21 @@ namespace StudentManagementSystem.Controllers
         [Route("ComprehensiveGrades/CourseFinalGrades")]
         public async Task<IActionResult> CourseFinalGrades()
         {
-            // Show course selection if no course specified
-            var courses = await _context.Courses
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.CourseName)
-                .ToListAsync();
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.CourseName)
+                    .ToListAsync();
 
-            ViewBag.Courses = courses;
-            return View("SelectCourseForFinalGrades");
+                return View("SelectCourseForFinalGrades", courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading courses for final grades");
+                TempData["Error"] = "Error loading courses. Please try again.";
+                return View("SelectCourseForFinalGrades", new List<Course>());
+            }
         }
 
         // GET: Course final grades for specific course
@@ -157,17 +212,15 @@ namespace StudentManagementSystem.Controllers
         [Route("ComprehensiveGrades/CourseFinalGrades/{courseId:int}")]
         public async Task<IActionResult> CourseFinalGrades(int courseId)
         {
-            var summary = await _gradeService.GetCourseGradeSummaryAsync(courseId);
-            var course = await _context.Courses.FindAsync(courseId);
+            await _gradeService.CalculateAllFinalGradesAsync(courseId);
+            var enrollments = await _context.CourseEnrollments
+                .Include(e => e.Student)
+                .Include(e => e.Course)
+                .Where(e => e.CourseId == courseId && e.IsActive)
+                .ToListAsync();
 
-            var model = new CourseFinalGradesViewModel
-            {
-                Summary = summary,
-                CourseId = courseId
-            };
-
-            ViewBag.Course = course;
-            return View(model);
+            ViewBag.Course = await _context.Courses.FindAsync(courseId);
+            return View(enrollments); // Return List<CourseEnrollment> directly
         }
 
         // GET: Grade students for an evaluation
@@ -328,14 +381,21 @@ namespace StudentManagementSystem.Controllers
         [Route("ComprehensiveGrades/GradeDistribution")]
         public async Task<IActionResult> GradeDistribution()
         {
-            // Show course selection for grade distribution
-            var courses = await _context.Courses
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.CourseName)
-                .ToListAsync();
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.CourseName)
+                    .ToListAsync();
 
-            ViewBag.Courses = courses;
-            return View("SelectCourseForGradeDistribution");
+                return View("SelectCourseForGradeDistribution", courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading courses for grade distribution");
+                TempData["Error"] = "Error loading courses. Please try again.";
+                return View("SelectCourseForGradeDistribution", new List<Course>());
+            }
         }
 
         // GET: Grade distribution for specific course
@@ -360,16 +420,23 @@ namespace StudentManagementSystem.Controllers
         [Route("ComprehensiveGrades/EvaluationStatistics")]
         public async Task<IActionResult> EvaluationStatistics()
         {
-            // Show evaluation selection for statistics
-            var evaluations = await _context.CourseEvaluations
-                .Include(e => e.Course)
-                .Include(e => e.EvaluationType)
-                .Where(e => e.IsGraded)
-                .OrderBy(e => e.EvaluationDate)
-                .ToListAsync();
+            try
+            {
+                var evaluations = await _context.CourseEvaluations
+                    .Include(e => e.Course)
+                    .Include(e => e.EvaluationType)
+                    .Where(e => e.IsGraded)
+                    .OrderBy(e => e.EvaluationDate)
+                    .ToListAsync();
 
-            ViewBag.Evaluations = evaluations;
-            return View("SelectEvaluationForStatistics");
+                return View("SelectEvaluationForStatistics", evaluations);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading evaluations for statistics");
+                TempData["Error"] = "Error loading evaluations. Please try again.";
+                return View("SelectEvaluationForStatistics", new List<CourseEvaluation>());
+            }
         }
 
         // GET: Evaluation statistics for specific evaluation
@@ -669,6 +736,105 @@ namespace StudentManagementSystem.Controllers
             }
 
             return View(transcript);
+        }
+
+        // Add this to your ComprehensiveGradesController
+        public async Task<IActionResult> CheckData()
+        {
+            var dataCheck = new
+            {
+                TotalCourses = await _context.Courses.CountAsync(),
+                TotalStudents = await _context.Students.CountAsync(),
+                TotalEnrollments = await _context.CourseEnrollments.CountAsync(),
+                ActiveEnrollments = await _context.CourseEnrollments.CountAsync(e => e.IsActive),
+                TotalEvaluations = await _context.CourseEvaluations.CountAsync(),
+                GradedEvaluations = await _context.CourseEvaluations.CountAsync(e => e.IsGraded),
+                TotalStudentGrades = await _context.StudentGrades.CountAsync()
+            };
+
+            ViewBag.DataCheck = dataCheck;
+            return View();
+        }
+
+        // GET: ComprehensiveGrades/CreateSampleEvaluations
+        public async Task<IActionResult> CreateSampleEvaluations()
+        {
+            try
+            {
+                var courses = await _context.Courses.Where(c => c.IsActive).Take(3).ToListAsync();
+                var evaluationTypes = await _context.EvaluationTypes.Where(et => et.IsActive).Take(3).ToListAsync();
+
+                if (!courses.Any() || !evaluationTypes.Any())
+                {
+                    TempData["Error"] = "Need active courses and evaluation types first";
+                    return RedirectToAction(nameof(Dashboard));
+                }
+
+                int evaluationsCreated = 0;
+
+                foreach (var course in courses)
+                {
+                    foreach (var evalType in evaluationTypes)
+                    {
+                        // Check if evaluation already exists
+                        var existing = await _context.CourseEvaluations
+                            .FirstOrDefaultAsync(e => e.CourseId == course.Id && e.EvaluationTypeId == evalType.Id);
+
+                        if (existing == null)
+                        {
+                            var evaluation = new CourseEvaluation
+                            {
+                                CourseId = course.Id,
+                                EvaluationTypeId = evalType.Id,
+                                Title = $"{evalType.Name} - {course.CourseCode}",
+                                Description = $"Sample {evalType.Name} for {course.CourseName}",
+                                Weight = evalType.DefaultWeight,
+                                MaxScore = 100,
+                                EvaluationDate = DateTime.Now.AddDays(14),
+                                DueDate = DateTime.Now.AddDays(7),
+                                IsGraded = false
+                            };
+
+                            _context.CourseEvaluations.Add(evaluation);
+                            evaluationsCreated++;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Created {evaluationsCreated} sample evaluations";
+                return RedirectToAction(nameof(CourseEvaluations));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error creating evaluations: {ex.Message}";
+                return RedirectToAction(nameof(Dashboard));
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("ComprehensiveGrades/SaveGrades")]
+        public async Task<IActionResult> SaveGrades([FromBody] List<StudentGrade> grades)
+        {
+            try
+            {
+                var result = await _gradeService.BulkAssignGradesAsync(grades);
+
+                if (result)
+                {
+                    return Json(new { success = true, message = "Grades saved successfully" });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Failed to save grades" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving grades");
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
         }
     }
 }

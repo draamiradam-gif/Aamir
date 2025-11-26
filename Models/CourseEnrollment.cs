@@ -164,6 +164,20 @@ namespace StudentManagementSystem.Models
             }
         }
 
+        private GradeScale GetGradeScale(decimal percentage)
+        {
+            // Simple default implementation - you can enhance this
+            return percentage switch
+            {
+                >= 90 => new GradeScale { GradeLetter = "A", GradePoints = 4.0m },
+                >= 80 => new GradeScale { GradeLetter = "B", GradePoints = 3.0m },
+                >= 70 => new GradeScale { GradeLetter = "C", GradePoints = 2.0m },
+                >= 60 => new GradeScale { GradeLetter = "D", GradePoints = 1.0m },
+                _ => new GradeScale { GradeLetter = "F", GradePoints = 0.0m }
+            };
+        }
+
+
         public void CalculateComprehensiveGrade()
         {
             // Calculate final grade based on multiple components

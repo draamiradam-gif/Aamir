@@ -1,0 +1,129 @@
+﻿@model EvaluationStatisticsViewModel
+
+@{
+    ViewData["Title"] = "Evaluation Statistics - " + Model.Evaluation.Title;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Evaluation Statistics - @Model.Evaluation.Title</h3>
+                    <div class="card-tools">
+                        <a asp-action="EvaluationStatistics" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Evaluation Selection
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Summary Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fas fa-users"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Students</span>
+                                    <span class="info-box-number">@Model.Statistics.TotalStudents</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="fas fa-check"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Submissions</span>
+                                    <span class="info-box-number">@Model.Statistics.TotalSubmissions</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary"><i class="fas fa-percentage"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Submission Rate</span>
+                                    <span class="info-box-number">@Model.Statistics.SubmissionRate.ToString("0.00")%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning"><i class="fas fa-chart-line"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Average Score</span>
+                                    <span class="info-box-number">@Model.Statistics.AverageScore.ToString("0.00")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Score Statistics -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Score Range</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <tr>
+                                                <th>Highest Score</th>
+                                                <td class="text-success font-weight-bold">@Model.Statistics.HighestScore.ToString("0.00")</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Lowest Score</th>
+                                                <td class="text-danger font-weight-bold">@Model.Statistics.LowestScore.ToString("0.00")</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Average Score</th>
+                                                <td class="text-primary font-weight-bold">@Model.Statistics.AverageScore.ToString("0.00")</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Median Score</th>
+                                                <td class="text-info font-weight-bold">@Model.Statistics.MedianScore.ToString("0.00")</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Evaluation Details</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <tr>
+                                                <th>Evaluation</th>
+                                                <td>@Model.Evaluation.Title</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Course</th>
+                                                <td>@Model.Evaluation.Course?.CourseName</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Weight</th>
+                                                <td>@Model.Evaluation.Weight%</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Max Score</th>
+                                                <td>@Model.Evaluation.MaxScore</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Evaluation Date</th>
+                                                <td>@Model.Evaluation.EvaluationDate?.ToString("yyyy-MM-dd")</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,7 +1,20 @@
-﻿@model CourseFinalGradesViewModel
+﻿@model List<CourseEnrollment>
+
 @{
-    ViewData["Title"] = "Final Grades";
-    var course = ViewBag.Course as Course;
+    ViewData["Title"] = "Final Grades - " + (ViewBag.Course?.CourseName ?? "Unknown Course");
+
+    // Fixed nullable handling
+    var totalStudents = Model.Count;
+    var gradedEnrollments = Model.Where(e => e.Grade.HasValue).ToList();
+    var gradedStudents = gradedEnrollments.Count;
+    decimal averageGrade = 0.0m;  // Use decimal instead of double
+    double passRate = 0.0;
+
+    if (gradedEnrollments.Any())
+    {
+        averageGrade = gradedEnrollments.Average(e => e.Grade!.Value);
+        passRate = (gradedEnrollments.Count(e => e.Grade >= 60) * 100.0 / gradedEnrollments.Count);
+    }
 }
 
 <div class="container-fluid">
@@ -9,21 +22,103 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Final Grades - @course?.CourseName</h3>
+                    <h3 class="card-title">Final Grades - @ViewBag.Course?.CourseName</h3>
                     <div class="card-tools">
-                        <form method="post" asp-action="CalculateFinalGrades">
-                            <input type="hidden" name="courseId" value="@Model.CourseId" />
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-calculator"></i> Calculate Final Grades
-                            </button>
-                        </form>
+                        <a asp-action="CourseFinalGrades" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Course Selection
+                        </a>
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Final grades content will go here -->
-                    <div class="alert alert-info">
-                        <h5><i class="fas fa-info-circle"></i> Final Grades Calculation</h5>
-                        <p>Final grades are calculated based on all evaluations and their weights.</p>
+                    <!-- Display summary statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fas fa-users"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Students</span>
+                                    <span class="info-box-number">@totalStudents</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="fas fa-check"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Graded Students</span>
+                                    <span class="info-box-number">@gradedStudents</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary"><i class="fas fa-chart-line"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Average Grade</span>
+                                    <span class="info-box-number">@averageGrade.ToString("0.00")</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning"><i class="fas fa-percentage"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Pass Rate</span>
+                                    <span class="info-box-number">@passRate.ToString("0.00")%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Display student grades -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Student ID</th>
+                                    <th>Final Grade</th>
+                                    <th>Grade Letter</th>
+                                    <th>Grade Points</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var enrollment in Model)
+                                {
+                                    <tr>
+                                        <td>@enrollment.Student?.Name</td>
+                                        <td>@enrollment.Student?.StudentId</td>
+                                        <td>
+                                            @if (enrollment.Grade.HasValue)
+                                            {
+                                                <span class="font-weight-bold">@enrollment.Grade.Value.ToString("0.00")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not Graded</span>
+                                            }
+                                        </td>
+                                        <td>@enrollment.GradeLetter</td>
+                                        <td>
+                                            @if (enrollment.GradePoints.HasValue)
+                                            {
+                                                <span class="badge badge-info">@enrollment.GradePoints.Value.ToString("0.00")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-@(enrollment.GradeStatus == GradeStatus.Completed ? "success" : "warning")">
+                                                @enrollment.GradeStatus
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

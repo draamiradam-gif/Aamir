@@ -1,41 +1,62 @@
 ﻿@model List<CourseEvaluation>
+
 @{
     ViewData["Title"] = "Select Evaluation for Statistics";
-    var evaluations = Model ?? new List<CourseEvaluation>();
 }
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Select Evaluation for Statistics</h3>
-                    <p class="card-subtitle">Choose an evaluation to view performance analytics</p>
+                    <h3 class="card-title">@ViewData["Title"]</h3>
+                    <div class="card-tools">
+                        <a asp-action="Dashboard" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
-                    @if (evaluations.Any())
-                    {
-                        <div class="list-group">
-                            @foreach (var evaluation in evaluations)
-                            {
-                                <a href="@Url.Action("EvaluationStatistics", new { evaluationId = evaluation.Id })"
-                                   class="list-group-item list-group-item-action">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h5 class="mb-1">@evaluation.Title</h5>
-                                        <small>@evaluation.EvaluationType?.Name</small>
-                                    </div>
-                                    <p class="mb-1">@evaluation.Course?.CourseName</p>
-                                    <small>Average: @evaluation.AverageScore.ToString("0.00") | Submissions: @evaluation.TotalSubmissions</small>
-                                </a>
-                            }
-                        </div>
-                    }
-                    else
+                    @if (Model == null || !Model.Any())
                     {
                         <div class="alert alert-warning">
                             <h5><i class="fas fa-exclamation-triangle"></i> No Graded Evaluations Available</h5>
                             <p>There are no graded evaluations available for statistics. Please grade some evaluations first.</p>
-                            <a href="@Url.Action("Dashboard")" class="btn btn-primary">Go to Dashboard</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Evaluation</th>
+                                        <th>Course</th>
+                                        <th>Type</th>
+                                        <th>Evaluation Date</th>
+                                        <th>Weight</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var evaluation in Model)
+                                    {
+                                        <tr>
+                                            <td>@evaluation.Title</td>
+                                            <td>@evaluation.Course?.CourseName</td>
+                                            <td>@evaluation.EvaluationType?.Name</td>
+                                            <td>@evaluation.EvaluationDate?.ToString("yyyy-MM-dd")</td>
+                                            <td>@evaluation.Weight%</td>
+                                            <td>
+                                                <a asp-action="EvaluationStatistics" asp-route-evaluationId="@evaluation.Id"
+                                                   class="btn btn-info btn-sm">
+                                                    <i class="fas fa-chart-line"></i> View Statistics
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     }
                 </div>

@@ -1,40 +1,78 @@
-﻿@model List<Course>
-@{
-    ViewData["Title"] = "Select Course";
-}
+﻿@model List<Course> 
 
+@{
+    ViewData["Title"] = "Select Course for Evaluations";
+}
+<!-- DEBUG INFO -->
+<div class="alert alert-warning">
+    <h5>Debug - Courses:</h5>
+    @foreach (var course in Model.Take(5))
+    {
+        <div>Course: @course.CourseName | ID: @course.Id | Active: @course.IsActive</div>
+    }
+    <div>Total Courses: @Model.Count | Valid IDs: @Model.Count(c => c.Id > 0)</div>
+</div>
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Select Course</h3>
-                    <p class="card-subtitle">Choose a course to manage evaluations</p>
+                    <h3 class="card-title">@ViewData["Title"]</h3>
+                    <div class="card-tools">
+                        <a asp-action="Dashboard" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
-                    @if (Model.Any())
+                    @if (TempData["Error"] != null)
                     {
-                        <div class="list-group">
-                            @foreach (var course in Model)
-                            {
-                                <a href="@Url.Action("CourseEvaluations", new { courseId = course.Id })"
-                                   class="list-group-item list-group-item-action">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h5 class="mb-1">@course.CourseName</h5>
-                                        <small>@course.CourseCode</small>
-                                    </div>
-                                    <p class="mb-1">@course.Department</p>
-                                    <small>@course.CurrentEnrollment students enrolled</small>
-                                </a>
-                            }
+                        <div class="alert alert-danger alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                            @TempData["Error"]
+                        </div>
+                    }
+
+                    @if (Model == null || !Model.Any())
+                    {
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-exclamation-triangle"></i> No Courses Available</h5>
+                            <p>There are no active courses available. Please create courses first.</p>
+                            <a asp-controller="Courses" asp-action="Create" class="btn btn-primary">Create Course</a>
                         </div>
                     }
                     else
                     {
-                        <div class="alert alert-warning">
-                            <h5><i class="fas fa-exclamation-triangle"></i> No Courses Available</h5>
-                            <p>There are no active courses to manage. Please create courses first.</p>
-                            <a href="@Url.Action("Index", "Courses")" class="btn btn-primary">Go to Courses</a>
+                        <div class="row">
+                            @foreach (var course in Model)
+                            {
+                                <div class="col-md-4 mb-4">
+                                    <div class="card course-card">
+                                        <div class="card-header">
+                                            <h5 class="card-title mb-0">@course.CourseCode</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <h6 class="card-subtitle mb-2 text-muted">@course.CourseName</h6>
+                                        </div>
+                                        <div class="card-footer">
+                                            <!-- ADD ID VALIDATION -->
+                                            @if (course.Id > 0)
+                                            {
+                                                <a asp-action="CourseEvaluations" asp-route-courseId="@course.Id"
+                                                   class="btn btn-primary btn-block">
+                                                    <i class="fas fa-tasks"></i> Manage Evaluations
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-secondary btn-block" disabled>
+                                                    <i class="fas fa-exclamation-triangle"></i> Invalid Course ID
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -42,3 +80,16 @@
         </div>
     </div>
 </div>
+
+@section Styles {
+    <style>
+        .course-card {
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+}
