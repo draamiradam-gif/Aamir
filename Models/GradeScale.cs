@@ -32,8 +32,19 @@ namespace StudentManagementSystem.Models
 
         //[Display(Name = "Is Active")]
         //public bool IsActive { get; set; } = true;
+
+        [Display(Name = "Classification")]
+        [StringLength(50)]
+        public string Classification { get; set; } = string.Empty; // Excellent, Good, etc.
+               
+
+        // Helper method to get grade scale based on percentage
+        public static GradeScale? GetGradeScale(decimal percentage, List<GradeScale> gradeScales)
+        {
+            return gradeScales.FirstOrDefault(gs =>
+                percentage >= gs.MinPercentage &&
+                percentage <= gs.MaxPercentage &&
+                gs.IsActive);
+        }
     }
-
-
-
 }

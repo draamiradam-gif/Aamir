@@ -347,11 +347,24 @@
             </a>
         </li>
 
-        <li class="nav-item">
-            <a class="nav-link" asp-controller="Registration" asp-action="Analytics">
-                <i class="fas fa-chart-bar me-2"></i>Analytics
+        <li>
+            <a class="dropdown-item" href="@Url.Action("Index", "AdminManagement")">
+                <i class="fas fa-key me-2"></i>Permissions Management
             </a>
         </li>
+
+        @* <li>
+            <a class="dropdown-item" href="@Url.Action("Index", "UserManagement")">
+                <i class="fas fa-user-tag me-2"></i>Roles & Users
+            </a>
+        </li> *@
+
+        <li>
+            <a class="dropdown-item" href="@Url.Action("Analytics", "Admin")">
+                <i class="fas fa-chart-line me-2"></i>Analytics
+            </a>
+        </li>
+
         <li class="nav-item">
             <a class="nav-link" asp-controller="Registration" asp-action="Reports">
                 <i class="fas fa-chart-pie me-2"></i>Reports

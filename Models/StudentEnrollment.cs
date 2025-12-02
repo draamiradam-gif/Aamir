@@ -56,7 +56,7 @@ namespace StudentManagementSystem.Models
         public bool IsFailed => GradeStatus == GradeStatus.Failed;
 
         [NotMapped]
-        public bool IsPassing => Grade >= 60;
+        public bool IsPassing => Grade >= 50;
     }
 
     

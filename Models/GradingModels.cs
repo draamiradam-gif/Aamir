@@ -43,6 +43,8 @@ namespace StudentManagementSystem.Models
         [Display(Name = "Is Active")]
         public new bool IsActive { get; set; } = true;
 
+        [Display(Name = "Is Required")]
+        public bool IsRequired { get; set; } = true;
         public virtual ICollection<StudentGrade> StudentGrades { get; set; } = new List<StudentGrade>();
     }
 
@@ -96,11 +98,12 @@ namespace StudentManagementSystem.Models
         public virtual Semester? Semester { get; set; }
 
         // Computed properties
-        [NotMapped]
-        public decimal WeightedScore => (MarksObtained / GradingComponent?.MaximumMarks ?? 1) * (GradingComponent?.WeightPercentage ?? 0);
+        //[NotMapped]
+        //public decimal WeightedScore => (MarksObtained / GradingComponent?.MaximumMarks ?? 1) * (GradingComponent?.WeightPercentage ?? 0);
+        public decimal WeightedScore { get; set; }
 
         [NotMapped]
-        public bool IsPassing => Percentage >= 60; // Adjust threshold as needed
+        public bool IsPassing => Percentage >= 50; // Adjust threshold as needed
     }
 
     public class FinalGrade : BaseEntity

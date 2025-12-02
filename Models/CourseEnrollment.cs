@@ -56,14 +56,14 @@ namespace StudentManagementSystem.Models
 
         [Display(Name = "Approved By")]
         [StringLength(100)]
-        public string? ApprovedBy { get; set; } // Made nullable
+        public string? ApprovedBy { get; set; }
 
         [Display(Name = "Approval Date")]
         public DateTime? ApprovalDate { get; set; }
 
         [Display(Name = "Drop/Withdraw Reason")]
         [StringLength(500)]
-        public string? DropReason { get; set; } // Made nullable
+        public string? DropReason { get; set; }
 
         [Display(Name = "Drop/Withdraw Date")]
         public DateTime? DropDate { get; set; }
@@ -72,9 +72,9 @@ namespace StudentManagementSystem.Models
         public DateTime LastActivityDate { get; set; } = DateTime.Now;
 
         [Display(Name = "Audit Trail")]
-        public string? AuditTrail { get; set; } // JSON history of changes
+        public string? AuditTrail { get; set; }
 
-        // Navigation properties (EXISTING - KEEP THESE, already nullable)
+        // Navigation properties
         [ForeignKey("CourseId")]
         public virtual Course? Course { get; set; }
 
@@ -84,7 +84,7 @@ namespace StudentManagementSystem.Models
         [ForeignKey("SemesterId")]
         public virtual Semester? Semester { get; set; }
 
-        // Computed properties (EXISTING + NEW)
+        // Computed properties
         [NotMapped]
         public bool IsCompleted => GradeStatus == GradeStatus.Completed;
 
@@ -92,7 +92,7 @@ namespace StudentManagementSystem.Models
         public bool IsFailed => GradeStatus == GradeStatus.Failed;
 
         [NotMapped]
-        public bool IsPassing => Grade >= 60;
+        public bool IsPassing => Grade >= 50; // Updated: Passing grade is 50%
 
         [NotMapped]
         public bool IsWaitlisted => WaitlistPosition.HasValue && EnrollmentStatus == EnrollmentStatus.Waitlisted;
@@ -117,16 +117,24 @@ namespace StudentManagementSystem.Models
             }
         }
 
-        // ADD THESE HELPER METHODS:
+        // UPDATED: New grading system
         private decimal CalculateGradePoints(decimal grade)
         {
             return grade switch
             {
-                >= 90 => 4.0m,  // A
-                >= 80 => 3.0m,  // B
-                >= 70 => 2.0m,  // C
-                >= 60 => 1.0m,  // D
-                _ => 0.0m       // F
+                >= 96 => 4.0m,    // A+
+                >= 92 => 3.7m,    // A
+                >= 88 => 3.4m,    // A-
+                >= 84 => 3.2m,    // B+
+                >= 80 => 3.0m,    // B
+                >= 76 => 2.8m,    // B-
+                >= 72 => 2.6m,    // C+
+                >= 68 => 2.4m,    // C
+                >= 64 => 2.2m,    // C-
+                >= 60 => 2.0m,    // D+
+                >= 55 => 1.5m,    // D
+                >= 50 => 1.0m,    // D-
+                _ => 0.0m         // F
             };
         }
 
@@ -134,17 +142,25 @@ namespace StudentManagementSystem.Models
         {
             return grade switch
             {
-                >= 90 => "A",
+                >= 96 => "A+",
+                >= 92 => "A",
+                >= 88 => "A-",
+                >= 84 => "B+",
                 >= 80 => "B",
-                >= 70 => "C",
-                >= 60 => "D",
+                >= 76 => "B-",
+                >= 72 => "C+",
+                >= 68 => "C",
+                >= 64 => "C-",
+                >= 60 => "D+",
+                >= 55 => "D",
+                >= 50 => "D-",
                 _ => "F"
             };
         }
 
         private void UpdateGradeStatus()
         {
-            if (Grade >= 60)
+            if (Grade >= 50) // Updated: Passing grade is 50%
             {
                 GradeStatus = GradeStatus.Completed;
                 CompletionDate ??= DateTime.Now;
@@ -153,6 +169,36 @@ namespace StudentManagementSystem.Models
             {
                 GradeStatus = GradeStatus.Failed;
             }
+        }
+
+        // NEW: Get full grade description
+        public string GetGradeDescription()
+        {
+            if (!Grade.HasValue)
+                return "No Grade";
+
+            var letter = CalculateGradeLetter(Grade.Value);
+            var points = CalculateGradePoints(Grade.Value);
+
+            return $"{letter} ({Grade:F1}%) - {points:F2} points";
+        }
+
+        // NEW: Get grade classification
+        public string GetGradeClassification()
+        {
+            if (!Grade.HasValue)
+                return "Ungraded";
+
+            return Grade.Value switch
+            {
+                >= 90 => "Excellent",
+                >= 80 => "Very Good",
+                >= 70 => "Good",
+                >= 60 => "Average",
+                >= 50 => "Below Average (Pass)",
+                < 50 => "Fail"
+                //_ => "Unknown"
+            };
         }
 
         public void AddAuditEntry(string action, string performedBy, string? notes = null)
@@ -169,15 +215,14 @@ namespace StudentManagementSystem.Models
 
             var auditList = string.IsNullOrEmpty(AuditTrail) ?
                 new List<object>() :
-                JsonSerializer.Deserialize<List<object>>(AuditTrail) ?? new List<object>(); // Added null coalescing
+                JsonSerializer.Deserialize<List<object>>(AuditTrail) ?? new List<object>();
 
             auditList.Add(audit);
             AuditTrail = JsonSerializer.Serialize(auditList);
         }
     }
 
-    // ENUMS - Make sure these are outside the CourseEnrollment class but inside the namespace
-
+    // UPDATED: Extended GradeStatus enum with special cases
     public enum GradeStatus
     {
         [Display(Name = "In Progress")]
@@ -193,7 +238,13 @@ namespace StudentManagementSystem.Models
         Withdrawn,
 
         [Display(Name = "Incomplete")]
-        Incomplete
+        Incomplete,
+
+        [Display(Name = "Fail with FX")]
+        FailedFX, // FX: Failed due to academic dishonesty
+
+        [Display(Name = "Incomplete Course")]
+        IncompleteCourse, // IC: Incomplete (needs makeup work)
     }
 
     public enum EnrollmentStatus
@@ -221,6 +272,4 @@ namespace StudentManagementSystem.Models
         CrossRegistration,
         IndependentStudy
     }
-
-
 }

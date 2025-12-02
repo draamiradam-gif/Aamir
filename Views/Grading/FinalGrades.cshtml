@@ -108,7 +108,7 @@
                                         <td>@finalGrade.Student?.StudentId</td>
                                         <td>@finalGrade.Student?.Name</td>
                                         <td>
-                                            <span class="badge @(finalGrade.FinalPercentage >= 60 ? "bg-success" : "bg-danger")">
+                                            <span class="badge @(finalGrade.FinalPercentage >= 50 ? "bg-success" : "bg-danger")">
                                                 @finalGrade.FinalPercentage.ToString("F1")%
                                             </span>
                                         </td>

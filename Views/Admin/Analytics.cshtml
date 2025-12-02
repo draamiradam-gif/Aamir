@@ -7,6 +7,7 @@
         <i class="fas fa-chart-line me-2"></i>System Analytics
     </h1>
 
+    <!-- Stats Cards -->
     <div class="row">
         <div class="col-md-3 mb-4">
             <div class="card bg-primary text-white">
@@ -46,20 +47,147 @@
         </div>
     </div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">
-                <i class="fas fa-chart-bar me-2"></i>User Activity Chart
-            </h5>
+    <!-- Charts Row -->
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>User Activity (Last 7 Days)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userActivityChart" height="250"></canvas>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div style="height: 300px;">
-                <!-- Chart placeholder -->
-                <div class="text-center py-5">
-                    <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
-                    <p class="text-muted">Analytics chart would appear here</p>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>User Roles Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="rolesChart" height="250"></canvas>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Recent Activity Table -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-history me-2"></i>Recent System Activities
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover dataTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 1; i <= 10; i++)
+                        {
+                            <tr>
+                                <td>@DateTime.Now.AddHours(-i).ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@(i % 2 == 0 ? "admin@localhost" : "student" + i + "@edu")</td>
+                                <td>
+                                    @{
+                                        var actions = new[] { "Login", "Logout", "Course View", "Grade Update", "Profile Update" };
+                                        var badges = new[] { "success", "secondary", "info", "warning", "primary" };
+                                        var idx = i % actions.Length;
+                                    }
+                                    <span class="badge bg-@badges[idx]">@actions[idx]</span>
+                                </td>
+                                <td>@(actions[idx] + " operation completed")</td>
+                                <td>192.168.1.@i</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            $('.dataTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+
+            // User Activity Chart
+            const activityCtx = document.getElementById('userActivityChart').getContext('2d');
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const activityData = [120, 190, 300, 500, 200, 300, 400];
+
+            new Chart(activityCtx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'User Logins',
+                        data: activityData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Roles Distribution Chart
+            const rolesCtx = document.getElementById('rolesChart').getContext('2d');
+            new Chart(rolesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Admins', 'Faculty', 'Students', 'Guests'],
+                    datasets: [{
+                        data: [10, 25, 150, 15],
+                        backgroundColor: [
+                            '#ef4444',
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

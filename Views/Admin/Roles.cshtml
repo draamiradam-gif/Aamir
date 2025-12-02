@@ -1,0 +1,20 @@
+﻿@{
+    ViewData["Title"] = "Roles Management";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Roles management has been moved to <a href="@Url.Action("Index", "UserManagement")" class="alert-link">User Management</a>.
+    </div>
+
+    <div class="text-center py-5">
+        <i class="fas fa-user-tag fa-4x text-primary mb-3"></i>
+        <h3>Roles Management</h3>
+        <p class="text-muted">This feature is now available in the User Management section.</p>
+        <a href="@Url.Action("Index", "UserManagement")" class="btn btn-primary mt-3">
+            <i class="fas fa-arrow-right me-2"></i>Go to User Management
+        </a>
+    </div>
+</div>

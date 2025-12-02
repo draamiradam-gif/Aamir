@@ -308,7 +308,7 @@ namespace StudentManagementSystem.Services
                 return true;
 
             var completedCourses = await _context.CourseEnrollments
-                .Where(e => e.StudentId == studentId && e.GradeStatus == GradeStatus.Completed && e.Grade >= 60)
+                .Where(e => e.StudentId == studentId && e.GradeStatus == GradeStatus.Completed && e.Grade >= 50)
                 .Select(e => e.CourseId)
                 .ToListAsync();
 

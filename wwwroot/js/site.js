@@ -425,6 +425,7 @@ function safeAddEventListener(selector, event, handler) {
     }
 }
 // Add to site.js before the DOMContentLoaded event
+// Replace the problematic ModalManager.preventModalOverflow method
 class ModalManager {
     static init() {
         this.setupModalCloseHandlers();
@@ -451,38 +452,43 @@ class ModalManager {
         document.querySelectorAll('.modal-overlay.active, .modal-container.active').forEach(el => {
             el.classList.remove('active');
         });
-        
+
         // Re-enable body scrolling
         document.body.style.overflow = '';
         document.body.style.paddingRight = '';
     }
 
     static preventModalOverflow() {
-        // Prevent body from being hidden when modal opens
-        const originalModalShow = Modal.prototype.show;
-        if (typeof Modal !== 'undefined') {
-            Modal.prototype.show = function() {
+        // Check if Bootstrap Modal exists
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            // Safe check for Bootstrap modals
+            $(document).on('show.bs.modal', '.modal', function () {
                 // Don't add modal-open class to body
                 document.body.style.overflow = 'auto';
                 document.body.style.paddingRight = '0';
-                return originalModalShow.call(this);
-            };
+            });
+
+            $(document).on('hidden.bs.modal', '.modal', function () {
+                // Clean up backdrop
+                $('.modal-backdrop').remove();
+                document.body.style.overflow = 'auto';
+            });
         }
     }
 
     static openModal(modalId) {
         const overlay = document.querySelector('.modal-overlay');
         const modal = document.getElementById(modalId);
-        
+
         if (overlay && modal) {
             // Close any open modals first
             this.closeAllModals();
-            
+
             // Show new modal
             overlay.classList.add('active');
             modal.classList.add('active');
-            
-            // Prevent body scrolling but don't hide it
+
+            // Prevent body scrolling
             document.body.style.overflow = 'hidden';
         }
     }
@@ -490,10 +496,10 @@ class ModalManager {
     static closeModal(modalId) {
         const overlay = document.querySelector('.modal-overlay');
         const modal = document.getElementById(modalId);
-        
+
         if (overlay) overlay.classList.remove('active');
         if (modal) modal.classList.remove('active');
-        
+
         document.body.style.overflow = '';
     }
 }
@@ -604,6 +610,80 @@ class LogoutHelper {
         resetTimer();
     }
 }
+
+// Update DataTablesHelper.init() in site.js
+class ModalManager {
+    static init() {
+        this.setupModalCloseHandlers();
+        this.preventModalOverflow();
+    }
+
+    static setupModalCloseHandlers() {
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeAllModals();
+            }
+        });
+
+        // Close modal on backdrop click
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                this.closeAllModals();
+            }
+        });
+    }
+
+    static closeAllModals() {
+        document.querySelectorAll('.modal-overlay.active, .modal-container.active').forEach(el => {
+            el.classList.remove('active');
+        });
+
+        // Re-enable body scrolling
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }
+
+    static preventModalOverflow() {
+        // Simply fix body overflow for modals
+        const observer = new MutationObserver(() => {
+            if (document.body.classList.contains('modal-open')) {
+                document.body.style.overflow = 'auto';
+                document.body.style.paddingRight = '0';
+            }
+        });
+
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    static openModal(modalId) {
+        const overlay = document.querySelector('.modal-overlay');
+        const modal = document.getElementById(modalId);
+
+        if (overlay && modal) {
+            // Close any open modals first
+            this.closeAllModals();
+
+            // Show new modal
+            overlay.classList.add('active');
+            modal.classList.add('active');
+
+            // Prevent body scrolling
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    static closeModal(modalId) {
+        const overlay = document.querySelector('.modal-overlay');
+        const modal = document.getElementById(modalId);
+
+        if (overlay) overlay.classList.remove('active');
+        if (modal) modal.classList.remove('active');
+
+        document.body.style.overflow = '';
+    }
+}
+
 
 // Initialize in DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function () {

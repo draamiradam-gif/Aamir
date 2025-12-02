@@ -271,7 +271,7 @@ namespace StudentManagementSystem.Services
 
             var prerequisites = await GetCoursePrerequisitesAsync(courseId);
             var studentCompletedCourses = await _context.CourseEnrollments
-                .Where(e => e.StudentId == studentId && e.Grade.HasValue && e.Grade >= 60)
+                .Where(e => e.StudentId == studentId && e.Grade.HasValue && e.Grade >= 50)
                 .Select(e => e.CourseId)
                 .ToListAsync();
 

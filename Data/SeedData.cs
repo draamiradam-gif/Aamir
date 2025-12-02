@@ -458,4 +458,37 @@ namespace StudentManagementSystem.Data
             }
         }
     }
+
+    public static class GradeScaleSeeder
+    {
+        public static async Task SeedGradeScalesAsync(ApplicationDbContext context)
+        {
+            if (!await context.GradeScales.AnyAsync())
+            {
+                var gradeScales = new List<GradeScale>
+            {
+                // English version of your grading system
+                new GradeScale { GradeLetter = "A+", Description = "A Plus", MinPercentage = 96, MaxPercentage = 100, GradePoints = 4.0m, IsPassingGrade = true, Classification = "Excellent" },
+                new GradeScale { GradeLetter = "A", Description = "A", MinPercentage = 92, MaxPercentage = 95.99m, GradePoints = 3.7m, IsPassingGrade = true, Classification = "Excellent" },
+                new GradeScale { GradeLetter = "A-", Description = "A Minus", MinPercentage = 88, MaxPercentage = 91.99m, GradePoints = 3.4m, IsPassingGrade = true, Classification = "Excellent" },
+                new GradeScale { GradeLetter = "B+", Description = "B Plus", MinPercentage = 84, MaxPercentage = 87.99m, GradePoints = 3.2m, IsPassingGrade = true, Classification = "Very Good" },
+                new GradeScale { GradeLetter = "B", Description = "B", MinPercentage = 80, MaxPercentage = 83.99m, GradePoints = 3.0m, IsPassingGrade = true, Classification = "Very Good" },
+                new GradeScale { GradeLetter = "B-", Description = "B Minus", MinPercentage = 76, MaxPercentage = 79.99m, GradePoints = 2.8m, IsPassingGrade = true, Classification = "Good" },
+                new GradeScale { GradeLetter = "C+", Description = "C Plus", MinPercentage = 72, MaxPercentage = 75.99m, GradePoints = 2.6m, IsPassingGrade = true, Classification = "Good" },
+                new GradeScale { GradeLetter = "C", Description = "C", MinPercentage = 68, MaxPercentage = 71.99m, GradePoints = 2.4m, IsPassingGrade = true, Classification = "Good" },
+                new GradeScale { GradeLetter = "C-", Description = "C Minus", MinPercentage = 64, MaxPercentage = 67.99m, GradePoints = 2.2m, IsPassingGrade = true, Classification = "Average" },
+                new GradeScale { GradeLetter = "D+", Description = "D Plus", MinPercentage = 60, MaxPercentage = 63.99m, GradePoints = 2.0m, IsPassingGrade = true, Classification = "Below Average" },
+                new GradeScale { GradeLetter = "D", Description = "D", MinPercentage = 55, MaxPercentage = 59.99m, GradePoints = 1.5m, IsPassingGrade = true, Classification = "Below Average" },
+                new GradeScale { GradeLetter = "D-", Description = "D Minus", MinPercentage = 50, MaxPercentage = 54.99m, GradePoints = 1.0m, IsPassingGrade = true, Classification = "Below Average" },
+                new GradeScale { GradeLetter = "F", Description = "Fail", MinPercentage = 0, MaxPercentage = 49.99m, GradePoints = 0.0m, IsPassingGrade = false, Classification = "Fail" },
+                new GradeScale { GradeLetter = "FX", Description = "Fail (Academic Dishonesty)", MinPercentage = 0, MaxPercentage = 0, GradePoints = 0.0m, IsPassingGrade = false, Classification = "Fail" },
+                new GradeScale { GradeLetter = "IC", Description = "Incomplete", MinPercentage = 0, MaxPercentage = 0, GradePoints = 0.0m, IsPassingGrade = false, Classification = "Incomplete" },
+                new GradeScale { GradeLetter = "W", Description = "Withdrawn", MinPercentage = 0, MaxPercentage = 0, GradePoints = 0.0m, IsPassingGrade = false, Classification = "Withdrawn" }
+            };
+
+                context.GradeScales.AddRange(gradeScales);
+                await context.SaveChangesAsync();
+            }
+        }
+    }
 }

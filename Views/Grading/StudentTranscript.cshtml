@@ -65,7 +65,7 @@
                                         <td>@enrollment.Semester?.Name</td>
                                         <td>@enrollment.Course?.Credits</td>
                                         <td>
-                                            <span class="badge @(enrollment.Grade >= 60 ? "bg-success" : "bg-danger")">
+                                            <span class="badge @(enrollment.Grade >= 50 ? "bg-success" : "bg-danger")">
                                                 @enrollment.GradeLetter (@enrollment.Grade?.ToString("F1")%)
                                             </span>
                                         </td>

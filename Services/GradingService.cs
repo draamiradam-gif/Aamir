@@ -107,7 +107,7 @@ namespace StudentManagementSystem.Services
             finalGrade.FinalGradeLetter = gradeLetter;
             finalGrade.TotalMarksObtained = grades.Sum(g => g.MarksObtained);
             finalGrade.TotalMaximumMarks = grades.Sum(g => g.GradingComponent?.MaximumMarks ?? 0);
-            finalGrade.GradeStatus = totalPercentage >= 60 ? GradeStatus.Completed : GradeStatus.Failed;
+            finalGrade.GradeStatus = totalPercentage >= 50 ? GradeStatus.Completed : GradeStatus.Failed;
             finalGrade.CalculationDate = DateTime.Now;
 
             // Store grade breakdown
@@ -145,11 +145,20 @@ namespace StudentManagementSystem.Services
         {
             return percentage switch
             {
-                >= 90 => (4.0m, "A"),
+                >= 96 => (4.0m, "A+"),
+                >= 92 => (3.7m, "A"),
+                >= 88 => (3.4m, "A-"),
+                >= 84 => (3.2m, "B+"),
                 >= 80 => (3.0m, "B"),
-                >= 70 => (2.0m, "C"),
-                >= 60 => (1.0m, "D"),
+                >= 76 => (2.8m, "B-"),
+                >= 72 => (2.6m, "C+"),
+                >= 68 => (2.4m, "C"),
+                >= 64 => (2.2m, "C-"),
+                >= 60 => (2.0m, "D+"),
+                >= 55 => (1.5m, "D"),
+                >= 50 => (1.0m, "D-"),
                 _ => (0.0m, "F")
+
             };
         }
 
@@ -222,14 +231,14 @@ namespace StudentManagementSystem.Services
                 HighestGrade = finalGrades.Any() ? finalGrades.Max(fg => fg.FinalPercentage) : 0,
                 LowestGrade = finalGrades.Any() ? finalGrades.Min(fg => fg.FinalPercentage) : 0,
                 PassRate = finalGrades.Any() ?
-                    (decimal)finalGrades.Count(fg => fg.FinalPercentage >= 60) / finalGrades.Count * 100 : 0
+                    (decimal)finalGrades.Count(fg => fg.FinalPercentage >= 50) / finalGrades.Count * 100 : 0
             };
 
-            // Calculate grade distribution
-            summary.ACount = finalGrades.Count(fg => fg.FinalGradeLetter == "A");
-            summary.BCount = finalGrades.Count(fg => fg.FinalGradeLetter == "B");
-            summary.CCount = finalGrades.Count(fg => fg.FinalGradeLetter == "C");
-            summary.DCount = finalGrades.Count(fg => fg.FinalGradeLetter == "D");
+            // Calculate grade distribution for plus/minus grading scale
+            summary.ACount = finalGrades.Count(fg => fg.FinalGradeLetter.StartsWith("A"));
+            summary.BCount = finalGrades.Count(fg => fg.FinalGradeLetter.StartsWith("B"));
+            summary.CCount = finalGrades.Count(fg => fg.FinalGradeLetter.StartsWith("C"));
+            summary.DCount = finalGrades.Count(fg => fg.FinalGradeLetter.StartsWith("D"));
             summary.FCount = finalGrades.Count(fg => fg.FinalGradeLetter == "F");
 
             return summary;

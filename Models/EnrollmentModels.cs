@@ -79,7 +79,7 @@ namespace StudentManagementSystem.Models
         public string? RequestedBy { get; set; }        
         public string SelectionType { get; set; } = "specific"; // all, eligible, specific
         public EnrollmentType Type { get; set; } = EnrollmentType.Regular;
-
+        public string? Notes { get; set; }
     }
 
     public class BulkDropRequest
