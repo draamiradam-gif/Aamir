@@ -7,7 +7,7 @@ using StudentManagementSystem.ViewModels;
 
 namespace StudentManagementSystem.Controllers
 {
-    public class GradesController : Controller
+    public class GradesController : BaseController
     {
         private readonly ApplicationDbContext _context;
         private readonly IGradeService _gradeService;
@@ -40,6 +40,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignGrade(int enrollmentId, decimal mark)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (mark < 0 || mark > 100)
             {
                 TempData["Error"] = "Mark must be between 0 and 100";
@@ -59,6 +64,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Grades/Transcript/5
         public async Task<IActionResult> Transcript(int studentId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var transcript = await _gradeService.GenerateTranscriptAsync(studentId);
 
             if (transcript?.Student == null)
@@ -93,6 +103,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Grades/StudentEnrollments/5
         public async Task<IActionResult> StudentEnrollments(int studentId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var enrollments = await _gradeService.GetStudentEnrollmentsAsync(studentId);
             var student = await _context.Students.FindAsync(studentId);
 
@@ -115,6 +130,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnrollStudent(int studentId, int courseId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var success = await _gradeService.EnrollStudentInCourseAsync(studentId, courseId);
 
             if (success)
@@ -128,6 +148,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Grades/CreateTestData
         public async Task<IActionResult> CreateTestData()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var context = _context;

@@ -1,0 +1,81 @@
+﻿@model Setup2FAViewModel
+@{
+    ViewData["Title"] = "Setup Two-Factor Authentication";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-shield-alt me-2"></i>Setup Two-Factor Authentication</h1>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Admins
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card card-modern">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i>2FA Setup Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Two-factor authentication adds an extra layer of security to admin accounts.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Step 1: Scan QR Code</h6>
+                            <p>Use an authenticator app (Google Authenticator, Microsoft Authenticator, etc.) to scan this QR code:</p>
+
+                            <!-- QR Code Placeholder -->
+                            <div class="text-center border p-4 mb-3 bg-light">
+                                <i class="fas fa-qrcode fa-5x text-muted mb-3"></i>
+                                <p class="text-muted">QR Code would be displayed here</p>
+                                <small class="text-muted">Manual key: @Model.AuthenticatorKey</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6>Step 2: Enter Verification Code</h6>
+                            <p>Enter the 6-digit code from your authenticator app:</p>
+
+                            <form method="post" action="@Url.Action("Verify2FA", new { adminId = Model.AdminId })">
+                                <div class="mb-3">
+                                    <label for="verificationCode" class="form-label">Verification Code</label>
+                                    <input type="text" class="form-control" id="verificationCode" name="verificationCode"
+                                           placeholder="Enter 6-digit code" maxlength="6" required>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check me-2"></i>Verify and Enable 2FA
+                                    </button>
+                                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Cancel</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6>Supported Authenticator Apps:</h6>
+                        <div class="row text-center">
+                            <div class="col">
+                                <i class="fab fa-google fa-2x text-danger mb-2"></i>
+                                <div>Google Authenticator</div>
+                            </div>
+                            <div class="col">
+                                <i class="fab fa-microsoft fa-2x text-primary mb-2"></i>
+                                <div>Microsoft Authenticator</div>
+                            </div>
+                            <div class="col">
+                                <i class="fas fa-mobile-alt fa-2x text-success mb-2"></i>
+                                <div>Authy</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

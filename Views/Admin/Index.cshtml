@@ -1,0 +1,113 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header mb-4">
+                <h1><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
+                <p class="text-muted">Welcome to the administration portal</p>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card card-modern">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                            <h3>1,254</h3>
+                            <p class="text-muted mb-0">Total Students</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-modern">
+                        <div class="card-body text-center">
+                            <i class="fas fa-book fa-2x text-success mb-2"></i>
+                            <h3>86</h3>
+                            <p class="text-muted mb-0">Courses</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-modern">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                            <h3>94%</h3>
+                            <p class="text-muted mb-0">System Uptime</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-modern">
+                        <div class="card-body text-center">
+                            <i class="fas fa-bell fa-2x text-info mb-2"></i>
+                            <h3>12</h3>
+                            <p class="text-muted mb-0">Pending Tasks</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card card-modern">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="@Url.Action("Index", "AdminManagement")" class="btn btn-primary">
+                                    <i class="fas fa-cogs me-2"></i>Manage Admins
+                                </a>
+                                <a href="@Url.Action("Index", "UserManagement")" class="btn btn-success">
+                                    <i class="fas fa-users-cog me-2"></i>User Management
+                                </a>
+                                <a href="@Url.Action("Index", "Courses")" class="btn btn-info">
+                                    <i class="fas fa-book me-2"></i>Course Management
+                                </a>
+                                <a href="@Url.Action("Index", "Students")" class="btn btn-warning">
+                                    <i class="fas fa-user-graduate me-2"></i>Student Management
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card card-modern">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Recent Activity</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-user-plus text-success me-2"></i>
+                                        <small>New student registered</small>
+                                    </div>
+                                    <small class="text-muted">2 min ago</small>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-book text-primary me-2"></i>
+                                        <small>Course updated</small>
+                                    </div>
+                                    <small class="text-muted">1 hour ago</small>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-chart-bar text-info me-2"></i>
+                                        <small>System backup completed</small>
+                                    </div>
+                                    <small class="text-muted">3 hours ago</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

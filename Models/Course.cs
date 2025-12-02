@@ -8,6 +8,8 @@ namespace StudentManagementSystem.Models
         [NotMapped]
         public int SerialNumber { get; set; }
 
+
+
         [Required]
         [StringLength(20)]
         [Display(Name = "Course Code")]
@@ -41,9 +43,9 @@ namespace StudentManagementSystem.Models
         [Range(1, 12)]
         public int GradeLevel { get; set; } = 1;
 
-        [Required]
-        [Display(Name = "Active")]
-        public bool IsActive { get; set; } = true;
+        //[Required]
+        //[Display(Name = "Active")]
+        //public bool IsActive { get; set; } = true;
 
         [Range(1, 1000)]
         [Display(Name = "Max Students")]
@@ -71,11 +73,14 @@ namespace StudentManagementSystem.Models
         public string? Icon { get; set; }
 
 
+        //[NotMapped]
+        //[Display(Name = "Current Enrollment")]
+        //public int CurrentEnrollment => CourseEnrollments?.Count(e => e.IsActive && e.GradeStatus == GradeStatus.InProgress) ?? 0;
+
         [NotMapped]
         [Display(Name = "Current Enrollment")]
-        public int CurrentEnrollment => CourseEnrollments?.Count(e => e.IsActive && e.GradeStatus == GradeStatus.InProgress) ?? 0;
-
-
+        public int CurrentEnrollment => CourseEnrollments?.Count(e =>
+            e.IsActive && e.EnrollmentStatus == EnrollmentStatus.Active) ?? 0;
 
         public int? DepartmentId { get; set; }
         
@@ -101,23 +106,45 @@ namespace StudentManagementSystem.Models
         [ForeignKey("DepartmentId")]
         public virtual Department? CourseDepartment { get; set; }
 
+        //[NotMapped]
+        //public int Semester
+        //{
+        //    get => SemesterId;
+        //    set => SemesterId = value;
+        //}
+
+        ////[Required]
+        ////[Display(Name = "Semester")]
+        ////public int SemesterId { get; set; }  // Remove nullable
+        //[Display(Name = "Semester")]
+        //public int SemesterId { get; set; } = 0;
+        //// public int? SemesterId { get; set; }
+        //[ForeignKey("SemesterId")]
+        //[Display(Name = "Semester")]
+        //public virtual Semester? CourseSemester { get; set; }
+
+        //[NotMapped]
+        //public string SemesterDisplay => CourseSemester?.Name ?? $"Semester {SemesterId}";
+        //[ForeignKey("SemesterId")]
+        [Display(Name = "Semester")]
+        public int? SemesterId { get; set; } // ✅ Changed to nullable
+
         [NotMapped]
         public int Semester
         {
-            get => SemesterId;
-            set => SemesterId = value;
+            get => SemesterId ?? 0; // Handle null case
+            //set => SemesterId = value;
+            set => SemesterId = value == 0 ? null : value;
         }
-
-        [Required]
-        [Display(Name = "Semester")]
-        public int SemesterId { get; set; }  // Remove nullable
 
         [ForeignKey("SemesterId")]
         [Display(Name = "Semester")]
         public virtual Semester? CourseSemester { get; set; }
 
         [NotMapped]
-        public string SemesterDisplay => CourseSemester?.Name ?? $"Semester {SemesterId}";
+        public string SemesterDisplay => CourseSemester?.Name ??
+            (SemesterId.HasValue ? $"Semester {SemesterId}" : "Not assigned");
+
 
         // Computed properties
         [NotMapped]
@@ -152,8 +179,19 @@ namespace StudentManagementSystem.Models
         [ForeignKey("PrerequisiteCourseId")]
         public virtual Course? PrerequisiteCourse { get; set; }
 
+        public bool IsMandatory { get; set; } = true;
+
 
     }
 
+    public class ImportOptions
+    {
+        public bool CreateMissingSemesters { get; set; } = false;
+        public bool PreserveSemesterAssignments { get; set; } = true;
+        public string SemesterCreationMode { get; set; } = "ask"; // "ask", "auto", "ignore"
+        public List<int> SemestersToCreate { get; set; } = new List<int>();
+    }
+
+    
 
 }

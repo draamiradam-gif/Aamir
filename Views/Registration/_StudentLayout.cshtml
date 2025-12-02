@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Student Management System</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        .student-sidebar {
+            background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+            .student-sidebar .nav-link {
+                color: rgba(255, 255, 255, 0.8);
+                padding: 0.75rem 1rem;
+                margin: 0.1rem 0;
+                border-radius: 0.375rem;
+                transition: all 0.3s;
+            }
+
+                .student-sidebar .nav-link:hover,
+                .student-sidebar .nav-link.active {
+                    color: white;
+                    background: rgba(255, 255, 255, 0.1);
+                }
+
+                .student-sidebar .nav-link i {
+                    width: 1.5rem;
+                    text-align: center;
+                }
+
+        .student-header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+
+        .student-profile-img {
+            width: 80px;
+            height: 80px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Student Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block student-sidebar collapse">
+                <div class="sidebar-brand text-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        Student Portal
+                    </h5>
+                </div>
+
+                <!-- Student Profile -->
+                <div class="text-center p-3 border-bottom border-secondary">
+                    <div class="mb-3">
+                        <i class="fas fa-user-circle fa-3x text-light"></i>
+                    </div>
+                    <h6 class="mb-1">@ViewBag.StudentName</h6>
+                    <small class="text-light opacity-75">Student</small>
+                    <div class="mt-2">
+                        <small class="text-light opacity-75">
+                            GPA: @ViewBag.CurrentGPA?.ToString("F2") |
+                            Hours: @ViewBag.PassedHours
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <!-- Enhanced Student Navigation in _StudentLayout.cshtml -->
+                <nav class="nav flex-column p-3">
+                    <a class="nav-link" asp-controller="Registration" asp-action="StudentDashboard" asp-route-studentId="@Context.Session.GetString("CurrentStudentId")">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                    <a class="nav-link" asp-controller="Registration" asp-action="StudentPortal" asp-route-studentId="@Context.Session.GetString("CurrentStudentId")">
+                        <i class="fas fa-book me-2"></i>Course Registration
+                    </a>
+                    <a class="nav-link" asp-controller="Registration" asp-action="MySchedule" asp-route-studentId="@Context.Session.GetString("CurrentStudentId")">
+                        <i class="fas fa-calendar me-2"></i>My Schedule
+                    </a>
+                    <a class="nav-link" asp-controller="Registration" asp-action="MyGrades" asp-route-studentId="@Context.Session.GetString("CurrentStudentId")">
+                        <i class="fas fa-chart-bar me-2"></i>My Grades
+                    </a>
+                    <a class="nav-link" asp-controller="Registration" asp-action="Transcript" asp-route-studentId="@Context.Session.GetString("CurrentStudentId")">
+                        <i class="fas fa-file-alt me-2"></i>Transcript
+                    </a>
+                    <a class="nav-link" asp-controller="Registration" asp-action="AcademicProgress" asp-route-studentId="@Context.Session.GetString("CurrentStudentId")">
+                        <i class="fas fa-tasks me-2"></i>Academic Progress
+                    </a>
+                    <a class="nav-link" asp-controller="Registration" asp-action="CourseMaterials" asp-route-studentId="@Context.Session.GetString("CurrentStudentId")">
+                        <i class="fas fa-folder me-2"></i>Course Materials
+                    </a>
+
+                    <div class="mt-4 pt-3 border-top border-secondary">
+                        <a class="nav-link text-warning" href="#">
+                            <i class="fas fa-cog me-2"></i>Settings
+                        </a>
+                        <a class="nav-link text-danger" asp-controller="Registration" asp-action="StudentLogout">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </div>
+                </nav>
+            </div>
+
+            <!-- Main Content -->
+            <main class="col-md-9 col-lg-10 ms-sm-auto main-content">
+                <!-- Header -->
+                <header class="student-header sticky-top">
+                    <div class="container-fluid py-2">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <button class="btn btn-outline-primary d-md-none" type="button" data-bs-toggle="collapse" data-bs-target=".student-sidebar">
+                                    <i class="fas fa-bars"></i>
+                                </button>
+                                <h4 class="mb-0 ms-2 d-inline">@ViewData["Title"]</h4>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-user me-2"></i>@ViewBag.StudentName
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" asp-controller="Registration" asp-action="StudentLogout">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Page Content -->
+                <div class="container-fluid py-4">
+                    <!-- Alert Messages -->
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (TempData["WarningMessage"] != null)
+                    {
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["WarningMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @RenderBody()
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap & jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom Scripts -->
+    <script>
+        // Auto-dismiss alerts after 5 seconds
+        $(document).ready(function() {
+            setTimeout(function() {
+                $('.alert').alert('close');
+            }, 5000);
+        });
+
+        // Set active nav link
+        $(document).ready(function() {
+            const currentPage = window.location.pathname;
+            $('.nav-link').each(function() {
+                const link = $(this).attr('href');
+                if (currentPage.includes(link)) {
+                    $(this).addClass('active');
+                }
+            });
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,42 @@
+﻿@{
+    ViewData["Title"] = "Emergency System Check";
+}
+
+<div class="container mt-5">
+    <h1 class="text-danger">🚨 System Status</h1>
+
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5>Database Connection</h5>
+        </div>
+        <div class="card-body">
+            <p>
+                <strong>Status:</strong>
+                <span class="@(ViewBag.CanConnect ? "text-success" : "text-danger")">
+                    @(ViewBag.CanConnect ? "✅ CONNECTED" : "❌ NOT CONNECTED")
+                </span>
+            </p>
+
+            <p>
+                <strong>Connection String:</strong>
+                <code>@ViewBag.ConnectionString</code>
+            </p>
+
+            <div class="mt-4">
+                <h6>Troubleshooting Steps:</h6>
+                <ol>
+                    <li><a href="/debug/db" target="_blank">Check Database Status</a></li>
+                    <li><a href="/debug/migrate" target="_blank">Apply Database Migrations</a></li>
+                    <li><a href="/debug/tables" target="_blank">List Database Tables</a></li>
+                    <li><a href="/health" target="_blank">Health Check</a></li>
+                </ol>
+            </div>
+
+            <div class="mt-4">
+                <a href="/" class="btn btn-primary">Try Home Page Again</a>
+                <a href="/Home/PortalAccess" class="btn btn-secondary">Go to Portal Access</a>
+                <a href="/Home/AdminLogin" class="btn btn-success">Admin Login</a>
+            </div>
+        </div>
+    </div>
+</div>

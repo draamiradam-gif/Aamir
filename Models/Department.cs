@@ -38,8 +38,8 @@ namespace StudentManagementSystem.Models
         [Display(Name = "Available Benches")]
         public int AvailableBenches { get; set; } = 0;
 
-        [Display(Name = "Active")]
-        public bool IsActive { get; set; } = true;
+        //[Display(Name = "Active")]
+        //public bool IsActive { get; set; } = true;
 
         // Navigation properties
         [ForeignKey("CollegeId")]

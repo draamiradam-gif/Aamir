@@ -1,0 +1,420 @@
+﻿﻿
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Academic Management System</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+@*     <style>
+        /* Fixed Layout Styles */
+        .layout-container {
+            display: flex;
+            min-height: calc(100vh - var(--header-height));
+            margin-top: var(--header-height);
+        }
+
+        .sidebar-container {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--secondary-bg) 100%);
+            box-shadow: 4px 0 30px var(--shadow-color);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            height: calc(100vh - var(--header-height));
+            z-index: 1015;
+            transition: transform 0.3s ease;
+        }
+
+        .main-content-container {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+            background: transparent;
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        .content-area {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 40px var(--shadow-color);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            min-height: calc(100vh - var(--header-height) - 4rem);
+        }
+
+        /* Mobile Responsive */
+        @@media (max-width: 768px) {
+            .sidebar-container {
+                transform: translateX(-100%);
+                z-index: 1030;
+            }
+
+                .sidebar-container.mobile-open {
+                    transform: translateX(0);
+                }
+
+            .main-content-container {
+                margin-left: 0;
+                padding: 1rem;
+                width: 100%;
+            }
+        }
+
+        /* Ensure proper variable definitions */
+        :root {
+            --sidebar-width: 280px;
+            --header-height: 70px;
+        }
+    </style> *@
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-main navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <!-- Brand Logo -->
+            <a class="navbar-brand text-white d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                <i class="fas fa-university me-3 fs-2"></i>
+                <div>
+                    <div class="fw-bold fs-4">AcademicPro</div>
+                    <div class="small opacity-75">Management System</div>
+                </div>
+            </a>
+
+            <!-- Mobile Menu Button -->
+            <button class="navbar-toggler mobile-menu-btn d-md-none" type="button" onclick="toggleMobileSidebar()">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- User Status & Actions -->
+            <div class="navbar-nav ms-auto">
+                @using Microsoft.AspNetCore.Identity
+                @inject SignInManager<IdentityUser> SignInManager
+                @inject UserManager<IdentityUser> UserManager
+
+                @if (SignInManager.IsSignedIn(User))
+                {
+                    <!-- User is logged in via Identity -->
+                    var user = await UserManager.GetUserAsync(User);
+                    if (user != null)
+                    {
+                        var roles = await UserManager.GetRolesAsync(user);
+                        var isAdmin = roles.Contains("Admin") || roles.Contains("SuperAdmin");
+                        var isStudent = roles.Contains("Student");
+                        var isFaculty = roles.Contains("Faculty");
+
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle
+                                              @(isAdmin ? "text-success" :
+                                                                       isFaculty ? "text-info" :
+                                                                       isStudent ? "text-warning" : "text-primary")"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="@(isAdmin ? "fas fa-user-shield" :
+                                                                     isFaculty ? "fas fa-chalkboard-teacher" :
+                                                                     isStudent ? "fas fa-user-graduate" : "fas fa-user") me-2"></i>
+                        @User.Identity?.Name
+                        @if (roles.Any())
+                                {
+                                    <small class="opacity-75">(@string.Join(", ", roles))</small>
+                                }
+                            </a>
+                            <ul class="dropdown-menu">
+                                @if (isAdmin)
+                                {
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("Index", "UserManagement")">
+                                            <i class="fas fa-users me-2"></i>User Management
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("Index", "Courses")">
+                                            <i class="fas fa-book me-2"></i>Course Management
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("EmergencyAccess", "Emergency")">
+                                            <i class="fas fa-tools me-2"></i>System Tools
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                }
+                                else if (isStudent)
+                                {
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("StudentDashboard", "Home", new { studentId = "0" })">
+                                            <i class="fas fa-tachometer-alt me-2"></i>Student Dashboard
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("MyGrades", "Registration", new { studentId = "0" })">
+                                            <i class="fas fa-chart-line me-2"></i>My Grades
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                }
+                                else if (isFaculty)
+                                {
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("Index", "Courses")">
+                                            <i class="fas fa-book me-2"></i>My Courses
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("Index", "Grades")">
+                                            <i class="fas fa-graduation-cap me-2"></i>Grade Management
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                }
+                                <li>
+                                    <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home")" method="post">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                }
+                else if (ViewData["UserType"] as string == "Student")
+                {
+                    <!-- Student is logged in via session (legacy system) -->
+                    var studentName = Context.Session.GetString("StudentName");
+                    var currentStudentId = ViewData["CurrentStudentId"]?.ToString();
+
+                    if (!string.IsNullOrEmpty(studentName) && !string.IsNullOrEmpty(currentStudentId))
+                    {
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-warning" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-graduate me-2"></i>
+                                @studentName
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("StudentDashboard", "Home", new { studentId = currentStudentId })">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Student Dashboard
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("StudentLogout", "Home")">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="nav-item">
+                            <a class="nav-link" href="@Url.Action("StudentPortalEntry", "Home")">
+                                <i class="fas fa-user-graduate me-2"></i>Student Login
+                            </a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <!-- Guest view -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-2"></i>Portal Access
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("PortalAccess", "Home")">
+                                    <i class="fas fa-door-open me-2"></i>Portal Selection
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("StudentPortalEntry", "Home")">
+                                    <i class="fas fa-user-graduate me-2"></i>Student Portal
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("AdminLogin", "Home")">
+                                    <i class="fas fa-user-shield me-2"></i>Admin Portal
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-warning" href="@Url.Action("Access", "Emergency")">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Emergency Access
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                }
+            </div>
+
+            <!-- Theme Selector in Navbar -->
+            <div class="navbar-nav">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-palette me-2"></i>Themes
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item theme-quick-select" data-theme="dark" href="#">Dark</a></li>
+                        <li><a class="dropdown-item theme-quick-select" data-theme="light" href="#">Light</a></li>
+                        <li><a class="dropdown-item theme-quick-select" data-theme="blue" href="#">Ocean</a></li>
+                        <li><a class="dropdown-item theme-quick-select" data-theme="green" href="#">Forest</a></li>
+                        <li><a class="dropdown-item theme-quick-select" data-theme="purple" href="#">Royal</a></li>
+                        <li><a class="dropdown-item theme-quick-select" data-theme="midnight" href="#">Midnight</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Layout Container -->
+    <div class="layout-container">
+        <!-- Sidebar -->
+        <div class="sidebar-container d-none d-md-block" id="desktopSidebar">
+            <partial name="_MainNavigation" />
+        </div>
+
+        <!-- Mobile Sidebar Backdrop -->
+        <div class="sidebar-backdrop d-md-none" id="sidebarBackdrop" style="display: none;"></div>
+
+        <!-- Mobile Sidebar -->
+        <div class="sidebar-container d-md-none" id="mobileSidebar">
+            <partial name="_MainNavigation" />
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content-container">
+            <div class="content-area">
+                <!-- Alert Messages -->
+                <div class="container-fluid p-0">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-2 fs-5"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Success!</strong> @TempData["SuccessMessage"]
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle me-2 fs-5"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Error!</strong> @TempData["ErrorMessage"]
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </div>
+                    }
+                    @if (TempData["WarningMessage"] != null)
+                    {
+                        <div class="alert alert-warning alert-dismissible fade show m-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Warning!</strong> @TempData["WarningMessage"]
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Page Content -->
+                <div class="page-content">
+                    @RenderBody()
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-2">
+                        <i class="fas fa-university me-2"></i>AcademicPro Management System
+                    </h6>
+                    <p class="mb-0 opacity-75 small">
+                        Comprehensive platform for modern academic institution management
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <p class="mb-0 opacity-75 small">
+                        &copy; 2024 AcademicPro System v2.0
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // Mobile sidebar functionality
+        function toggleMobileSidebar() {
+            const mobileSidebar = document.getElementById('mobileSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+
+            mobileSidebar.classList.toggle('mobile-open');
+            backdrop.style.display = mobileSidebar.classList.contains('mobile-open') ? 'block' : 'none';
+        }
+
+        // Close mobile sidebar when clicking backdrop
+        document.getElementById('sidebarBackdrop').addEventListener('click', function() {
+            toggleMobileSidebar();
+        });
+
+        // Quick theme selection from navbar
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.theme-quick-select').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const theme = this.dataset.theme;
+                    if (typeof ThemeManager !== 'undefined') {
+                        ThemeManager.setTheme(theme);
+                    }
+                });
+            });
+
+            // Initialize theme manager if it exists
+            if (typeof ThemeManager !== 'undefined') {
+                ThemeManager.init();
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                // Close mobile sidebar on desktop
+                const mobileSidebar = document.getElementById('mobileSidebar');
+                const backdrop = document.getElementById('sidebarBackdrop');
+                mobileSidebar.classList.remove('mobile-open');
+                backdrop.style.display = 'none';
+            }
+        });
+    </script>
+
+   @* @await RenderSectionAsync("Scripts", required: false)*@
+</body>
+</html>

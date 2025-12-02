@@ -12,7 +12,7 @@ using StudentManagementSystem.Models.ViewModels;
 
 namespace StudentManagementSystem.Controllers
 {
-    public class UniversityController : Controller
+    public class UniversityController : BaseController
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<UniversityController> _logger;
@@ -26,6 +26,11 @@ namespace StudentManagementSystem.Controllers
         // GET: University
         public async Task<IActionResult> Index()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var universities = await _context.Universities
                 .Include(u => u.Colleges)
                 .OrderBy(u => u.Name)
@@ -51,6 +56,11 @@ namespace StudentManagementSystem.Controllers
         // GET: University/Create
         public IActionResult Create()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             return View();
         }
 
@@ -59,6 +69,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,Code,Description,Address,Email,Phone,Website,EstablishmentYear,IsActive,AllowMultipleColleges")] University university)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (ModelState.IsValid)
             {
                 // Check if code already exists
@@ -83,6 +98,11 @@ namespace StudentManagementSystem.Controllers
         // GET: University/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var university = await _context.Universities.FindAsync(id);
@@ -96,6 +116,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Code,Description,Address,Email,Phone,Website,EstablishmentYear,IsActive,AllowMultipleColleges")] University university)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id != university.Id) return NotFound();
 
             if (ModelState.IsValid)
@@ -154,6 +179,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var university = await _context.Universities
                 .Include(u => u.Colleges)
                 .FirstOrDefaultAsync(u => u.Id == id);
@@ -179,6 +209,11 @@ namespace StudentManagementSystem.Controllers
         // GET: University/Duplicate/5
         public async Task<IActionResult> Duplicate(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var university = await _context.Universities.FindAsync(id);
@@ -198,6 +233,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Duplicate(int id, DuplicateViewModel model)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id != model.SourceId) return NotFound();
 
             var sourceUniversity = await _context.Universities
@@ -262,6 +302,11 @@ namespace StudentManagementSystem.Controllers
         // Update the Dashboard method:
         public async Task<IActionResult> Dashboard()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var universities = await _context.Universities
                 .Include(u => u.Colleges)
                 .Where(u => u.IsActive)
@@ -288,6 +333,11 @@ namespace StudentManagementSystem.Controllers
         // GET: University/Dashboard/5
         public async Task<IActionResult> Dashboard(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var university = await _context.Universities
@@ -332,10 +382,6 @@ namespace StudentManagementSystem.Controllers
 
             return View("UniversityDashboard", viewModel);
         }
-
-
-
-
 
         // GET: University/StructureOverview
         public async Task<IActionResult> StructureOverview()

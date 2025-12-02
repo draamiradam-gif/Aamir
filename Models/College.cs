@@ -23,8 +23,9 @@ namespace StudentManagementSystem.Models
         [Display(Name = "Description")]
         public string? Description { get; set; }
 
-        [Display(Name = "Active")]
-        public bool IsActive { get; set; } = true;
+        //[Display(Name = "Active")]
+        //public bool IsActive { get; set; } = true;
+        
         [NotMapped]
         public int DepartmentCount => Departments?.Count ?? 0;
 

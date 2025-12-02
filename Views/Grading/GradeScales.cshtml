@@ -1,0 +1,114 @@
+﻿@model List<GradeScale>
+@{
+    ViewData["Title"] = "Grade Scales";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4">Grade Scales</h1>
+            <partial name="_AlertMessages" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Grade Scale Configuration</h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addGradeScaleModal">
+                        <i class="fas fa-plus"></i> Add Grade Scale
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Grade Letter</th>
+                                        <th>Min %</th>
+                                        <th>Max %</th>
+                                        <th>Grade Points</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var scale in Model)
+                                    {
+                                        <tr>
+                                            <td><strong>@scale.GradeLetter</strong></td>
+                                            <td>@scale.MinPercentage.ToString("F1")%</td>
+                                            <td>@scale.MaxPercentage.ToString("F1")%</td>
+                                            <td>@scale.GradePoints.ToString("F2")</td>
+                                            <td>@scale.Description</td>
+                                            <td>
+                                                <span class="badge @(scale.IsActive ? "bg-success" : "bg-secondary")">
+                                                    @(scale.IsActive ? "Active" : "Inactive")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-warning"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#editGradeScaleModal"
+                                                            data-id="@scale.Id"
+                                                            data-letter="@scale.GradeLetter"
+                                                            data-min="@scale.MinPercentage"
+                                                            data-max="@scale.MaxPercentage"
+                                                            data-points="@scale.GradePoints"
+                                                            data-desc="@scale.Description"
+                                                            data-active="@scale.IsActive">
+                                                        Edit
+                                                    </button>
+                                                    <form method="post" asp-action="DeleteGradeScale" class="d-inline">
+                                                        <input type="hidden" name="id" value="@scale.Id" />
+                                                        <button type="submit" class="btn btn-outline-danger"
+                                                                onclick="return confirm('Are you sure you want to delete this grade scale?')">
+                                                            Delete
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <p>No grade scales configured. Add grade scales to define how percentages map to letter grades.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Default Grade Scale</h6>
+                </div>
+                <div class="card-body">
+                    <div class="grade-scale-preview">
+                        @foreach (var scale in Model.Where(s => s.IsActive).OrderByDescending(s => s.MinPercentage))
+                        {
+                            <div class="grade-item d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                                <span class="grade-letter fw-bold">@scale.GradeLetter</span>
+                                <span class="grade-range">@scale.MinPercentage - @scale.MaxPercentage%</span>
+                                <span class="grade-points badge bg-primary">@scale.GradePoints</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modals would go here -->

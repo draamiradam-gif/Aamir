@@ -157,7 +157,7 @@
             // Set minimum dates
             if (startDateInput) {
                 const today = new Date().toISOString().split('T')[0];
-                startDateInput.min = today;
+                //startDateInput.min = today;
 
                 startDateInput.addEventListener('change', function() {
                     if (endDateInput) endDateInput.min = this.value;

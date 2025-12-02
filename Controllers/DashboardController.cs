@@ -7,7 +7,7 @@ using StudentManagementSystem.Models;
 namespace StudentManagementSystem.Controllers
 {
     [Authorize]
-    public class DashboardController : Controller
+    public class DashboardController : BaseController
     {
         private readonly IStudentService _studentService;
         private readonly ILogger<DashboardController> _logger;
@@ -20,6 +20,11 @@ namespace StudentManagementSystem.Controllers
 
         public async Task<IActionResult> Index()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var students = await _studentService.GetAllStudentsAsync();

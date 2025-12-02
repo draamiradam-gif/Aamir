@@ -11,7 +11,7 @@ using StudentManagementSystem.Models.ViewModels;
 namespace StudentManagementSystem.Controllers
 {
     [Authorize]
-    public class StudentsController : Controller
+    public class StudentsController : BaseController
     {
         private readonly IStudentService _studentService;
 
@@ -26,6 +26,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Students
         public async Task<IActionResult> Index(string searchString, string sortBy, string sortOrder, int? pageNumber)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 // Get all students
@@ -136,6 +141,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Students/Create
         public IActionResult Create()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             return View();
         }
 
@@ -144,6 +154,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Student student)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (!ModelState.IsValid)
                 return View(student);
 
@@ -160,6 +175,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Students/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var student = await _studentService.GetStudentByIdAsync(id);
             if (student == null)
             {
@@ -173,6 +193,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Student student)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id != student.Id)
                 return NotFound();
 
@@ -196,6 +221,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Students/Import
         public IActionResult Import()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             return View();
         }
 
@@ -206,6 +236,11 @@ namespace StudentManagementSystem.Controllers
         [RequestFormLimits(MultipartBodyLengthLimit = 100 * 1024 * 1024)]
         public async Task<IActionResult> Import(IFormFile file)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 _logger.LogInformation("Starting file upload process");
@@ -265,6 +300,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Students/ImportReview
         public IActionResult ImportReview()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 _logger.LogInformation("Loading ImportReview page");
@@ -366,6 +406,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Students/Export
         public async Task<IActionResult> Export()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 Console.WriteLine("Export method called");
@@ -419,6 +464,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExportSelected(int[] selectedStudents)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 if (selectedStudents == null || selectedStudents.Length == 0)
@@ -462,6 +512,11 @@ namespace StudentManagementSystem.Controllers
         [HttpGet]
         public IActionResult ImportReview(string? sortBy, string? sortOrder, string? searchString)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 _logger.LogInformation("Loading ImportReview page with filters");
@@ -670,36 +725,36 @@ namespace StudentManagementSystem.Controllers
 
             // Headers with instructions
             string[] headers = {
-        "StudentId (Required)",
-        "Name (Required)",
-        "SeatNumber",
-        "NationalId",
-        "Department",
-        "StudyLevel",
-        "Semester",
-        "Grade",
-        "Phone",
-        "Email",
-        "GPA",
-        "Percentage",
-        "PassedHours"
-    };
+                "StudentId (Required)",
+                "Name (Required)",
+                "SeatNumber",
+                "NationalId",
+                "Department",
+                "StudyLevel",
+                "Semester",
+                "Grade",
+                "Phone",
+                "Email",
+                "GPA",
+                "Percentage",
+                "PassedHours"
+            };
 
             string[] descriptions = {
-        "Unique student identifier",
-        "Full name of student",
-        "Classroom seat number",
-        "National identification number",
-        "Department name",
-        "Study level/year",
-        "Academic semester",
-        "Grade/Class",
-        "Phone number",
-        "Email address",
-        "Grade Point Average (0.00-4.00)",
-        "Percentage score (0-100)",
-        "Completed credit hours"
-    };
+                "Unique student identifier",
+                "Full name of student",
+                "Classroom seat number",
+                "National identification number",
+                "Department name",
+                "Study level/year",
+                "Academic semester",
+                "Grade/Class",
+                "Phone number",
+                "Email address",
+                "Grade Point Average (0.00-4.00)",
+                "Percentage score (0-100)",
+                "Completed credit hours"
+            };
 
             // Add headers and descriptions
             for (int i = 0; i < headers.Length; i++)
@@ -720,9 +775,9 @@ namespace StudentManagementSystem.Controllers
             // Add sample data
             var sampleStudents = new[]
             {
-        new { StudentId = "20240001", Name = "أحمد محمد", SeatNumber = "CS-001", Department = "Computer Science", GPA = 3.8m },
-        new { StudentId = "20240002", Name = "فاطمة علي", SeatNumber = "CS-002", Department = "Computer Science", GPA = 3.6m }
-    };
+                new { StudentId = "20240001", Name = "أحمد محمد", SeatNumber = "CS-001", Department = "Computer Science", GPA = 3.8m },
+                new { StudentId = "20240002", Name = "فاطمة علي", SeatNumber = "CS-002", Department = "Computer Science", GPA = 3.6m }
+            };
 
             for (int i = 0; i < sampleStudents.Length; i++)
             {
@@ -743,6 +798,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Students/Delete/5
         public async Task<IActionResult> Delete(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var student = await _studentService.GetStudentByIdAsync(id);
             if (student == null)
             {
@@ -756,6 +816,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             await _studentService.DeleteStudentAsync(id);
             return RedirectToAction(nameof(Index));
         }
@@ -765,6 +830,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteMultiple(int[] selectedStudents)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 Console.WriteLine($"DeleteMultiple called with {selectedStudents?.Length ?? 0} students");
@@ -809,6 +879,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAll()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var allStudents = await _studentService.GetAllStudentsAsync();
@@ -842,6 +917,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ImportExecute(ImportSettings settings)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 _logger.LogInformation("Starting import execution");

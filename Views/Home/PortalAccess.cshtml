@@ -1,0 +1,127 @@
+﻿@{
+    ViewData["Title"] = "Portal Access";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3><i class="fas fa-university me-2"></i>Academic Management System</h3>
+                    <p class="mb-0">Select Your Access Method</p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Student Portal -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 text-center portal-card">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <i class="fas fa-user-graduate fa-4x text-primary portal-icon"></i>
+                                    </div>
+                                    <h4 class="card-title">Student Portal</h4>
+                                    <p class="card-text">Access your courses, grades, and registration.</p>
+                                    <a href="@Url.Action("StudentPortalEntry", "Home")" class="btn btn-primary btn-lg w-100">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Student Login
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Portal -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 text-center portal-card">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <i class="fas fa-user-shield fa-4x text-success portal-icon"></i>
+                                    </div>
+                                    <h4 class="card-title">Admin Portal</h4>
+                                    <p class="card-text">Manage students, courses, and system settings.</p>
+                                    <a href="@Url.Action("AdminLogin", "Home")" class="btn btn-success btn-lg w-100">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Admin Login
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="mt-4">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>System Statistics</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-3 mb-3">
+                                        <div class="stat-box">
+                                            <h3 class="text-primary">@(ViewBag.TotalStudents ?? "0")</h3>
+                                            <p class="text-muted mb-0">Students</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="stat-box">
+                                            <h3 class="text-success">@(ViewBag.TotalCourses ?? "0")</h3>
+                                            <p class="text-muted mb-0">Courses</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="stat-box">
+                                            <h3 class="text-warning">@(ViewBag.ActiveCourses ?? "0")</h3>
+                                            <p class="text-muted mb-0">Active Courses</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="stat-box">
+                                            <h3 class="text-info">@(ViewBag.CurrentSemesterName ?? "N/A")</h3>
+                                            <p class="text-muted mb-0">Current Semester</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-center text-muted">
+                    <small>&copy; @DateTime.Now.Year Academic Management System v2.0</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .portal-card {
+        transition: transform 0.3s ease;
+        border: 1px solid #dee2e6;
+    }
+
+        .portal-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+    .stat-box {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+
+        .stat-box h3 {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+</style>
+@section Scripts {
+    <script>
+        // Clear any stuck session data when accessing portal
+        sessionStorage.clear();
+        localStorage.removeItem('userSession');
+
+        // Clear cookies
+        document.cookie.split(";").forEach(function(c) {
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+    </script>
+}

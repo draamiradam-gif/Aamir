@@ -1,0 +1,332 @@
+﻿@model BulkAdminOperationViewModel
+@{
+    ViewData["Title"] = "Bulk Admin Operations";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-cogs me-2"></i>Bulk Admin Operations</h1>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-modern">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Perform Bulk Operations</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="BulkOperations">
+                        @Html.AntiForgeryToken()
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="form-label fw-bold">Select Admins</label>
+                                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background: var(--card-bg);">
+                                        @if (Model.AvailableAdmins != null && Model.AvailableAdmins.Any())
+                                        {
+                                            <div class="mb-2">
+                                                <button type="button" class="btn btn-sm btn-outline-info mb-2" onclick="selectAllAdmins()">
+                                                    <i class="fas fa-check-square me-1"></i>Select All
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="deselectAllAdmins()">
+                                                    <i class="fas fa-times-circle me-1"></i>Deselect All
+                                                </button>
+                                            </div>
+
+                                            @foreach (var admin in Model.AvailableAdmins)
+                                            {
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input admin-checkbox"
+                                                           type="checkbox"
+                                                           name="SelectedAdminIds"
+                                                           value="@admin.AdminId"
+                                                           id="admin_@admin.AdminId">
+                                                    <label class="form-check-label" for="admin_@admin.AdminId">
+                                                        <span class="badge bg-info me-2">@admin.AdminType</span>
+                                                        @admin.AdminName
+                                                        <small class="text-muted d-block">@admin.Email</small>
+                                                    </label>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center text-muted py-3">
+                                                <i class="fas fa-users-slash fa-2x mb-2"></i>
+                                                <p>No admins available</p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="OperationType" class="form-label fw-bold"></label>
+                                    <select asp-for="OperationType" class="form-control" id="operationType">
+                                        <option value="">-- Select Operation --</option>
+                                        <option value="UpdatePermissions">Update Permissions</option>
+                                        <option value="ChangeAdminType">Change Admin Type</option>
+                                        <option value="Activate">Activate Admins</option>
+                                        <option value="Deactivate">Deactivate Admins</option>
+                                    </select>
+                                    <span asp-validation-for="OperationType" class="text-danger"></span>
+                                </div>
+
+                                <!-- Permissions Section (hidden by default) -->
+                                <div id="permissionsSection" class="form-group mb-3" style="display: none;">
+                                    <label class="form-label fw-bold">Select Permissions</label>
+                                    <div class="border rounded p-3" style="max-height: 250px; overflow-y: auto; background: var(--card-bg);">
+                                        @{
+                                            var allPermissions = Enum.GetValues<PermissionModule>();
+                                        }
+                                        <div class="mb-2">
+                                            <button type="button" class="btn btn-sm btn-outline-info mb-2" onclick="selectAllPermissions()">
+                                                <i class="fas fa-check-square me-1"></i>Select All
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="deselectAllPermissions()">
+                                                <i class="fas fa-times-circle me-1"></i>Deselect All
+                                            </button>
+                                        </div>
+
+                                        @foreach (var permission in allPermissions)
+                                        {
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input permission-checkbox"
+                                                       type="checkbox"
+                                                       name="NewPermissions"
+                                                       value="@permission"
+                                                       id="perm_@permission">
+                                                <label class="form-check-label" for="perm_@permission">
+                                                    <span class="badge bg-primary me-2">@permission</span>
+                                                    @GetPermissionDescription(permission)
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Admin Type Section (hidden by default) -->
+                                <div id="adminTypeSection" class="form-group mb-3" style="display: none;">
+                                    <label asp-for="NewAdminType" class="form-label fw-bold"></label>
+                                    <select asp-for="NewAdminType" class="form-control">
+                                        <option value="">-- Select Admin Type --</option>
+                                        @foreach (AdminType type in Enum.GetValues(typeof(AdminType)))
+                                        {
+                                            <option value="@type">@type</option>
+                                        }
+                                    </select>
+                                    <span asp-validation-for="NewAdminType" class="text-danger"></span>
+                                </div>
+
+                                <!-- Operation Preview -->
+                                <div id="operationPreview" class="alert alert-info mt-3" style="display: none;">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <span id="previewText"></span>
+                                </div>
+
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                                        <i class="fas fa-play-circle me-2"></i>Execute Bulk Operation
+                                    </button>
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        This action will affect all selected admins
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Operation type change handler
+            $('#operationType').change(function() {
+                var selectedOp = $(this).val();
+
+                // Hide all sections
+                $('#permissionsSection').hide();
+                $('#adminTypeSection').hide();
+                $('#operationPreview').hide();
+
+                // Show relevant section
+                if (selectedOp === 'UpdatePermissions') {
+                    $('#permissionsSection').show();
+                    updatePreview('Update permissions for selected admins');
+                } else if (selectedOp === 'ChangeAdminType') {
+                    $('#adminTypeSection').show();
+                    updatePreview('Change admin type for selected admins');
+                } else if (selectedOp === 'Activate') {
+                    updatePreview('Activate selected admins');
+                } else if (selectedOp === 'Deactivate') {
+                    updatePreview('Deactivate selected admins');
+                }
+            });
+
+            // Update admin type preview
+            $('#NewAdminType').change(function() {
+                if ($(this).val()) {
+                    updatePreview('Change admin type to: ' + $(this).val());
+                }
+            });
+
+            // Update permissions preview
+            $('.permission-checkbox').change(function() {
+                var selectedCount = $('.permission-checkbox:checked').length;
+                updatePreview('Set ' + selectedCount + ' permission(s)');
+            });
+
+            // Form validation
+            $('form').submit(function(e) {
+                var selectedAdmins = $('.admin-checkbox:checked').length;
+                var operationType = $('#operationType').val();
+
+                if (selectedAdmins === 0) {
+                    alert('Please select at least one admin.');
+                    e.preventDefault();
+                    return false;
+                }
+
+                if (!operationType) {
+                    alert('Please select an operation type.');
+                    e.preventDefault();
+                    return false;
+                }
+
+                if (operationType === 'UpdatePermissions' && $('.permission-checkbox:checked').length === 0) {
+                    alert('Please select at least one permission.');
+                    e.preventDefault();
+                    return false;
+                }
+
+                if (operationType === 'ChangeAdminType' && !$('#NewAdminType').val()) {
+                    alert('Please select a new admin type.');
+                    e.preventDefault();
+                    return false;
+                }
+
+                return confirm('Are you sure you want to perform this bulk operation on ' + selectedAdmins + ' admin(s)?');
+            });
+        });
+
+        function selectAllAdmins() {
+            $('.admin-checkbox').prop('checked', true);
+        }
+
+        function deselectAllAdmins() {
+            $('.admin-checkbox').prop('checked', false);
+        }
+
+        function selectAllPermissions() {
+            $('.permission-checkbox').prop('checked', true);
+            var selectedCount = $('.permission-checkbox:checked').length;
+            updatePreview('Set ' + selectedCount + ' permission(s)');
+        }
+
+        function deselectAllPermissions() {
+            $('.permission-checkbox').prop('checked', false);
+            updatePreview('Set 0 permission(s)');
+        }
+
+        function updatePreview(text) {
+            $('#previewText').text(text);
+            $('#operationPreview').show();
+        }
+    </script>
+}
+
+@functions {
+    public string GetPermissionDescription(PermissionModule permission)
+    {
+        return permission switch
+        {
+            // User Management
+            PermissionModule.UserManagement_View => "View user accounts",
+            PermissionModule.UserManagement_Create => "Create user accounts",
+            PermissionModule.UserManagement_Edit => "Edit user information",
+            PermissionModule.UserManagement_Delete => "Delete user accounts",
+            PermissionModule.UserManagement_Export => "Export user data",
+
+            // Student Management
+            PermissionModule.Student_View => "View student information",
+            PermissionModule.Student_Create => "Create student records",
+            PermissionModule.Student_Edit => "Edit student information",
+            PermissionModule.Student_Delete => "Delete student records",
+            PermissionModule.Student_Export => "Export student data",
+            PermissionModule.Student_Import => "Import student data",
+
+            // Course Management
+            PermissionModule.Course_View => "View courses",
+            PermissionModule.Course_Create => "Create courses",
+            PermissionModule.Course_Edit => "Edit courses",
+            PermissionModule.Course_Delete => "Delete courses",
+            PermissionModule.Course_Export => "Export course data",
+            PermissionModule.Course_Import => "Import course data",
+
+            // Grade Management
+            PermissionModule.Grade_View => "View grades",
+            PermissionModule.Grade_Edit => "Enter and modify grades",
+            PermissionModule.Grade_Delete => "Delete grade records",
+            PermissionModule.Grade_Export => "Export grade reports",
+            PermissionModule.Grade_Import => "Import grade data",
+
+            // Finance Management
+            PermissionModule.Finance_View => "View financial records",
+            PermissionModule.Finance_Create => "Create financial records",
+            PermissionModule.Finance_Edit => "Edit financial information",
+            PermissionModule.Finance_Delete => "Delete financial records",
+            PermissionModule.Finance_Export => "Export financial data",
+            PermissionModule.Finance_Reports => "Generate financial reports",
+
+            // University Structure
+            PermissionModule.University_View => "View university information",
+            PermissionModule.University_Create => "Create university records",
+            PermissionModule.University_Edit => "Edit university details",
+            PermissionModule.University_Delete => "Delete university records",
+
+            // College Management
+            PermissionModule.College_View => "View college information",
+            PermissionModule.College_Create => "Create college records",
+            PermissionModule.College_Edit => "Edit college details",
+            PermissionModule.College_Delete => "Delete college records",
+
+            // Department Management
+            PermissionModule.Department_View => "View department information",
+            PermissionModule.Department_Create => "Create department records",
+            PermissionModule.Department_Edit => "Edit department details",
+            PermissionModule.Department_Delete => "Delete department records",
+
+            // System Administration
+            PermissionModule.System_Backup => "Create system backups",
+            PermissionModule.System_Restore => "Restore from backups",
+            PermissionModule.System_Logs => "View system logs",
+            PermissionModule.System_Settings => "Configure system settings",
+
+            // Admin Management
+            PermissionModule.Admin_View => "View admin accounts",
+            PermissionModule.Admin_Create => "Create admin accounts",
+            PermissionModule.Admin_Edit => "Edit admin privileges",
+            PermissionModule.Admin_Delete => "Delete admin accounts",
+            PermissionModule.Admin_Permissions => "Manage permissions",
+
+            // Application Management
+            PermissionModule.Application_View => "View applications",
+            PermissionModule.Application_Approve => "Approve applications",
+            PermissionModule.Application_Reject => "Reject applications",
+            PermissionModule.Application_Export => "Export application data",
+
+            _ => permission.ToString().Replace('_', ' ')
+        };
+    }
+    
+}

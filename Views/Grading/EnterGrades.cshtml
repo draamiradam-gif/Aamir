@@ -1,0 +1,143 @@
+﻿@model StudentManagementSystem.Controllers.EnterGradesViewModel
+@{
+    ViewData["Title"] = "Enter Grades";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4">Enter Grades</h1>
+            <partial name="_AlertMessages" />
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>@Model.Course?.CourseCode - @Model.Course?.CourseName</h5>
+                    <p class="mb-0 text-muted">Semester: @Model.Semester?.Name</p>
+                </div>
+                <div class="card-body">
+                    <!-- Component Selection -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Select Grading Component:</strong></label>
+                            <div class="list-group">
+                                @foreach (var component in Model.Components)
+                                {
+                                    <a href="@Url.Action("EnterGrades", new { courseId = Model.Course?.Id, semesterId = Model.Semester?.Id, componentId = component.Id })"
+                                       class="list-group-item list-group-item-action @(Model.SelectedComponent?.Id == component.Id ? "active" : "")">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">@component.Name</h6>
+                                            <small>@component.WeightPercentage%</small>
+                                        </div>
+                                        <p class="mb-1">@component.ComponentType</p>
+                                        <small>Max Marks: @component.MaximumMarks</small>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            @if (Model.SelectedComponent != null)
+                            {
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6>Selected Component</h6>
+                                        <p><strong>@Model.SelectedComponent.Name</strong></p>
+                                        <p>Type: @Model.SelectedComponent.ComponentType</p>
+                                        <p>Weight: @Model.SelectedComponent.WeightPercentage%</p>
+                                        <p>Max Marks: @Model.SelectedComponent.MaximumMarks</p>
+                                        <p>Students: @Model.Enrollments.Count</p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Grades Entry Form -->
+                    @if (Model.SelectedComponent != null)
+                    {
+                        <form method="post" asp-action="SaveGrades">
+                            <input type="hidden" name="[0].GradingComponentId" value="@Model.SelectedComponent.Id" />
+                            <input type="hidden" name="[0].CourseId" value="@Model.Course?.Id" />
+                            <input type="hidden" name="[0].SemesterId" value="@Model.Semester?.Id" />
+
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Student ID</th>
+                                            <th>Student Name</th>
+                                            <th>Marks Obtained</th>
+                                            <th>Absent</th>
+                                            <th>Exempted</th>
+                                            <th>Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (int i = 0; i < Model.Enrollments.Count; i++)
+                                        {
+                                            var enrollment = Model.Enrollments[i];
+                                            var existingGrade = Model.StudentGrades.FirstOrDefault(sg =>
+                                            sg.StudentId == enrollment.StudentId &&
+                                            sg.GradingComponentId == Model.SelectedComponent.Id);
+
+                                            <tr>
+                                                <td>
+                                                    @enrollment.Student?.StudentId
+                                                    <input type="hidden" name="@($"[{i}].StudentId")" value="@enrollment.StudentId" />
+                                                    <input type="hidden" name="@($"[{i}].GradingComponentId")" value="@Model.SelectedComponent.Id" />
+                                                    <input type="hidden" name="@($"[{i}].CourseId")" value="@Model.Course?.Id" />
+                                                    <input type="hidden" name="@($"[{i}].SemesterId")" value="@Model.Semester?.Id" />
+                                                </td>
+                                                <td>@enrollment.Student?.Name</td>
+                                                <td>
+                                                    <input type="number" class="form-control form-control-sm"
+                                                           name="@($"[{i}].MarksObtained")"
+                                                           value="@(existingGrade?.MarksObtained)"
+                                                           min="0" max="@Model.SelectedComponent.MaximumMarks"
+                                                           step="0.1" />
+                                                </td>
+                                                <td>
+                                                    <input type="checkbox" class="form-check-input"
+                                                           name="@($"[{i}].IsAbsent")" value="true"
+                                                           @(existingGrade?.IsAbsent == true ? "checked" : "") />
+                                                </td>
+                                                <td>
+                                                    <input type="checkbox" class="form-check-input"
+                                                           name="@($"[{i}].IsExempted")" value="true"
+                                                           @(existingGrade?.IsExempted == true ? "checked" : "") />
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                           name="@($"[{i}].Remarks")"
+                                                           value="@existingGrade?.Remarks"
+                                                           placeholder="Optional remarks" />
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Save All Grades
+                                </button>
+                                <a href="@Url.Action("ManageComponents", new { courseId = Model.Course?.Id })"
+                                   class="btn btn-secondary">Back to Components</a>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <p>Please select a grading component to enter grades.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

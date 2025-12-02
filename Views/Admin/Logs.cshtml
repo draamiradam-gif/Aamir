@@ -1,0 +1,76 @@
+﻿@{
+    ViewData["Title"] = "System Logs";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">
+            <i class="fas fa-history me-2"></i>System Logs
+        </h1>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary">
+                <i class="fas fa-download me-2"></i>Export
+            </button>
+            <button class="btn btn-outline-danger">
+                <i class="fas fa-trash me-2"></i>Clear Logs
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Recent System Activities
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover dataTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>@DateTime.Now.AddHours(-1).ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>admin@localhost</td>
+                            <td><span class="badge bg-success">Login</span></td>
+                            <td>User logged in successfully</td>
+                            <td>127.0.0.1</td>
+                        </tr>
+                        <tr>
+                            <td>@DateTime.Now.AddHours(-2).ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>system</td>
+                            <td><span class="badge bg-info">Backup</span></td>
+                            <td>System backup completed</td>
+                            <td>127.0.0.1</td>
+                        </tr>
+                        <tr>
+                            <td>@DateTime.Now.AddHours(-3).ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>admin@localhost</td>
+                            <td><span class="badge bg-warning">Update</span></td>
+                            <td>Course data updated</td>
+                            <td>127.0.0.1</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('.dataTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 25
+            });
+        });
+    </script>
+}

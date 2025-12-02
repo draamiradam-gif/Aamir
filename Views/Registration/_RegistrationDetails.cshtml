@@ -1,0 +1,90 @@
+﻿@model StudentManagementSystem.Models.CourseRegistration
+
+<div class="row">
+    <div class="col-md-6">
+        <h5>Student Information</h5>
+        <dl class="row">
+            <dt class="col-sm-4">Student ID:</dt>
+            <dd class="col-sm-8">@(Model.Student?.StudentId ?? "N/A")</dd>
+
+            <dt class="col-sm-4">Name:</dt>
+            <dd class="col-sm-8">@(Model.Student?.Name ?? "N/A")</dd>
+
+            <dt class="col-sm-4">Email:</dt>
+            <dd class="col-sm-8">@(Model.Student?.Email ?? "N/A")</dd>
+
+            <dt class="col-sm-4">GPA:</dt>
+            <dd class="col-sm-8">@(Model.Student?.GPA.ToString("F2") ?? "N/A")</dd>
+        </dl>
+    </div>
+    <div class="col-md-6">
+        <h5>Course Information</h5>
+        <dl class="row">
+            <dt class="col-sm-4">Course Code:</dt>
+            <dd class="col-sm-8">@(Model.Course?.CourseCode ?? "N/A")</dd>
+
+            <dt class="col-sm-4">Course Name:</dt>
+            <dd class="col-sm-8">@(Model.Course?.CourseName ?? "N/A")</dd>
+
+            <dt class="col-sm-4">Credits:</dt>
+            <dd class="col-sm-8">@(Model.Course?.Credits.ToString() ?? "N/A")</dd>
+
+            <dt class="col-sm-4">Department:</dt>
+            <dd class="col-sm-8">@(Model.Course?.Department ?? "N/A")</dd> <!-- Fixed: Using string property -->
+        </dl>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <h5>Registration Details</h5>
+        <dl class="row">
+            <dt class="col-sm-3">Semester:</dt>
+            <dd class="col-sm-9">@(Model.Semester?.Name ?? "N/A")</dd>
+
+            <dt class="col-sm-3">Registration Date:</dt>
+            <dd class="col-sm-9">@Model.RegistrationDate.ToString("MMM dd, yyyy HH:mm")</dd>
+
+            <dt class="col-sm-3">Status:</dt>
+            <dd class="col-sm-9">
+                <span class="badge @GetStatusBadgeClass(Model.Status)">
+                    @Model.Status
+                </span>
+            </dd>
+
+            <dt class="col-sm-3">Type:</dt>
+            <dd class="col-sm-9">@Model.RegistrationType</dd>
+
+            @if (!string.IsNullOrEmpty(Model.ApprovedBy))
+            {
+                <dt class="col-sm-3">Approved By:</dt>
+                <dd class="col-sm-9">@Model.ApprovedBy</dd>
+
+                <dt class="col-sm-3">Approval Date:</dt>
+                <dd class="col-sm-9">@(Model.ApprovalDate?.ToString("MMM dd, yyyy HH:mm") ?? "N/A")</dd>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.Remarks))
+            {
+                <dt class="col-sm-3">Remarks:</dt>
+                <dd class="col-sm-9">@Model.Remarks</dd>
+            }
+        </dl>
+    </div>
+</div>
+
+@functions {
+    private string GetStatusBadgeClass(RegistrationStatus status)
+    {
+        return status switch
+        {
+            RegistrationStatus.Approved => "bg-success",
+            RegistrationStatus.Pending => "bg-warning",
+            RegistrationStatus.Rejected => "bg-danger",
+            RegistrationStatus.Waitlisted => "bg-info",
+            RegistrationStatus.Dropped => "bg-secondary",
+            RegistrationStatus.Completed => "bg-primary",
+            _ => "bg-secondary"
+        };
+    }
+}

@@ -1,0 +1,439 @@
+﻿@model StudentManagementSystem.Controllers.ManageComponentsViewModel
+@{
+    ViewData["Title"] = "Manage Grading Components";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4">Manage Grading Components</h1>
+            <partial name="_AlertMessages" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Course: @Model.Course?.CourseCode - @Model.Course?.CourseName</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Weight Summary -->
+                    <div class="alert @(Model.IsValidWeight ? "alert-success" : "alert-warning") mb-4">
+                        <h6>Weight Summary</h6>
+                        <p class="mb-0">
+                            Total Weight: <strong>@Model.TotalWeight.ToString("F2")%</strong>
+                            <span class="badge @Model.WeightStatusClass float-end">@Model.WeightStatus</span>
+                        </p>
+                    </div>
+
+                    <!-- Components List -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6>Grading Components</h6>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addComponentModal">
+                            <i class="fas fa-plus"></i> Add Component
+                        </button>
+                    </div>
+
+                    @if (Model.Components.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Weight %</th>
+                                        <th>Max Marks</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var component in Model.Components)
+                                    {
+                                        <tr>
+                                            <td>@component.Name</td>
+                                            <td>@component.ComponentType</td>
+                                            <td>@component.WeightPercentage%</td>
+                                            <td>@component.MaximumMarks</td>
+                                            <td>
+                                                <span class="badge @(component.IsActive ? "bg-success" : "bg-secondary")">
+                                                    @(component.IsActive ? "Active" : "Inactive")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-primary"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#editComponentModal"
+                                                            data-id="@component.Id"
+                                                            data-name="@component.Name"
+                                                            data-type="@component.ComponentType"
+                                                            data-weight="@component.WeightPercentage"
+                                                            data-marks="@component.MaximumMarks"
+                                                            data-description="@component.Description"
+                                                            data-include="@component.IncludeInFinalGrade">
+                                                        Edit
+                                                    </button>
+                                                    <form method="post" asp-action="DeleteComponent" class="d-inline">
+                                                        <input type="hidden" name="id" value="@component.Id" />
+                                                        <input type="hidden" name="courseId" value="@Model.Course?.Id" />
+                                                        <button type="submit" class="btn btn-outline-danger"
+                                                                onclick="return confirm('Are you sure you want to delete this component?')">
+                                                            Delete
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <p>No grading components defined for this course.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Apply Template -->
+            <div class="card">
+                <div class="card-header">
+                    <h6>Apply Template</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.AvailableTemplates.Any())
+                    {
+                        <form method="post" asp-action="ApplyTemplate">
+                            <input type="hidden" name="courseId" value="@Model.Course?.Id" />
+                            <div class="mb-3">
+                                <label class="form-label">Select Template</label>
+                                <select name="templateId" class="form-select" required>
+                                    <option value="">-- Select Template --</option>
+                                    @foreach (var template in Model.AvailableTemplates)
+                                    {
+                                        <option value="@template.Id">@template.TemplateName</option>
+                                    }
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">Apply Template</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No templates available.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("EnterGrades", new { courseId = Model.Course?.Id })"
+                           class="btn btn-outline-primary">Enter Grades</a>
+                        <a href="@Url.Action("FinalGrades", new { courseId = Model.Course?.Id })"
+                           class="btn btn-outline-info">View Final Grades</a>
+                        <a href="@Url.Action("Dashboard")" class="btn btn-outline-secondary">Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Component Modal -->
+<div class="modal fade" id="addComponentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Grading Component</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-action="SaveComponent">
+                <input type="hidden" name="Id" value="0" />
+                <input type="hidden" name="CourseId" value="@Model.Course?.Id" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Component Name</label>
+                        <input type="text" class="form-control" name="Name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Component Type</label>
+                        <select class="form-select" name="ComponentType" required>
+                            <option value="">-- Select Type --</option>
+                            @foreach (var type in Enum.GetValues(typeof(GradingComponentType)))
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Weight Percentage</label>
+                        <input type="number" class="form-control" name="WeightPercentage"
+                               min="0" max="100" step="0.1" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Maximum Marks</label>
+                        <input type="number" class="form-control" name="MaximumMarks"
+                               min="0" max="1000" step="0.1" value="100" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="Description" rows="2"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="IncludeInFinalGrade" value="true" checked />
+                        <label class="form-check-label">Include in Final Grade Calculation</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Component</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Component Modal -->
+<div class="modal fade" id="editComponentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Grading Component</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-action="SaveComponent">
+                <input type="hidden" name="Id" id="editComponentId" />
+                <input type="hidden" name="CourseId" value="@Model.Course?.Id" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Component Name</label>
+                        <input type="text" class="form-control" name="Name" id="editComponentName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Component Type</label>
+                        <select class="form-select" name="ComponentType" id="editComponentType" required>
+                            <option value="">-- Select Type --</option>
+                            @foreach (var type in Enum.GetValues(typeof(GradingComponentType)))
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Weight Percentage</label>
+                        <input type="number" class="form-control" name="WeightPercentage"
+                               id="editComponentWeight" min="0" max="100" step="0.1" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Maximum Marks</label>
+                        <input type="number" class="form-control" name="MaximumMarks"
+                               id="editComponentMarks" min="0" max="1000" step="0.1" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="Description" id="editComponentDescription" rows="2"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="IncludeInFinalGrade"
+                               id="editComponentInclude" value="true" />
+                        <label class="form-check-label">Include in Final Grade Calculation</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Component</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only initialize if modals exist
+            const editModal = document.getElementById('editComponentModal');
+            const addModal = document.getElementById('addComponentModal');
+
+            if (editModal) {
+                initializeEditModal();
+            } else {
+                console.log('Edit modal not found - skipping initialization');
+            }
+
+            if (addModal) {
+                initializeAddModal();
+            }
+
+            initializeFormHandlers();
+            initializeValidation();
+        });
+
+        function initializeEditModal() {
+            const editModal = document.getElementById('editComponentModal');
+
+            editModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+
+                // Get data attributes from the edit button
+                const componentId = button.getAttribute('data-id');
+                const componentName = button.getAttribute('data-name');
+                const componentType = button.getAttribute('data-type');
+                const componentWeight = button.getAttribute('data-weight');
+                const componentMarks = button.getAttribute('data-marks');
+                const componentDescription = button.getAttribute('data-description');
+                const componentInclude = button.getAttribute('data-include');
+
+                // Set form values
+                document.getElementById('editComponentId').value = componentId || '';
+                document.getElementById('editComponentName').value = componentName || '';
+                document.getElementById('editComponentType').value = componentType || '';
+                document.getElementById('editComponentWeight').value = componentWeight || '';
+                document.getElementById('editComponentMarks').value = componentMarks || '';
+                document.getElementById('editComponentDescription').value = componentDescription || '';
+
+                const includeCheckbox = document.getElementById('editComponentInclude');
+                if (includeCheckbox) {
+                    includeCheckbox.checked = componentInclude === 'True';
+                }
+            });
+        }
+
+        function initializeAddModal() {
+            // Add any specific initialization for the add modal here
+            console.log('Add modal initialized');
+        }
+
+        function initializeFormHandlers() {
+            // Delete confirmation
+            const deleteForms = document.querySelectorAll('form[action*="DeleteComponent"]');
+            deleteForms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    if (!confirm('Are you sure you want to delete this grading component? This action cannot be undone.')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+
+            // Template application confirmation
+            const templateForms = document.querySelectorAll('form[action*="ApplyTemplate"]');
+            templateForms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    if (!confirm('Applying a template will replace all existing grading components. Continue?')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        }
+
+        function initializeValidation() {
+            // Weight percentage validation
+            const weightInputs = document.querySelectorAll('input[name="WeightPercentage"]');
+            weightInputs.forEach(function(input) {
+                input.addEventListener('blur', function() {
+                    validateWeightPercentage(this);
+                });
+
+                input.addEventListener('input', function() {
+                    this.setCustomValidity('');
+                });
+            });
+
+            // Maximum marks validation
+            const marksInputs = document.querySelectorAll('input[name="MaximumMarks"]');
+            marksInputs.forEach(function(input) {
+                input.addEventListener('blur', function() {
+                    validateMaximumMarks(this);
+                });
+            });
+        }
+
+        function validateWeightPercentage(input) {
+            const value = parseFloat(input.value);
+            if (isNaN(value) || value < 0 || value > 100) {
+                input.setCustomValidity('Weight percentage must be a number between 0 and 100');
+                return false;
+            } else {
+                input.setCustomValidity('');
+                return true;
+            }
+        }
+
+        function validateMaximumMarks(input) {
+            const value = parseFloat(input.value);
+            if (isNaN(value) || value <= 0) {
+                input.setCustomValidity('Maximum marks must be a positive number');
+                return false;
+            } else {
+                input.setCustomValidity('');
+                return true;
+            }
+        }
+    </script>
+}
+
+<style>
+    .template-card {
+        transition: transform 0.2s;
+        cursor: pointer;
+    }
+
+        .template-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+    .component-table tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .badge-weight {
+        font-size: 0.8em;
+    }
+
+    /* Loading states */
+    .btn-loading {
+        position: relative;
+        color: transparent;
+    }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-right-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    
+</style>

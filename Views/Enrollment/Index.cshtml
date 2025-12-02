@@ -1,0 +1,53 @@
+﻿@{
+    ViewData["Title"] = "Enrollment Management";
+}
+
+<div class="container-fluid">
+    <h1 class="h3 mb-4">
+        <i class="fas fa-clipboard-list me-2"></i>Enrollment Management
+    </h1>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        This is the enrollment management page. Use the links in the sidebar for specific enrollment functions.
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-list fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">View Enrollments</h5>
+                    <p class="card-text">Browse all course enrollments</p>
+                    <a href="@Url.Action("MyEnrollments", "Enrollment")" class="btn btn-primary">
+                        <i class="fas fa-eye me-2"></i>View
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-plus-circle fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Bulk Enrollment</h5>
+                    <p class="card-text">Enroll multiple students</p>
+                    <a href="@Url.Action("BulkEnrollment", "Enrollment")" class="btn btn-success">
+                        <i class="fas fa-users me-2"></i>Bulk Add
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">Enrollment Dashboard</h5>
+                    <p class="card-text">View enrollment statistics</p>
+                    <a href="@Url.Action("Dashboard", "Enrollment")" class="btn btn-info">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

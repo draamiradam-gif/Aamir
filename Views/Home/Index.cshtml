@@ -1,6 +1,4 @@
 ﻿@{
-    @*ViewData["Title"] = "Academic Management System";*@
-
     ViewData["Title"] = "Home";
 }
 
@@ -91,17 +89,17 @@
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a asp-controller="College" asp-action="Create" class="btn btn-outline-info w-100 h-100 py-3">
-                                <i class="fas fa-school fa-2x mb-2"></i>
-                                <h5>Add College</h5>
-                                <small class="text-muted">Create new college</small>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a asp-controller="Students" asp-action="Index" class="btn btn-outline-warning w-100 h-100 py-3">
+                            <a asp-controller="Students" asp-action="Index" class="btn btn-outline-info w-100 h-100 py-3">
                                 <i class="fas fa-users fa-2x mb-2"></i>
                                 <h5>Manage Students</h5>
                                 <small class="text-muted">Student records</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-controller="Courses" asp-action="Index" class="btn btn-outline-warning w-100 h-100 py-3">
+                                <i class="fas fa-book fa-2x mb-2"></i>
+                                <h5>Manage Courses</h5>
+                                <small class="text-muted">Course catalog</small>
                             </a>
                         </div>
                     </div>
@@ -119,17 +117,21 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
-                        <a asp-controller="University" asp-action="Index" class="list-group-item list-group-item-action">
-                            <i class="fas fa-building me-2"></i>Universities
+                        <a asp-controller="University" asp-action="Index" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-building me-2 text-primary"></i>Universities
+                            <span class="badge bg-primary ms-auto">@ViewBag.TotalUniversities</span>
                         </a>
-                        <a asp-controller="College" asp-action="Index" class="list-group-item list-group-item-action">
-                            <i class="fas fa-school me-2"></i>Colleges
+                        <a asp-controller="College" asp-action="Index" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-school me-2 text-success"></i>Colleges
+                            <span class="badge bg-success ms-auto">@ViewBag.TotalColleges</span>
                         </a>
-                        <a asp-controller="Departments" asp-action="Index" class="list-group-item list-group-item-action">
-                            <i class="fas fa-building me-2"></i>Departments
+                        <a asp-controller="Departments" asp-action="Index" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-building me-2 text-info"></i>Departments
+                            <span class="badge bg-info ms-auto">@ViewBag.TotalDepartments</span>
                         </a>
-                        <a asp-controller="Branches" asp-action="Index" class="list-group-item list-group-item-action">
-                            <i class="fas fa-code-branch me-2"></i>Branches
+                        <a asp-controller="Branches" asp-action="Index" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-code-branch me-2 text-warning"></i>Branches
+                            <span class="badge bg-warning ms-auto">@ViewBag.TotalBranches</span>
                         </a>
                     </div>
                 </div>
@@ -142,17 +144,21 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
-                        <a asp-controller="Students" asp-action="Index" class="list-group-item list-group-item-action">
-                            <i class="fas fa-users me-2"></i>Students
+                        <a asp-controller="Students" asp-action="Index" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-users me-2 text-success"></i>Students
+                            <span class="badge bg-success ms-auto">@ViewBag.TotalStudents</span>
                         </a>
-                        <a asp-controller="Courses" asp-action="Index" class="list-group-item list-group-item-action">
-                            <i class="fas fa-book me-2"></i>Courses
+                        <a asp-controller="Courses" asp-action="Index" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-book me-2 text-info"></i>Courses
+                            <span class="badge bg-info ms-auto">@ViewBag.TotalCourses</span>
                         </a>
-                        <a asp-controller="Semesters" asp-action="Index" class="list-group-item list-group-item-action">
-                            <i class="fas fa-calendar-alt me-2"></i>Semesters
+                        <a asp-controller="Semesters" asp-action="Index" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-calendar-alt me-2 text-warning"></i>Semesters
+                            <span class="badge bg-warning ms-auto">@ViewBag.TotalSemesters</span>
                         </a>
-                        <a asp-controller="QRCode" asp-action="Index" class="list-group-item list-group-item-action">
-                            <i class="fas fa-qrcode me-2"></i>QR Attendance
+                        <a href="@Url.Action("StudentPortalEntry", "Registration")" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-graduation-cap me-2 text-primary"></i>Student Portal
+                            <span class="badge bg-primary ms-auto">Access</span>
                         </a>
                     </div>
                 </div>
@@ -161,22 +167,131 @@
         <div class="col-md-4 mb-4">
             <div class="card card-university h-100">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Analytics</h5>
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Analytics & Tools</h5>
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
                         <a asp-controller="Dashboard" asp-action="Index" class="list-group-item list-group-item-action">
-                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                        </a>
-                        <a asp-controller="University" asp-action="Dashboard" class="list-group-item list-group-item-action">
-                            <i class="fas fa-university me-2"></i>University Analytics
+                            <i class="fas fa-tachometer-alt me-2"></i>Analytics Dashboard
                         </a>
                         <a asp-controller="Home" asp-action="Hierarchy" class="list-group-item list-group-item-action">
                             <i class="fas fa-sitemap me-2"></i>Structure Overview
+                        </a>
+                        <a asp-controller="QRCode" asp-action="Index" class="list-group-item list-group-item-action">
+                            <i class="fas fa-qrcode me-2"></i>QR Attendance
+                        </a>
+                        <a href="@Url.Action("Dashboard", "Grading")" class="list-group-item list-group-item-action">
+                            <i class="fas fa-graduation-cap me-2"></i>Grade Management
                         </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Recent Activity Section -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card card-university">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2 text-primary"></i>System Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <i class="fas fa-user-graduate fa-2x text-primary mb-2"></i>
+                                    <h5>Student Portal</h5>
+                                    <p class="text-muted">Access academic information and register for courses</p>
+                                    <a href="@Url.Action("StudentPortalEntry", "Registration")" class="btn btn-primary btn-sm">
+                                        Enter Portal
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <i class="fas fa-chart-bar fa-2x text-success mb-2"></i>
+                                    <h5>Grading System</h5>
+                                    <p class="text-muted">Manage grades and academic performance</p>
+                                    <a href="@Url.Action("Dashboard", "Grading")" class="btn btn-success btn-sm">
+                                        View Grades
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <i class="fas fa-clipboard-list fa-2x text-info mb-2"></i>
+                                    <h5>Registration</h5>
+                                    <p class="text-muted">Course registration and enrollment management</p>
+                                    <a href="@Url.Action("StudentPortal", "Registration")" class="btn btn-info btn-sm">
+                                        Register Courses
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <i class="fas fa-qrcode fa-2x text-warning mb-2"></i>
+                                    <h5>Attendance</h5>
+                                    <p class="text-muted">QR code based attendance system</p>
+                                    <a href="@Url.Action("Index", "QRCode")" class="btn btn-warning btn-sm">
+                                        Manage Attendance
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Add hover effects to cards
+            $('.card-university').hover(
+                function() {
+                    $(this).css('transform', 'translateY(-5px)');
+                    $(this).css('transition', 'transform 0.3s ease');
+                },
+                function() {
+                    $(this).css('transform', 'translateY(0)');
+                }
+            );
+
+            // Add click animations to buttons
+            $('.btn').on('click', function() {
+                $(this).css('transform', 'scale(0.95)');
+                setTimeout(() => {
+                    $(this).css('transform', 'scale(1)');
+                }, 150);
+            });
+        });
+    </script>
+
+    <style>
+        .card-university {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+            .card-university:hover {
+                box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            }
+
+        .btn {
+            transition: all 0.3s ease;
+        }
+    </style>
+}

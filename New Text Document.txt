@@ -125,7 +125,13 @@ git branch -M main
 git push -u origin main
 
 
+Remove-Migration -Context ApplicationDbContext
 
+# Create new migration
+Add-Migration AddAdminManagementSystem -Context ApplicationDbContext
+
+# Update database
+Update-Database -Context ApplicationDbContext
 
 
 
@@ -241,4 +247,57 @@ Implement real-time features?
 
 Or something else entirely?
 
+Username: admin@localhost
 
+Password: Admin123!
+
+
+
+
+How to Use the Debug Controller
+Now you can access these URLs to create admin users and debug:
+
+1. Create Admin User Immediately
+text
+https://localhost:7000/Debug/CreateAdmin
+2. Check Existing Users
+text
+https://localhost:7000/Debug/CheckUsers
+3. Reset Admin User
+text
+https://localhost:7000/Debug/ResetAdmin
+4. Create Multiple Test Users
+text
+https://localhost:7000/Debug/CreateTestUsers
+5. Check Permissions & Roles
+text
+https://localhost:7000/Debug/CheckPermissions
+6. Seed Permissions Manually
+text
+https://localhost:7000/Debug/SeedPermissions
+7. Test Your Current Login Status
+text
+https://localhost:7000/Debug/TestAdminAccess
+Quick Steps to Get Admin Access:
+Go to: https://localhost:7000/Debug/CreateAdmin
+
+You should see a success message with login credentials
+
+Then go to: https://localhost:7000/Identity/Account/Login
+
+Login with: admin@localhost / Admin123!
+
+Remove Later
+Remember to remove or restrict the DebugController in production! You can add an attribute to only allow it in development:
+
+csharp
+[ApiController]
+[Route("debug")]
+[ApiExplorerSettings(IgnoreApi = true)] // Hide from Swagger
+#if !DEBUG
+[NonController] // Only compile in debug mode
+#endif
+public class DebugController : Controller
+{
+    // ... your methods
+}

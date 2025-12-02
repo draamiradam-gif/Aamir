@@ -17,7 +17,7 @@ using DuplicateViewModel = StudentManagementSystem.Models.ViewModels.DuplicateVi
 
 namespace StudentManagementSystem.Controllers
 {
-    public class DepartmentsController : Controller
+    public class DepartmentsController : BaseController
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<DepartmentsController> _logger;
@@ -31,6 +31,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Departments
         public async Task<IActionResult> Index()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var departments = await _context.Departments
                 .Include(d => d.College!)
                     .ThenInclude(c => c.University!)
@@ -76,6 +81,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Departments/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var department = await _context.Departments.FindAsync(id);
@@ -90,6 +100,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,DepartmentCode,Description,CollegeId,StartYear,IsMajorDepartment,MinimumGPAMajor,TotalBenches,AvailableBenches,IsActive")] Department department)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id != department.Id) return NotFound();
 
             if (ModelState.IsValid)
@@ -132,6 +147,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Departments/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var department = await _context.Departments
@@ -157,6 +177,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var department = await _context.Departments
                 .Include(d => d.Branches)
                 .Include(d => d.Semesters)
@@ -181,6 +206,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Departments/Duplicate/5
         public async Task<IActionResult> Duplicate(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var department = await _context.Departments
@@ -208,6 +238,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Duplicate(int id, DuplicateViewModel model)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id != model.SourceId) return NotFound();
 
             var sourceDepartment = await _context.Departments
@@ -324,6 +359,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddBranch([Bind("Name,BranchCode,Description,DepartmentId,IsActive")] Branch branch)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (ModelState.IsValid)
             {
                 // Check if branch name already exists in the same department
@@ -387,6 +427,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Departments/Create
         public async Task<IActionResult> Create(int? collegeId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             // Initialize ViewBag properties to avoid null references
             ViewBag.ParentCollege = null;
             ViewBag.CollegeId = new SelectList(new List<object>(), "Id", "Name");
@@ -431,6 +476,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,DepartmentCode,Description,CollegeId,StartYear,IsMajorDepartment,MinimumGPAMajor,TotalBenches,AvailableBenches,IsActive")] Department department)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (ModelState.IsValid)
             {
                 // Check if department name already exists in the same college
@@ -473,12 +523,6 @@ namespace StudentManagementSystem.Controllers
             ViewBag.CollegeId = new SelectList(colleges, "Id", "Name");
         }
 
-
-
-
-
-    }
-
-        
+    }       
             
-    }
+}

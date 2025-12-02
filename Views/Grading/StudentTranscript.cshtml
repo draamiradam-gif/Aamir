@@ -1,0 +1,101 @@
+﻿@model StudentTranscript
+@{
+    ViewData["Title"] = "Student Transcript";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4">Student Transcript</h1>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Student Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Name:</strong> @Model.Student?.Name</p>
+                            <p><strong>Student ID:</strong> @Model.Student?.StudentId</p>
+                            <p><strong>Department:</strong> @Model.Student?.DepartmentName</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>GPA:</strong> <span class="badge bg-info">@Model.GPA.ToString("F2")</span></p>
+                            <p><strong>Academic Standing:</strong> <span class="badge @(Model.GPA >= 3.5m ? "bg-success" : Model.GPA >= 2.0m ? "bg-info" : "bg-warning")">@Model.AcademicStanding</span></p>
+                            <p><strong>Total Credits:</strong> @Model.TotalCredits</p>
+                            <p><strong>Completed Courses:</strong> @Model.CompletedCourses</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Course History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Semester</th>
+                                    <th>Credits</th>
+                                    <th>Grade</th>
+                                    <th>Grade Points</th>
+                                    <th>Status</th>
+                                    <th>Completion Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var enrollment in Model.Enrollments.OrderByDescending(e => e.Semester?.StartDate))
+                                {
+                                    <tr>
+                                        <td>@enrollment.Course?.CourseCode</td>
+                                        <td>@enrollment.Course?.CourseName</td>
+                                        <td>@enrollment.Semester?.Name</td>
+                                        <td>@enrollment.Course?.Credits</td>
+                                        <td>
+                                            <span class="badge @(enrollment.Grade >= 60 ? "bg-success" : "bg-danger")">
+                                                @enrollment.GradeLetter (@enrollment.Grade?.ToString("F1")%)
+                                            </span>
+                                        </td>
+                                        <td>@enrollment.GradePoints?.ToString("F2")</td>
+                                        <td>
+                                            <span class="badge @(enrollment.GradeStatus == GradeStatus.Completed ? "bg-success" : "bg-warning")">
+                                                @enrollment.GradeStatus
+                                            </span>
+                                        </td>
+                                        <td>@enrollment.CompletionDate?.ToString("MMM dd, yyyy")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print Transcript
+                </button>
+                <button class="btn btn-success" onclick="exportTranscript()">
+                    <i class="fas fa-download"></i> Export as PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

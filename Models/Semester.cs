@@ -48,8 +48,8 @@ namespace StudentManagementSystem.Models
         //[Display(Name = "Registration End Date")]
         //public DateTime RegistrationEndDate { get; set; } = DateTime.Now.AddDays(14);
 
-        [Display(Name = "Active")]
-        public bool IsActive { get; set; } = true;
+        //[Display(Name = "Active")]
+       // public bool IsActive { get; set; } = true;
 
         [Display(Name = "Current Semester")]
         public bool IsCurrent { get; set; } = false;
@@ -64,7 +64,7 @@ namespace StudentManagementSystem.Models
         [ForeignKey("SubBranchId")]
         public virtual Branch? SubBranch { get; set; }
 
-        
+        public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
 
         [NotMapped]
         public string FullPath

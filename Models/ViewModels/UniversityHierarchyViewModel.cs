@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using StudentManagementSystem.Models;
+using System.Collections.Generic;
 
 namespace StudentManagementSystem.Models.ViewModels
 {
     public class UniversityHierarchyViewModel
     {
-        public List<University> Universities { get; set; } = new();
+        public List<University> Universities { get; set; } = new List<University>();
         public int TotalUniversities { get; set; }
         public int TotalColleges { get; set; }
         public int TotalDepartments { get; set; }
@@ -12,6 +13,6 @@ namespace StudentManagementSystem.Models.ViewModels
         public int TotalSemesters { get; set; }
         public int TotalStudents { get; set; }
         public int TotalCourses { get; set; }
-        public string AccessScope { get; set; } = "all"; // all, university, college, department
+        public string AccessScope { get; set; } = "all";
     }
 }

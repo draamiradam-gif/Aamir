@@ -1,0 +1,450 @@
+﻿@model EditAdminPrivilegesViewModel
+@{
+    ViewData["Title"] = "Edit Admin Privileges";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-edit me-2"></i>Edit Admin Privileges</h1>
+        <div>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-modern">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-shield me-2"></i>
+                        Editing Privileges for: <span class="text-warning">@Model.AdminName</span>
+                    </h5>
+                    <div class="small opacity-75">
+                        <i class="fas fa-envelope me-1"></i>Email: @Model.Email |
+                        <i class="fas fa-user-tag me-1 ms-2"></i>Type: <span class="badge bg-info">@Model.AdminType</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="@Url.Action("EditPrivileges", new { id = Model.AdminId })">
+                        <input type="hidden" name="id" value="@Model.AdminId" />
+
+                        <!-- Permission Controls -->
+                        <div class="permission-controls mb-4">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Select the permissions for this admin. Changes will take effect immediately.
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllPermissions()">
+                                    <i class="fas fa-check-square me-1"></i>Select All
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllPermissions()">
+                                    <i class="fas fa-times-circle me-1"></i>Deselect All
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="selectAllView()">
+                                    <i class="fas fa-eye me-1"></i>All View Permissions
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="selectAllEdit()">
+                                    <i class="fas fa-edit me-1"></i>All Edit Permissions
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="selectAllDelete()">
+                                    <i class="fas fa-trash me-1"></i>All Delete Permissions
+                                </button>
+                            </div>
+
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-info me-2" id="selectedCount">
+                                    @Model.CurrentPermissions.Count selected
+                                </span>
+                                <span class="badge bg-secondary" id="totalCount">
+                                    @Model.AllPermissions.Count total
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Permission Groups -->
+                        <div class="permissions-container border rounded p-3"
+                             style="max-height: 600px; overflow-y: auto; background: rgba(var(--bs-primary-rgb), 0.03);">
+
+                            @{
+                                var permissionGroups = PermissionHelper.GetGroupedPermissions(Model.CurrentPermissions);
+                            }
+
+                            @foreach (var group in permissionGroups)
+                            {
+                                <div class="permission-group mb-4">
+                                    <div class="group-header bg-light p-3 rounded mb-3 d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0 fw-bold text-primary">
+                                                <i class="fas fa-folder me-2"></i>@group.DisplayName
+                                            </h6>
+                                            <small class="text-muted">
+                                                @group.Permissions.Count(p => p.IsSelected) of @group.Permissions.Count permissions selected
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-2"
+                                                    onclick="selectGroup('@group.GroupName')">
+                                                <i class="fas fa-check me-1"></i>Select All
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    onclick="deselectGroup('@group.GroupName')">
+                                                <i class="fas fa-times me-1"></i>Deselect All
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="group-content" id="group-@group.GroupName">
+                                        <div class="row">
+                                            @foreach (var permission in group.Permissions)
+                                            {
+                                                <div class="col-md-6 col-lg-4 mb-3">
+                                                    <div class="permission-item card border-0 shadow-sm h-100">
+                                                        <div class="card-body p-3">
+                                                            <div class="form-check h-100">
+                                                                <input class="form-check-input permission-checkbox"
+                                                                       type="checkbox"
+                                                                       name="selectedPermissions"
+                                                                       value="@permission.Permission"
+                                                                       id="perm_@permission.Permission"
+                                                                       @(permission.IsSelected ? "checked" : "")>
+                                                                <label class="form-check-label w-100 h-100" for="perm_@permission.Permission">
+                                                                    <div class="d-flex justify-content-between align-items-start h-100">
+                                                                        <div class="flex-grow-1">
+                                                                            <div class="fw-bold text-dark mb-1">
+                                                                                @permission.DisplayName
+                                                                            </div>
+                                                                            <div class="small text-muted">
+                                                                                @permission.Description
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="ms-2">
+                                                                            <span class="badge
+                                                                                        @(permission.DisplayName.Contains("View") ? "bg-info" :
+                                                                                                                                                                    permission.DisplayName.Contains("Create") ? "bg-success" :
+                                                                                                                                                                    permission.DisplayName.Contains("Edit") ? "bg-warning" :
+                                                                                                                                                                    permission.DisplayName.Contains("Delete") ? "bg-danger" :
+                                                                                                                                                                    permission.DisplayName.Contains("Manage") ? "bg-primary" :
+                                                                                                                                                                    permission.DisplayName.Contains("Approve") ? "bg-success" :
+                                                                                                                                                                    permission.DisplayName.Contains("Reject") ? "bg-danger" :
+                                                                                                                                                                    permission.DisplayName.Contains("Export") ? "bg-info" :
+                                                                                                                                                                    permission.DisplayName.Contains("Import") ? "bg-warning" :
+                                                                                                                                                                    permission.DisplayName.Contains("Backup") ? "bg-dark" :
+                                                                                                                                                                    permission.DisplayName.Contains("Restore") ? "bg-dark" :
+                                                                                                                                                                    permission.DisplayName.Contains("Logs") ? "bg-secondary" :
+                                                                                                                                                                    permission.DisplayName.Contains("Settings") ? "bg-dark" : "bg-secondary")">
+                                                                        @permission.DisplayName.Split(' ').Last()
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                                                                }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="fas fa-save me-2"></i>Update Privileges
+                                    </button>
+                                    <div>
+                                        <button type="button" class="btn btn-outline-warning me-2" onclick="previewChanges()">
+                                            <i class="fas fa-eye me-2"></i>Preview Changes
+                                        </button>
+                                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Cancel</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>Changes Preview
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <!-- Preview will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="submitForm()">
+                    <i class="fas fa-check me-2"></i>Confirm Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .permission-item:hover {
+            background-color: rgba(var(--bs-primary-rgb), 0.05);
+            transform: translateY(-2px);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .permission-item .form-check-input {
+            width: 1.2em;
+            height: 1.2em;
+            margin-top: 0.2em;
+        }
+
+            .permission-item .form-check-input:checked {
+                background-color: var(--bs-primary);
+                border-color: var(--bs-primary);
+            }
+
+        .permissions-container::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .permissions-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+
+        .permissions-container::-webkit-scrollbar-thumb {
+            background: var(--bs-primary);
+            border-radius: 5px;
+        }
+
+            .permissions-container::-webkit-scrollbar-thumb:hover {
+                background: var(--bs-primary-dark);
+            }
+
+        .group-header {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+            .group-header:hover {
+                background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
+            }
+
+        .permission-controls {
+            background: linear-gradient(135deg, rgba(var(--bs-info-rgb), 0.1), rgba(var(--bs-primary-rgb), 0.05));
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 2px dashed rgba(var(--bs-info-rgb), 0.3);
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            updateSelectedCount();
+
+            // Update count when permissions change
+            $('.permission-checkbox').change(function() {
+                updateSelectedCount();
+                highlightChangedPermission(this);
+            });
+
+            // Click entire card to toggle checkbox
+            $('.permission-item').click(function(e) {
+                if (!$(e.target).is('input, label, .btn, .badge')) {
+                    var checkbox = $(this).find('.permission-checkbox');
+                    checkbox.prop('checked', !checkbox.prop('checked'));
+                    checkbox.trigger('change');
+                }
+            });
+
+            // Initialize tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        });
+
+        function selectAllPermissions() {
+            $('.permission-checkbox').prop('checked', true).trigger('change');
+            showToast('All permissions selected', 'success');
+        }
+
+        function deselectAllPermissions() {
+            $('.permission-checkbox').prop('checked', false).trigger('change');
+            showToast('All permissions deselected', 'warning');
+        }
+
+        function selectGroup(groupName) {
+            $(`#group-${groupName} .permission-checkbox`).prop('checked', true).trigger('change');
+            showToast(`All ${groupName} permissions selected`, 'info');
+        }
+
+        function deselectGroup(groupName) {
+            $(`#group-${groupName} .permission-checkbox`).prop('checked', false).trigger('change');
+            showToast(`All ${groupName} permissions deselected`, 'info');
+        }
+
+        function selectAllView() {
+            $('.permission-checkbox').prop('checked', false);
+            $('.permission-checkbox[value*="View"]').prop('checked', true).trigger('change');
+            showToast('All view permissions selected', 'info');
+        }
+
+        function selectAllEdit() {
+            $('.permission-checkbox[value*="Edit"], .permission-checkbox[value*="Create"]').prop('checked', true).trigger('change');
+            showToast('All edit/create permissions selected', 'info');
+        }
+
+        function selectAllDelete() {
+            $('.permission-checkbox[value*="Delete"]').prop('checked', true).trigger('change');
+            showToast('All delete permissions selected', 'info');
+        }
+
+        function updateSelectedCount() {
+            var selected = $('.permission-checkbox:checked').length;
+            var total = $('.permission-checkbox').length;
+            var percentage = Math.round((selected / total) * 100);
+
+            $('#selectedCount').html(`
+                <i class="fas fa-check-circle me-1"></i>
+                ${selected} selected (${percentage}%)
+            `);
+            $('#totalCount').html(`
+                <i class="fas fa-list-alt me-1"></i>
+                ${total} total
+            `);
+
+            // Update progress bar color
+            var progressClass = 'bg-success';
+            if (percentage < 25) progressClass = 'bg-danger';
+            else if (percentage < 50) progressClass = 'bg-warning';
+            else if (percentage < 75) progressClass = 'bg-info';
+
+            // Update progress bar if exists
+            if ($('#selectionProgress').length) {
+                $('#selectionProgress .progress-bar')
+                    .css('width', percentage + '%')
+                    .removeClass('bg-danger bg-warning bg-info bg-success')
+                    .addClass(progressClass);
+            }
+        }
+
+        function highlightChangedPermission(checkbox) {
+            var $item = $(checkbox).closest('.permission-item');
+            var wasChecked = $item.data('was-checked');
+
+            if (wasChecked === undefined) {
+                $item.data('was-checked', checkbox.checked);
+            } else if (wasChecked !== checkbox.checked) {
+                $item.addClass('changed');
+                setTimeout(function() {
+                    $item.removeClass('changed');
+                }, 1000);
+            }
+        }
+
+        function previewChanges() {
+            var selectedPermissions = [];
+            $('.permission-checkbox:checked').each(function() {
+                selectedPermissions.push($(this).val());
+            });
+
+            var totalSelected = selectedPermissions.length;
+            var currentTotal = @Model.CurrentPermissions.Count;
+            var changeType = totalSelected > currentTotal ? 'Added' : 'Removed';
+            var changeCount = Math.abs(totalSelected - currentTotal);
+
+            var previewHtml = `
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-chart-bar me-2"></i>Summary of Changes</h6>
+                    <ul class="mb-0">
+                        <li>Currently selected: <strong>${totalSelected}</strong> permissions</li>
+                        <li>Previously had: <strong>${currentTotal}</strong> permissions</li>
+                        <li>Change: <strong>${changeType} ${changeCount}</strong> permissions</li>
+                    </ul>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Permission</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // Get all permissions with their status
+            $('.permission-checkbox').each(function() {
+                var permission = $(this).val();
+                var isChecked = $(this).is(':checked');
+                var wasChecked = @Html.Raw(Json.Serialize(Model.CurrentPermissions.Contains(PermissionModule.UserManagement_View))) // This is just an example
+                var category = permission.split('_')[0];
+                var status = '';
+
+                if (isChecked) {
+                    status = '<span class="badge bg-success">Selected</span>';
+                } else {
+                    status = '<span class="badge bg-secondary">Not Selected</span>';
+                }
+
+                previewHtml += `
+                    <tr>
+                        <td>${permission.replace('_', ' ')}</td>
+                        <td><span class="badge bg-info">${category}</span></td>
+                        <td>${status}</td>
+                    </tr>
+                `;
+            });
+
+            previewHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#previewContent').html(previewHtml);
+            $('#previewModal').modal('show');
+        }
+
+        function submitForm() {
+            $('form').submit();
+        }
+
+        function showToast(message, type) {
+            // Simple toast notification
+            var toast = $(`
+                <div class="toast toast-${type} position-fixed bottom-0 end-0 m-3" style="z-index: 1060">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                        ${message}
+                        <button type="button" class="btn-close btn-close-sm ms-2" onclick="$(this).closest('.toast').remove()"></button>
+                    </div>
+                </div>
+            `);
+
+            $('body').append(toast);
+            setTimeout(function() {
+                toast.fadeOut(300, function() { $(this).remove(); });
+            }, 3000);
+        }
+    </script>
+}

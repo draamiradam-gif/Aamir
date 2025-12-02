@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="alert alert-danger text-center">
+                <h2><i class="fas fa-ban"></i> Access Denied</h2>
+                <p>You don't have permission to access this page.</p>
+                @if (TempData["Error"] != null)
+                {
+                    <p><strong>Reason:</strong> @TempData["Error"]</p>
+                }
+                <a href="@Url.Action("Index", "Home")" class="btn btn-primary">Go Home</a>
+            </div>
+        </div>
+    </div>
+</div>

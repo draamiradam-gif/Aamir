@@ -1,0 +1,36 @@
+﻿@{
+    ViewData["Title"] = "Emergency Access";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card card-modern">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h3><i class="fas fa-exclamation-triangle me-2"></i>Emergency Access</h3>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted mb-4">
+                        Use this only if you're locked out of the system.
+                    </p>
+
+                    <div class="d-grid gap-3">
+                        <form method="post" asp-action="CreateEmergencyAdmin">
+                            <button type="submit" class="btn btn-warning btn-lg w-100">
+                                <i class="fas fa-user-shield me-2"></i>Create Emergency Admin
+                            </button>
+                        </form>
+
+                        <a href="@Url.Action("BypassAuth")" class="btn btn-outline-warning btn-lg">
+                            <i class="fas fa-bolt me-2"></i>Development Bypass
+                        </a>
+
+                        <a href="@Url.Action("PortalAccess", "Home")" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Portal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -25,8 +25,8 @@ namespace StudentManagementSystem.Models
 
         public int? ParentBranchId { get; set; } // For sub-branches
 
-        [Display(Name = "Active")]
-        public bool IsActive { get; set; } = true;
+        //[Display(Name = "Active")]
+        //public bool IsActive { get; set; } = true;
 
         // Navigation properties
         public virtual Department? Department { get; set; }

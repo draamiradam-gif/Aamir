@@ -1,0 +1,31 @@
+﻿@model dynamic
+@{
+    var activities = Model as IEnumerable<dynamic> ?? new List<dynamic>();
+}
+
+@if (!activities.Any())
+{
+    <div class="text-center text-muted">
+        <i class="fas fa-inbox fa-2x mb-2"></i>
+        <p>No recent activity</p>
+    </div>
+}
+else
+{
+    <div class="list-group list-group-flush">
+        @foreach (var activity in activities)
+        {
+            <div class="list-group-item px-0">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">@activity.StudentName</h6>
+                    <small class="text-muted">@activity.EnrollmentDate.ToString("MMM dd")</small>
+                </div>
+                <p class="mb-1 small">Enrolled in @activity.CourseCode</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-secondary">@activity.Status</span>
+                    <small class="text-muted">@activity.SemesterName</small>
+                </div>
+            </div>
+        }
+    </div>
+}

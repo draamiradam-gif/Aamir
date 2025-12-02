@@ -1,7 +1,7 @@
 ﻿// Models/EnrollmentResults.cs
 namespace StudentManagementSystem.Models
 {
-    public class BulkEnrollmentResult
+    public class BulkEnrollmentResult : BaseEntity
     {
         public int TotalStudents { get; set; }
         public int SuccessfullyEnrolled { get; set; }
@@ -9,6 +9,7 @@ namespace StudentManagementSystem.Models
         public List<StudentEnrollmentResult> Results { get; set; } = new List<StudentEnrollmentResult>();
         public string SemesterName { get; set; } = string.Empty;
         public DateTime ProcessedAt { get; set; } = DateTime.Now;
+        public string Message { get; set; } = string.Empty;
     }
 
     public class StudentEnrollmentResult

@@ -14,7 +14,7 @@ using StudentManagementSystem.ViewModels;
 
 namespace StudentManagementSystem.Controllers
 {
-    public class BranchesController : Controller
+    public class BranchesController : BaseController
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<BranchesController> _logger;
@@ -28,6 +28,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Branches
         public async Task<IActionResult> Index()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var branches = await _context.Branches
                 .Include(b => b.Department!)
                     .ThenInclude(d => d.College!)
@@ -76,6 +81,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Branches/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var branch = await _context.Branches.FindAsync(id);
@@ -91,6 +101,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,BranchCode,Description,DepartmentId,ParentBranchId,IsActive")] Branch branch)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id != branch.Id) return NotFound();
 
             if (ModelState.IsValid)
@@ -119,6 +134,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Branches/ManageSubBranches/5
         public async Task<IActionResult> ManageSubBranches(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var branch = await _context.Branches
@@ -175,9 +195,10 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Branches/ByDepartment/5
         public async Task<JsonResult> ByDepartment(int departmentId)
-        {
+        {                      
             var branches = await _context.Branches
-                .Where(b => b.DepartmentId == departmentId && b.IsActive && b.ParentBranchId == null)
+                .Where(b => b.DepartmentId == departmentId && b
+                .IsActive && b.ParentBranchId == null)
                 .OrderBy(b => b.Name)
                 .Select(b => new { b.Id, b.Name })
                 .ToListAsync();
@@ -253,6 +274,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Branches/Create
         public async Task<IActionResult> Create(int? departmentId, int? parentBranchId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var branch = new Branch();
 
             // Always initialize ViewBag properties to avoid null references
@@ -364,6 +390,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,BranchCode,Description,DepartmentId,ParentBranchId,IsActive")] Branch branch)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (ModelState.IsValid)
             {
                 // Validate that DepartmentId is set
@@ -430,6 +461,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSubBranch(Branch newSubBranch)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (ModelState.IsValid)
             {
                 // Check if branch name already exists in the same department
@@ -460,6 +496,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Branches/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null)
             {
                 return NotFound();
@@ -501,6 +542,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var branch = await _context.Branches
                 .Include(b => b.SubBranches)
                 .Include(b => b.BranchSemesters)

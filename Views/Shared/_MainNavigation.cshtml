@@ -1,0 +1,414 @@
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+@inject IAdminService AdminService
+
+@{
+    var currentStudentId = HttpContextAccessor.HttpContext?.Session.GetString("CurrentStudentId");
+    var isSignedIn = SignInManager.IsSignedIn(User);
+    var user = await UserManager.GetUserAsync(User);
+    var userRoles = user != null ? await UserManager.GetRolesAsync(user) : new List<string>();
+    var isAdmin = userRoles.Contains("SuperAdmin") || userRoles.Contains("UniversityAdmin") ||
+                  userRoles.Contains("FacultyAdmin") || userRoles.Contains("DepartmentAdmin") ||
+                  userRoles.Contains("FinanceAdmin") || userRoles.Contains("StudentAdmin");
+    var isSuperAdmin = userRoles.Contains("SuperAdmin");
+
+    // Get pending applications count safely
+    int pendingCount = 0;
+    if (isSuperAdmin)
+    {
+        try
+        {
+            var applications = await AdminService.GetPendingApplicationsAsync();
+            pendingCount = applications?.Count ?? 0;
+        }
+        catch
+        {
+            // If service fails, show 0
+            pendingCount = 0;
+        }
+    }
+}
+
+<div class="position-sticky pt-3">
+    <!-- User Profile Section -->
+    <div class="text-center text-white mb-4 p-3 bg-primary bg-opacity-25 rounded">
+        <div class="mb-3">
+            <i class="fas fa-university fa-2x text-warning"></i>
+        </div>
+        <h6 class="mb-1">Academic Portal</h6>
+        <small>Welcome to Student Management System</small>
+        @if (isSignedIn)
+        {
+            <div class="mt-2">
+                @if (isSuperAdmin)
+                {
+                    <span class="badge bg-danger">
+                        <i class="fas fa-crown me-1"></i>Super Admin
+                    </span>
+                }
+                else if (userRoles.Contains("UniversityAdmin"))
+                {
+                    <span class="badge bg-primary">
+                        <i class="fas fa-university me-1"></i>University Admin
+                    </span>
+                }
+                else if (userRoles.Contains("FacultyAdmin"))
+                {
+                    <span class="badge bg-info">
+                        <i class="fas fa-chalkboard-teacher me-1"></i>Faculty Admin
+                    </span>
+                }
+                else if (userRoles.Contains("DepartmentAdmin"))
+                {
+                    <span class="badge bg-success">
+                        <i class="fas fa-building me-1"></i>Department Admin
+                    </span>
+                }
+                else if (userRoles.Contains("FinanceAdmin"))
+                {
+                    <span class="badge bg-warning">
+                        <i class="fas fa-money-bill me-1"></i>Finance Admin
+                    </span>
+                }
+                else if (userRoles.Contains("StudentAdmin"))
+                {
+                    <span class="badge bg-secondary">
+                        <i class="fas fa-user-graduate me-1"></i>Student Admin
+                    </span>
+                }
+                else if (userRoles.Contains("Admin"))
+                {
+                    <span class="badge bg-success">
+                        <i class="fas fa-user-shield me-1"></i>Administrator
+                    </span>
+                }
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(currentStudentId))
+        {
+            <div class="mt-2">
+                <span class="badge bg-success">
+                    <i class="fas fa-user me-1"></i>Student Mode
+                </span>
+            </div>
+        }
+    </div>
+
+    <!-- Navigation Menu -->
+    <ul class="nav flex-column">
+        <!-- Dashboard Section -->
+        <li class="nav-item">
+            <div class="section-header">DASHBOARD</div>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @IsActive("Home", "Index")" href="@Url.Action("Index", "Home")">
+                <i class="fas fa-home me-2"></i>
+                Home
+            </a>
+        </li>
+
+        <!-- Admin System Section (Visible to Admins only) -->
+        @if (isAdmin)
+        {
+            <li class="nav-item">
+                <div class="section-header">ADMIN SYSTEM</div>
+            </li>
+
+            @if (isSuperAdmin)
+            {
+                <li class="nav-item">
+                    <a class="nav-link @IsActive("AdminManagement", "Index")" href="@Url.Action("Index", "AdminManagement")">
+                        <i class="fas fa-user-shield me-2"></i>
+                        Admin Management
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link @IsActive("AdminManagement", "Applications")" href="@Url.Action("Applications", "AdminManagement")">
+                        <i class="fas fa-clipboard-list me-2"></i>
+                        Admin Applications
+                        @if (pendingCount > 0)
+                        {
+                            <span class="badge bg-danger ms-2">@pendingCount</span>
+                        }
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link @IsActive("AdminManagement", "Dashboard")" href="@Url.Action("Dashboard", "AdminManagement")">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Admin Dashboard
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link @IsActive("UserManagement", "Index")" href="@Url.Action("Index", "UserManagement")">
+                        <i class="fas fa-users-cog me-2"></i>
+                        User Management
+                    </a>
+                </li>
+            }
+        }
+
+        <!-- Student Portal Section -->
+        <li class="nav-item">
+            <div class="section-header">STUDENT PORTAL</div>
+        </li>
+
+        @if (!string.IsNullOrEmpty(currentStudentId))
+        {
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Home", "StudentDashboard")"
+                   href="@Url.Action("StudentDashboard", "Home", new { studentId = currentStudentId })">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    Student Dashboard
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Registration", "StudentPortal")"
+                   href="@Url.Action("StudentPortal", "Registration", new { studentId = currentStudentId })">
+                    <i class="fas fa-clipboard-list me-2"></i>
+                    Course Registration
+                </a>
+            </li>
+        }
+        else
+        {
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Home", "PortalAccess")"
+                   href="@Url.Action("PortalAccess", "Home")">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    Portal Access
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("AdminManagement", "Access")"
+                   href="@Url.Action("Access", "AdminManagement")">
+                    <i class="fas fa-user-shield me-2"></i>
+                    Admin Access
+                </a>
+            </li>
+        }
+
+        <!-- Academic Management Section (Admin/Faculty only) -->
+        @if (isAdmin)
+        {
+            <li class="nav-item">
+                <div class="section-header">ACADEMIC MANAGEMENT</div>
+            </li>
+
+            <!-- University Structure Section -->
+            <li class="nav-item">
+                <div class="section-header">UNIVERSITY STRUCTURE</div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("University", "Index")" href="@Url.Action("Index", "University")">
+                    <i class="fas fa-building me-2"></i>
+                    Universities
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Colleges", "Index")" href="@Url.Action("Index", "Colleges")">
+                    <i class="fas fa-school me-2"></i>
+                    Colleges
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Departments", "Index")" href="@Url.Action("Index", "Departments")">
+                    <i class="fas fa-layer-group me-2"></i>
+                    Departments
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Branches", "Index")" href="@Url.Action("Index", "Branches")">
+                    <i class="fas fa-code-branch me-2"></i>
+                    Branches
+                </a>
+            </li>
+
+            <!-- Semesters -->
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Semesters", "Index")" href="@Url.Action("Index", "Semesters")">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    Semester Management
+                </a>
+            </li>
+
+            <!-- Students -->
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Students", "Index")" href="@Url.Action("Index", "Students")">
+                    <i class="fas fa-users me-2"></i>
+                    Student Management
+                </a>
+            </li>
+
+            <!-- Courses -->
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Courses", "Index")" href="@Url.Action("Index", "Courses")">
+                    <i class="fas fa-book me-2"></i>
+                    Course Management
+                </a>
+            </li>
+        }
+
+        <!-- Grading System Section -->
+        @if (isAdmin)
+        {
+            <li class="nav-item">
+                <div class="section-header">GRADING SYSTEM</div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Grading", "Dashboard")" href="@Url.Action("Dashboard", "Grading")">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Grading Dashboard
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Grading", "ManageComponents")" href="@Url.Action("ManageComponents", "Grading")">
+                    <i class="fas fa-cogs me-2"></i>
+                    Grading Components
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Grading", "EnterGrades")" href="@Url.Action("EnterGrades", "Grading")">
+                    <i class="fas fa-edit me-2"></i>
+                    Enter Grades
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Grading", "FinalGrades")" href="@Url.Action("FinalGrades", "Grading")">
+                    <i class="fas fa-list-alt me-2"></i>
+                    Final Grades
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Grading", "Reports")" href="@Url.Action("Reports", "Grading")">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Grade Reports
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Grading", "ImportExport")" href="@Url.Action("ImportExport", "Grading")">
+                    <i class="fas fa-file-import me-2"></i>
+                    Import/Export
+                </a>
+            </li>
+        }
+
+        <!-- Registration System Section -->
+        @if (isAdmin)
+        {
+            <li class="nav-item">
+                <div class="section-header">REGISTRATION SYSTEM</div>
+            </li>
+
+            <!-- Add to your main navigation in _Layout.cshtml -->
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="registrationDropdown" role="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-clipboard-list me-1"></i>Registration
+                </a>
+                <ul class="dropdown-menu">
+                    @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+                    {
+                        <li><a class="dropdown-item" asp-controller="Registration" asp-action="Management"><i class="fas fa-cogs me-2"></i>Registration Management</a></li>
+                        <li><a class="dropdown-item" asp-controller="Registration" asp-action="Rules"><i class="fas fa-ruler-combined me-2"></i>Registration Rules</a></li>
+                        <li><a class="dropdown-item" asp-controller="Registration" asp-action="Periods"><i class="fas fa-calendar-alt me-2"></i>Registration Periods</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                    }
+                    <li><a class="dropdown-item" asp-controller="Registration" asp-action="StudentPortalEntry"><i class="fas fa-graduation-cap me-2"></i>Student Portal</a></li>
+                </ul>
+            </li>
+        }
+
+        <!-- Resources Section -->
+        <li class="nav-item">
+            <div class="section-header">RESOURCES & TOOLS</div>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link @IsActive("QRCode", "Index")" href="@Url.Action("Index", "QRCode")">
+                <i class="fas fa-qrcode me-2"></i>
+                QR Code Attendance
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Registration" asp-action="Analytics">
+                <i class="fas fa-chart-bar me-2"></i>Analytics
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Registration" asp-action="Reports">
+                <i class="fas fa-chart-pie me-2"></i>Reports
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link @IsActive("Home", "AcademicCalendar")" href="@Url.Action("AcademicCalendar", "Home")">
+                <i class="fas fa-calendar me-2"></i>
+                Academic Calendar
+            </a>
+        </li>
+
+        @if (isAdmin)
+        {
+            <li class="nav-item">
+                <a class="nav-link @IsActive("Home", "Reports")" href="@Url.Action("Reports", "Home")">
+                    <i class="fas fa-chart-line me-2"></i>
+                    System Reports
+                </a>
+            </li>
+        }
+    </ul>
+
+    <!-- Quick Stats -->
+    <div class="mt-4 p-3 bg-dark bg-opacity-50 rounded text-white">
+        <h6 class="border-bottom pb-2">System Status</h6>
+        <div class="small">
+            <div class="d-flex justify-content-between mb-2">
+                <span>Active Students:</span>
+                <span class="badge bg-success">@(ViewBag.TotalStudents ?? "0")</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span>Active Courses:</span>
+                <span class="badge bg-info">@(ViewBag.ActiveCourses ?? "0")</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Current Semester:</span>
+                <span class="badge bg-warning">@(ViewBag.CurrentSemesterName ?? "N/A")</span>
+            </div>
+            @if (isSuperAdmin && pendingCount > 0)
+            {
+                <div class="d-flex justify-content-between mt-2 pt-2 border-top">
+                    <span>Pending Apps:</span>
+                    <span class="badge bg-danger">@pendingCount</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    public string IsActive(string controller, string action)
+    {
+        var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
+
+        return (currentController == controller && currentAction == action) ? "active" : "";
+    }
+}

@@ -3,7 +3,7 @@
 
 namespace StudentManagementSystem.Models
 {
-    public class StudentTranscript
+    public class StudentTranscript : BaseEntity
     {
         public List<CourseEnrollment> Enrollments { get; set; } = new List<CourseEnrollment>();
         public decimal GPA { get; set; }

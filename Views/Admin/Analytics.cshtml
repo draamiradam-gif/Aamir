@@ -1,0 +1,65 @@
+﻿@{
+    ViewData["Title"] = "System Analytics";
+}
+
+<div class="container-fluid">
+    <h1 class="h3 mb-4">
+        <i class="fas fa-chart-line me-2"></i>System Analytics
+    </h1>
+
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <h2 class="display-4">@(ViewBag.TotalUsers ?? "0")</h2>
+                    <p class="card-text">Active users in system</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Active Students</h5>
+                    <h2 class="display-4">@(ViewBag.TotalStudents ?? "0")</h2>
+                    <p class="card-text">Currently enrolled</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Courses</h5>
+                    <h2 class="display-4">@(ViewBag.TotalCourses ?? "0")</h2>
+                    <p class="card-text">Available courses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">System Uptime</h5>
+                    <h2 class="display-4">99.8%</h2>
+                    <p class="card-text">Last 30 days</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-chart-bar me-2"></i>User Activity Chart
+            </h5>
+        </div>
+        <div class="card-body">
+            <div style="height: 300px;">
+                <!-- Chart placeholder -->
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+                    <p class="text-muted">Analytics chart would appear here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

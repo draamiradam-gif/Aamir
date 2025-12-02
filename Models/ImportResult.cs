@@ -1,6 +1,7 @@
 ﻿using StudentManagementSystem.Models;
+using System.Reflection;
 
-public class ImportResult
+public class ImportResult : BaseEntity
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
@@ -15,7 +16,15 @@ public class ImportResult
     public List<Student> ValidStudents { get; set; } = new List<Student>();
     public List<InvalidStudent> InvalidStudents { get; set; } = new List<InvalidStudent>();
 
+    // ADD THESE MISSING PROPERTIES
+        public int PrerequisitesProcessed { get; set; }
+    public List<string> PrerequisiteErrors { get; set; } = new List<string>();
 
+    // You might also want these for completeness:
+    public int DuplicatesFound { get; set; }
+    public int SkippedRecords { get; set; }
+    public TimeSpan ProcessingTime { get; set; }
+    public DateTime ProcessedAt { get; set; } = DateTime.Now;
 }
 
 public class InvalidCourse

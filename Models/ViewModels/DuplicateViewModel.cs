@@ -27,5 +27,7 @@ namespace StudentManagementSystem.Models.ViewModels
 
         [Display(Name = "Copy Students")]
         public bool CopyStudents { get; set; } = false;
+
+
     }
 }

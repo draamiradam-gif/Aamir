@@ -30,7 +30,10 @@ namespace StudentManagementSystem.Models
         [Display(Name = "Is Passing Grade")]
         public bool IsPassingGrade { get; set; } = true;
 
-        [Display(Name = "Is Active")]
-        public bool IsActive { get; set; } = true;
+        //[Display(Name = "Is Active")]
+        //public bool IsActive { get; set; } = true;
     }
+
+
+
 }

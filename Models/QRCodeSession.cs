@@ -4,9 +4,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace StudentManagementSystem.Models
 {
     [Table("QRCodeSessions")]
-    public class QRCodeSession
+    public class QRCodeSession : BaseEntity
     {
-        public int Id { get; set; }
+        //public int Id { get; set; }
 
         [Required]
         public string SessionTitle { get; set; } = string.Empty;
@@ -30,11 +30,11 @@ namespace StudentManagementSystem.Models
 
         public bool AllowMultipleScans { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        //public bool IsActive { get; set; } = true;
 
-        public string CreatedBy { get; set; } = string.Empty;
+        //public string CreatedBy { get; set; } = string.Empty;
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        //public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public DateTime ExpiresAt => CreatedAt.AddMinutes(DurationMinutes);
 

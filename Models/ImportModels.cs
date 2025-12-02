@@ -2,7 +2,7 @@
 
 namespace StudentManagementSystem.Models
 {
-    public class ImportResult
+    public class ImportResult : BaseEntity
     {
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
@@ -43,4 +43,6 @@ namespace StudentManagementSystem.Models
         Override,       // Override existing
         CreateNew       // Create new records
     }
+
+
 }

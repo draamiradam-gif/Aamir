@@ -1,0 +1,50 @@
+﻿@* Layout is automatically set by BaseController *@
+@{
+    ViewData["Title"] = "Student Portal Access";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3><i class="fas fa-user-graduate me-2"></i>Student Portal Login</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="StudentLogin">
+                        <div class="mb-3">
+                            <label for="studentId" class="form-label">Student ID</label>
+                            <input type="text" class="form-control" id="studentId" name="studentId"
+                                   placeholder="e.g., 2024001" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   placeholder="your.email@university.edu" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login to Student Portal
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Demo Student Access -->
+                    <div class="mt-4">
+                        <h6>Quick Demo Access:</h6>
+                        <div class="list-group">
+                            @foreach (var student in ViewBag.DemoStudents ?? new List<Student>())
+                            {
+                                <a href="@Url.Action("StudentLogin", "Registration", new { studentId = student.StudentId, email = student.Email ?? "demo@university.edu" })"
+                                   class="list-group-item list-group-item-action">
+                                    <strong>@student.StudentId</strong> - @student.Name
+                                    <small class="text-muted">(@student.DepartmentName)</small>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

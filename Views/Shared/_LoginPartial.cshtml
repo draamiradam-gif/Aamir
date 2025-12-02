@@ -1,6 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
 
 <ul class="navbar-nav">
     @if (SignInManager.IsSignedIn(User))
@@ -11,7 +10,7 @@
             </span>
         </li>
         <li class="nav-item">
-            <form method="post" asp-controller="Account" asp-action="Logout">
+            <form asp-controller="Home" asp-action="AdminLogout" method="post" id="logoutForm">
                 <button type="submit" class="nav-link btn btn-link text-light">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
@@ -21,13 +20,8 @@
     else
     {
         <li class="nav-item">
-            <a class="nav-link" asp-controller="Account" asp-action="Register">
-                <i class="fas fa-user-plus"></i> Register
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" asp-controller="Account" asp-action="Login">
-                <i class="fas fa-sign-in-alt"></i> Login
+            <a class="nav-link text-light" href="@Url.Action("AdminLogin", "Home")">
+                <i class="fas fa-sign-in-alt"></i> Admin Login
             </a>
         </li>
     }

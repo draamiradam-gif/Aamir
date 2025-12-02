@@ -1,0 +1,12 @@
+﻿@* Create: Views/Shared/_LogoutPartial.cshtml *@
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <form asp-controller="Logout" asp-action="Index" method="post" id="logoutForm" class="d-none">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <a href="#" onclick="document.getElementById('logoutForm').submit(); return false;"
+       class="nav-link text-danger">
+        <i class="fas fa-sign-out-alt me-2"></i>Logout
+    </a>
+}

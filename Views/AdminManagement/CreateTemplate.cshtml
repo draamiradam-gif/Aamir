@@ -1,0 +1,71 @@
+﻿@model AdminPrivilegeTemplate
+@{
+    ViewData["Title"] = "Create Template";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-plus-circle me-2"></i>Create Admin Template</h1>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Admins
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-modern">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-layer-group me-2"></i>Template Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="CreateTemplate">
+                        @Html.AntiForgeryToken()
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="TemplateName" class="form-label fw-bold"></label>
+                                    <input asp-for="TemplateName" class="form-control"
+                                           placeholder="e.g., University Administrator" required />
+                                    <span asp-validation-for="TemplateName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="AdminType" class="form-label fw-bold"></label>
+                                    <select asp-for="AdminType" class="form-control" required>
+                                        <option value="">-- Select Admin Type --</option>
+                                        @foreach (AdminType type in Enum.GetValues(typeof(AdminType)))
+                                        {
+                                            if (type != AdminType.SuperAdmin)
+                                            {
+                                                <option value="@type">@type</option>
+                                            }
+                                        }
+                                    </select>
+                                    <span asp-validation-for="AdminType" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label asp-for="Description" class="form-label fw-bold"></label>
+                            <textarea asp-for="Description" class="form-control" rows="3"
+                                      placeholder="Describe this template's purpose..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <!-- Add permissions selection here (similar to Create.cshtml) -->
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save me-2"></i>Save Template
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

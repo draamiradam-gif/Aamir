@@ -2,65 +2,92 @@
 @{
     ViewData["Title"] = "Semester Details";
     var courses = ViewBag.Courses as List<StudentManagementSystem.Models.Course> ?? new List<StudentManagementSystem.Models.Course>();
+
+    // Calculate statistics for analysis
+    var totalEnrollments = courses.Sum(c => c.CurrentEnrollment);
+    var totalCapacity = courses.Sum(c => c.MaxStudents);
+    var utilizationRate = totalCapacity > 0 ? (totalEnrollments * 100.0) / totalCapacity : 0;
+    var fullCourses = courses.Count(c => c.CurrentEnrollment >= c.MaxStudents);
+    var emptyCourses = courses.Count(c => c.CurrentEnrollment == 0);
+    var averageEnrollment = courses.Count > 0 ? courses.Average(c => c.CurrentEnrollment) : 0;
+    var averageCapacity = courses.Count > 0 ? courses.Average(c => c.MaxStudents) : 0;
 }
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-            <i class="fas fa-calendar-alt me-2"></i>@Model.Name - Details
-        </h2>
-        <div>
-            <a href="@Url.Action("Index")" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i>Back to List
-            </a>
-            <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
-                <i class="fas fa-edit me-1"></i>Edit Semester
-            </a>
+    <!-- Page Header -->
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 fw-bold text-primary mb-2">
+                    <i class="fas fa-calendar-alt me-3"></i>@Model.Name
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")">Home</a></li>
+                        <li class="breadcrumb-item"><a href="@Url.Action("Index", "Semesters")">Semesters</a></li>
+                        <li class="breadcrumb-item active">@Model.Name</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="btn-group">
+                <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to List
+                </a>
+                <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Edit Semester
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Semester Information Card -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">
-                <i class="fas fa-info-circle me-2"></i>Semester Information
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>Name:</strong></td>
-                            <td>@Model.Name</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Type:</strong></td>
-                            <td>@Model.SemesterType</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Academic Year:</strong></td>
-                            <td>@Model.AcademicYear</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Start Date:</strong></td>
-                            <td>@Model.StartDate.ToString("MMM dd, yyyy")</td>
-                        </tr>
-                    </table>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Semester Information
+                    </h5>
                 </div>
-                <div class="col-md-6">
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>End Date:</strong></td>
-                            <td>@Model.EndDate.ToString("MMM dd, yyyy")</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Registration Period:</strong></td>
-                            <td>@Model.RegistrationStartDate.ToString("MMM dd") - @Model.RegistrationEndDate.ToString("MMM dd, yyyy")</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Status:</strong></td>
-                            <td>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="info-item">
+                                <label class="form-label fw-semibold text-muted small">Name</label>
+                                <p class="fs-6 mb-0 fw-bold">@Model.Name</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="info-item">
+                                <label class="form-label fw-semibold text-muted small">Type</label>
+                                <p class="mb-0">
+                                    <span class="badge bg-primary">@Model.SemesterType</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="info-item">
+                                <label class="form-label fw-semibold text-muted small">Academic Year</label>
+                                <p class="mb-0 fw-bold">@Model.AcademicYear</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="info-item">
+                                <label class="form-label fw-semibold text-muted small">Duration</label>
+                                <p class="mb-0 small">@Model.StartDate.ToString("MMM dd") - @Model.EndDate.ToString("MMM dd, yyyy")</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-item">
+                                <label class="form-label fw-semibold text-muted small">Registration</label>
+                                <p class="mb-0 small">@Model.RegistrationStartDate.ToString("MMM dd") - @Model.RegistrationEndDate.ToString("MMM dd")</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted small">Status</label>
+                            <div class="d-flex gap-2 flex-wrap">
                                 @if (Model.IsActive)
                                 {
                                     <span class="badge bg-success">Active</span>
@@ -71,155 +98,507 @@
                                 }
                                 @if (Model.IsCurrent)
                                 {
-                                    <span class="badge bg-primary ms-1">Current</span>
+                                    <span class="badge bg-primary">Current</span>
                                 }
                                 @if (Model.IsRegistrationOpen)
                                 {
-                                    <span class="badge bg-warning ms-1">Registration Open</span>
+                                    <span class="badge bg-warning">Registration Open</span>
                                 }
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Full Path:</strong></td>
-                            <td>@Model.FullPath</td>
-                        </tr>
-                    </table>
+                                else
+                                {
+                                    <span class="badge bg-secondary">Registration Closed</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="form-label fw-semibold text-muted small">Full Path</label>
+                                <p class="mb-0 text-muted small">@Model.FullPath</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Courses Management Card -->
-    <div class="card">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-book me-2"></i>Course Management
-                <span class="badge bg-primary ms-2">@courses.Count Courses</span>
-            </h5>
-            <div class="btn-group">
-                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addCoursesModal">
-                    <i class="fas fa-plus me-1"></i>Add Courses
-                </button>
-                <button class="btn btn-danger btn-sm" id="removeSelectedCoursesBtn" style="display: none;">
-                    <i class="fas fa-trash me-1"></i>Remove Selected
-                </button>
-                <button class="btn btn-outline-danger btn-sm" id="removeAllCoursesBtn" @(courses.Count == 0 ? "disabled" : "")>
-                    <i class="fas fa-broom me-1"></i>Remove All
-                </button>
-                <button class="btn btn-primary btn-sm" id="bulkEnrollBtn" @(courses.Count == 0 ? "disabled" : "")>
-                    <i class="fas fa-user-plus me-1"></i>Bulk Enroll
-                </button>
+    <!-- Enhanced Analysis Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-gradient-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Semester Analytics & Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Key Metrics -->
+                        <div class="col-lg-8">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <div class="card bg-primary text-white h-100">
+                                        <div class="card-body text-center">
+                                            <h3 class="mb-1">@courses.Count</h3>
+                                            <p class="mb-0 opacity-75">Total Courses</p>
+                                            <small class="opacity-75">@(courses.Count(c => c.IsActive)) Active</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card bg-success text-white h-100">
+                                        <div class="card-body text-center">
+                                            <h3 class="mb-1">@totalEnrollments</h3>
+                                            <p class="mb-0 opacity-75">Total Enrollments</p>
+                                            <small class="opacity-75">@totalCapacity Capacity</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card bg-warning text-dark h-100">
+                                        <div class="card-body text-center">
+                                            <h3 class="mb-1">@fullCourses</h3>
+                                            <p class="mb-0 opacity-75">Full Courses</p>
+                                            <small class="opacity-75">@(courses.Count(c => c.CurrentEnrollment > 0 && c.CurrentEnrollment < c.MaxStudents)) Partial</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card bg-info text-white h-100">
+                                        <div class="card-body text-center">
+                                            <h3 class="mb-1">@emptyCourses</h3>
+                                            <p class="mb-0 opacity-75">Empty Courses</p>
+                                            <small class="opacity-75">@(courses.Count - emptyCourses) With Students</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Utilization Progress -->
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-semibold">Overall Utilization Rate</span>
+                                    <span class="badge bg-primary">@utilizationRate.ToString("0.0")%</span>
+                                </div>
+                                <div class="progress" style="height: 12px;">
+                                    <div class="progress-bar bg-success" style="width: @(utilizationRate)%"
+                                         title="@utilizationRate.ToString("0.0")% of total capacity utilized">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small class="text-muted">@totalEnrollments enrollments of @totalCapacity capacity</small>
+                                    <small class="text-muted">@(totalCapacity - totalEnrollments) seats available</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="col-lg-4">
+                            <div class="bg-light rounded p-3 h-100">
+                                <h6 class="border-bottom pb-2 mb-3">Quick Statistics</h6>
+                                <div class="row">
+                                    <div class="col-6 mb-2">
+                                        <small class="text-muted">Avg. Enrollment:</small>
+                                        <div class="fw-bold">@averageEnrollment.ToString("0.0")</div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <small class="text-muted">Avg. Capacity:</small>
+                                        <div class="fw-bold">@averageCapacity.ToString("0.0")</div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <small class="text-muted">Utilization:</small>
+                                        <div class="fw-bold">@utilizationRate.ToString("0.0")%</div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <small class="text-muted">Fill Rate:</small>
+                                        <div class="fw-bold">@((courses.Count > 0 ? (courses.Count - emptyCourses) * 100.0 / courses.Count : 0).ToString("0.0"))%</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <small class="text-muted d-block">Course Status Distribution:</small>
+                                    <div class="mt-1">
+                                        <span class="badge bg-success me-1">@courses.Count(c => c.IsActive) Active</span>
+                                        <span class="badge bg-secondary">@courses.Count(c => !c.IsActive) Inactive</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="card-body p-0">
-            @if (courses.Any())
-            {
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover mb-0" id="coursesTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="50">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="selectAllCourses">
-                                    </div>
-                                </th>
-                                <th>Course Code</th>
-                                <th>Course Name</th>
-                                <th>Credits</th>
-                                <th>Department</th>
-                                <th>Available Seats</th>
-                                <th>Prerequisites</th>
-                                <th>Status</th>
-                                <th width="200" class="text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var course in courses)
-                            {
-                                <tr>
-                                    <td>
-                                        <div class="form-check">
-                                            <input class="form-check-input course-checkbox" type="checkbox" value="@course.Id" data-course-name="@course.CourseName">
-                                        </div>
-                                    </td>
-                                    <td class="fw-bold">@course.CourseCode</td>
-                                    <td>@course.CourseName</td>
-                                    <td class="text-center">
-                                        <span class="badge bg-info">@course.Credits</span>
-                                    </td>
-                                    <td>@course.Department</td>
-                                    <td class="text-center">
-                                        @{
-                                            var availableSeats = course.MaxStudents - course.CurrentEnrollment;
-                                            var percentage = course.MaxStudents > 0 ? (course.CurrentEnrollment * 100.0) / course.MaxStudents : 0;
-                                        }
-                                        <div class="progress mb-1" style="height: 6px;">
-                                            <div class="progress-bar @(percentage >= 90 ? "bg-danger" : percentage >= 70 ? "bg-warning" : "bg-success")"
-                                                 style="width: @percentage%" title="@percentage% Full">
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap">
+                        @if (Model.IsRegistrationOpen)
+                        {
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCoursesModal">
+                                <i class="fas fa-plus me-2"></i>Add Courses
+                            </button>
+                        }
+                        <button class="btn btn-primary" id="bulkEnrollBtn" @(courses.Count == 0 ? "disabled" : "")>
+                            <i class="fas fa-users me-2"></i>Bulk Enrollment
+                        </button>
+                        <button class="btn btn-outline-danger" id="removeAllCoursesBtn" @(courses.Count == 0 ? "disabled" : "")>
+                            <i class="fas fa-broom me-2"></i>Clear All Courses
+                        </button>
+                        <a href="@Url.Action("Duplicate", new { id = Model.Id })" class="btn btn-outline-info">
+                            <i class="fas fa-copy me-2"></i>Duplicate Semester
+                        </a>
+                        <a href="@Url.Action("BulkEnrollment", "Enrollment", new { semesterId = Model.Id })" class="btn btn-outline-success">
+                            <i class="fas fa-graduation-cap me-2"></i>Go to Enrollment
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-2"></i>Export Data
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="exportSelectedCourses"><i class="fas fa-table me-2"></i>Export Selected Courses</a></li>
+                                <li><a class="dropdown-item" href="#" id="exportAllCourses"><i class="fas fa-list me-2"></i>Export All Courses</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="exportSemesterSummary"><i class="fas fa-file-pdf me-2"></i>Export Semester Summary (PDF)</a></li>
+                                <li><a class="dropdown-item" href="#" id="exportSemesterDetails"><i class="fas fa-file-excel me-2"></i>Export Semester Details (Excel)</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Course Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-book me-2"></i>Course Management
+                        <span class="badge bg-primary ms-2">@courses.Count Courses</span>
+                    </h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addCoursesModal">
+                            <i class="fas fa-plus me-1"></i>Add Courses
+                        </button>
+                        <button class="btn btn-sm btn-danger" id="removeSelectedCoursesBtn" style="display: none;">
+                            <i class="fas fa-trash me-1"></i>Remove Selected
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" id="selectAllBtn">
+                            <i class="fas fa-check-square me-1"></i>Select All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Enhanced Filters -->
+                <div class="card-body border-bottom">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Search Courses</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" id="courseSearch" placeholder="Search courses...">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Department</label>
+                            <select class="form-select form-select-sm" id="departmentFilter">
+                                <option value="">All Departments</option>
+                                @foreach (var dept in courses.Select(c => c.Department).Distinct().OrderBy(d => d))
+                                {
+                                    <option value="@dept">@dept</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Status</label>
+                            <select class="form-select form-select-sm" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Enrollment</label>
+                            <select class="form-select form-select-sm" id="enrollmentFilter">
+                                <option value="">All</option>
+                                <option value="full">Full</option>
+                                <option value="available">Available Seats</option>
+                                <option value="empty">Empty</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Credits</label>
+                            <select class="form-select form-select-sm" id="creditsFilter">
+                                <option value="">All Credits</option>
+                                @foreach (var credit in courses.Select(c => c.Credits).Distinct().OrderBy(c => c))
+                                {
+                                    <option value="@credit">@credit Credits</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-light text-dark" id="filterCount">Showing @courses.Count of @courses.Count courses</span>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary" id="clearFilters">
+                                        <i class="fas fa-times me-1"></i>Clear Filters
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" id="toggleColumnVisibility">
+                                        <i class="fas fa-eye me-1"></i>Columns
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    @if (courses.Any())
+                    {
+                        <div class="table-responsive" style="max-height: 70vh; overflow: auto;">
+                            <table class="table table-striped table-hover mb-0" id="coursesTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th width="50">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAllCourses">
                                             </div>
-                                        </div>
-                                        <small>@availableSeats/@course.MaxStudents available</small>
-                                    </td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(course.PrerequisitesString))
-                                        {
-                                            <span class="badge bg-secondary" data-bs-toggle="tooltip" title="@course.PrerequisitesString">
-                                                @(course.PrerequisitesString.Length > 20 ? course.PrerequisitesString.Substring(0, 20) + "..." : course.PrerequisitesString)
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">None</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (course.IsActive)
-                                        {
-                                            <span class="badge bg-success">Active</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">Inactive</span>
-                                        }
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button class="btn btn-outline-primary enroll-single-btn"
-                                                    data-course-id="@course.Id"
-                                                    data-course-name="@course.CourseName"
-                                                    title="Enroll Students">
-                                                <i class="fas fa-user-plus"></i>
-                                            </button>
-                                            <a href="@Url.Action("Edit", "Courses", new { id = course.Id })"
-                                               class="btn btn-outline-warning" title="Edit Course">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <button class="btn btn-outline-danger remove-course-btn"
-                                                    data-course-id="@course.Id"
-                                                    data-course-name="@course.CourseName"
-                                                    title="Remove from Semester">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
+                                        </th>
+                                        <th width="170" data-sort="courseCode" class="sortable">
+                                            Course Code <span class="sort-indicator">🔻</span>
+                                        </th>
+                                        <th width="150" data-sort="courseName" class="sortable">
+                                            Course Name
+                                        </th>
+                                        <th width="100" data-sort="credits" class="sortable text-center">
+                                            Credits
+                                        </th>
+                                        <th width="150" data-sort="department" class="sortable">
+                                            Department
+                                        </th>
+                                        <th width="200" data-sort="plannedSemester" class="sortable">
+                                            Planned Semester
+                                        </th>
+                                        <th width="150" data-sort="enrollment" class="sortable text-center">
+                                            Enrollment
+                                        </th>
+                                        <th width="100" data-sort="capacity" class="sortable text-center">
+                                            Capacity
+                                        </th>
+                                        <th width="100" data-sort="status" class="sortable text-center">
+                                            Status
+                                        </th>
+                                        <th width="150" class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var course in courses)
+                                    {
+                                        var availableSeats = course.MaxStudents - course.CurrentEnrollment;
+                                        var utilization = course.MaxStudents > 0 ? (course.CurrentEnrollment * 100.0) / course.MaxStudents : 0;
+                                        var enrollmentStatus = availableSeats == 0 ? "full" : course.CurrentEnrollment == 0 ? "empty" : "available";
+
+                                        <tr data-course-id="@course.Id"
+                                            data-department="@course.Department"
+                                            data-status="@(course.IsActive ? "active" : "inactive")"
+                                            data-enrollment="@enrollmentStatus"
+                                            data-credits="@course.Credits">
+                                            <td>
+                                                <div class="form-check">
+                                                    <input class="form-check-input course-checkbox" type="checkbox"
+                                                           value="@course.Id" data-course-name="@course.CourseName">
+                                                </div>
+                                            </td>
+                                            <td class="fw-bold" data-sort-value="@course.CourseCode">
+                                                <span class="badge bg-primary">@course.CourseCode</span>
+                                            </td>
+                                            <td data-sort-value="@course.CourseName">
+                                                <div class="d-flex align-items-center">
+                                                    @if (!string.IsNullOrEmpty(course.Icon))
+                                                    {
+                                                        <i class="@course.Icon me-2 text-muted"></i>
+                                                    }
+                                                    <div>
+                                                        <div class="fw-semibold" title="@course.CourseName">
+                                                            @(course.CourseName.Length > 30 ? course.CourseName.Substring(0, 30) + "..." : course.CourseName)
+                                                        </div>
+                                                        @if (!string.IsNullOrEmpty(course.Description) && course.Description.Length > 50)
+                                                        {
+                                                            <small class="text-muted" title="@course.Description">
+                                                                @course.Description.Substring(0, 50)...
+                                                            </small>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center" data-sort-value="@course.Credits">
+                                                <span class="badge bg-info">@course.Credits</span>
+                                            </td>
+                                            <td data-sort-value="@course.Department">
+                                                <span class="badge bg-secondary">@course.Department</span>
+                                            </td>
+                                            <td data-sort-value="@course.CourseSemester?.Name">
+                                                @if (course.CourseSemester != null)
+                                                {
+                                                    <span class="badge bg-light text-dark" title="Planned Semester">@course.CourseSemester.Name</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Not planned</span>
+                                                }
+                                            </td>
+                                            <td class="text-center" data-sort-value="@course.CurrentEnrollment">
+                                                <div class="d-flex align-items-center justify-content-center">
+                                                    <span class="fw-bold me-2">@course.CurrentEnrollment</span>
+                                                    @if (course.CurrentEnrollment > 0)
+                                                    {
+                                                        <span class="badge bg-success">@utilization.ToString("0.0")%</span>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td class="text-center" data-sort-value="@utilization">
+                                                <div class="progress" style="height: 8px; width: 100px;" title="@utilization.ToString("0.0")% Full">
+                                                    <div class="progress-bar @(utilization >= 90 ? "bg-danger" : utilization >= 70 ? "bg-warning" : "bg-success")"
+                                                         style="width: @utilization%">
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted d-block">@availableSeats seats left</small>
+                                            </td>
+                                            <td data-sort-value="@course.IsActive" class="text-center">
+                                                @if (course.IsActive)
+                                                {
+                                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary"><i class="fas fa-times me-1"></i>Inactive</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="@Url.Action("Details", "Courses", new { id = course.Id })"
+                                                       class="btn btn-outline-primary" title="View Course" data-bs-toggle="tooltip">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("Edit", "Courses", new { id = course.Id })"
+                                                       class="btn btn-outline-warning" title="Edit Course" data-bs-toggle="tooltip">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button class="btn btn-outline-danger remove-course-btn"
+                                                            data-course-id="@course.Id"
+                                                            data-course-name="@course.CourseName"
+                                                            title="Remove from Semester" data-bs-toggle="tooltip">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">No Courses Assigned</h4>
+                            <p class="text-muted mb-4">This semester doesn't have any courses assigned yet.</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCoursesModal">
+                                <i class="fas fa-plus me-2"></i>Add Courses to Semester
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrollment Management Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Course Enrollments
+                    </h5>
+                    <div class="d-flex align-items-center">
+                        <label class="form-label me-2 mb-0 small">Select Course:</label>
+                        <select class="form-select form-select-sm d-inline-block me-2" id="courseSelector" style="width: 300px;">
+                            <option value="">Choose a course...</option>
+                            @if (ViewBag.Courses != null)
+                            {
+                                var courseList = ViewBag.Courses as List<StudentManagementSystem.Models.Course>;
+                                if (courseList != null && courseList.Any())
+                                {
+                                    foreach (var course in courseList)
+                                    {
+                                        <option value="@course.Id" data-course-name="@course.CourseName">
+                                            @course.CourseCode - @course.CourseName
+                                        </option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option value="" disabled>No courses available in this semester</option>
+                                }
+                            }
+                            else
+                            {
+                                <option value="" disabled>No course data available</option>
+                            }
+                        </select>
+                        <button class="btn btn-sm btn-primary" id="viewEnrollmentsBtn">
+                            <i class="fas fa-eye me-1"></i>View Enrollments
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body" id="enrollmentsSection" style="display: none;">
+                    <div id="enrollmentsHeader" class="mb-3 border-bottom pb-2">
+                        <h6 id="selectedCourseTitle" class="text-primary mb-1"></h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted" id="enrollmentCount"></small>
+                            <button class="btn btn-sm btn-outline-danger" id="unenrollAllBtn" style="display: none;">
+                                <i class="fas fa-user-times me-1"></i>Unenroll All Students
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height: 70vh; overflow: auto;">
+                        <table class="table table-sm table-hover" id="enrollmentsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Student Name</th>
+                                    <th>Status</th>
+                                    <th>Enrollment Date</th>
+                                    <th width="100">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="enrollmentsBody">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Select a course and click "View Enrollments" to see student enrollments
                                     </td>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            }
-            else
-            {
-                <div class="text-center py-5">
-                    <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
-                    <h4 class="text-muted">No Courses Assigned</h4>
-                    <p class="text-muted">This semester doesn't have any courses assigned yet.</p>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCoursesModal">
-                        <i class="fas fa-plus me-1"></i>Add Courses to Semester
-                    </button>
-                </div>
-            }
+            </div>
         </div>
     </div>
 </div>
@@ -237,16 +616,23 @@
             <div class="modal-body">
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <input type="text" class="form-control" id="courseSearch" placeholder="Search courses...">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" id="courseSearchFilter" placeholder="Search courses by code, name, or department...">
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-check">
+                        <div class="form-check form-check-inline">
                             <input class="form-check-input" type="checkbox" id="selectAllAvailable">
                             <label class="form-check-label" for="selectAllAvailable">Select All</label>
                         </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="filterActiveOnly" checked>
+                            <label class="form-check-label" for="filterActiveOnly">Active Only</label>
+                        </div>
                     </div>
                 </div>
-                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                     <table class="table table-sm table-hover" id="availableCoursesTable">
                         <thead class="table-light sticky-top">
                             <tr>
@@ -263,95 +649,71 @@
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Will be populated by JavaScript -->
+                        <tbody id="availableCoursesBody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading available courses...
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" id="confirmAddCourses">Add Selected Courses</button>
+                <button type="button" class="btn btn-success" id="confirmAddCourses">
+                    <i class="fas fa-plus me-2"></i>Add Selected Courses
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Bulk Enrollment Modal -->
-<div class="modal fade" id="bulkEnrollModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-users me-2"></i>Bulk Student Enrollment
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="bulkEnrollContent">
-                    <p>Enroll students in <strong id="selectedCoursesCount">0</strong> selected courses from semester <strong>@Model.Name</strong>.</p>
-
-                    <div class="mb-3">
-                        <label class="form-label">Select Students:</label>
-                        <select class="form-select" id="studentGroupSelect" multiple size="6">
-                            <option value="all">All Students in Department</option>
-                            <option value="eligible">Only Eligible Students</option>
-                            <!-- Will be populated by JavaScript -->
-                        </select>
-                    </div>
-
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Students will be enrolled only in courses where they meet all requirements (prerequisites, GPA, passed hours, capacity).
-                    </div>
-
-                    <div id="enrollmentPreview" style="display: none;">
-                        <h6>Enrollment Preview:</h6>
-                        <div id="previewContent" class="small text-muted"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmBulkEnroll">Start Bulk Enrollment</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Remove Confirmation Modal -->
-<div class="modal fade" id="removeConfirmModal" tabindex="-1">
+<!-- Column Visibility Modal -->
+<div class="modal fade" id="columnVisibilityModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Removal
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-eye me-2"></i>Column Visibility</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="removeSingleContent">
-                    <p>Are you sure you want to remove <strong id="removeCourseName"></strong> from this semester?</p>
-                    <p class="text-muted small">The course will remain in the system but will no longer be associated with this semester.</p>
+                <div class="form-check">
+                    <input class="form-check-input column-toggle" type="checkbox" data-column="1" checked>
+                    <label class="form-check-label">Course Code</label>
                 </div>
-                <div id="removeMultipleContent" style="display: none;">
-                    <p>Are you sure you want to remove <strong id="removeCount">0</strong> selected courses from this semester?</p>
-                    <div id="removeCourseList" class="small text-muted mt-2"></div>
+                <div class="form-check">
+                    <input class="form-check-input column-toggle" type="checkbox" data-column="2" checked>
+                    <label class="form-check-label">Course Name</label>
                 </div>
-                <div id="removeAllContent" style="display: none;">
-                    <div class="alert alert-warning">
-                        <h6><i class="fas fa-radiation me-2"></i>Warning</h6>
-                        <p class="mb-0">You are about to remove <strong>ALL @courses.Count courses</strong> from this semester!</p>
-                    </div>
-                    <p class="text-danger">
-                        <i class="fas fa-exclamation-triangle me-1"></i>
-                        This will disassociate all courses from the semester. Courses will remain in the system.
-                    </p>
+                <div class="form-check">
+                    <input class="form-check-input column-toggle" type="checkbox" data-column="3" checked>
+                    <label class="form-check-label">Credits</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input column-toggle" type="checkbox" data-column="4" checked>
+                    <label class="form-check-label">Department</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input column-toggle" type="checkbox" data-column="5" checked>
+                    <label class="form-check-label">Planned Semester</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input column-toggle" type="checkbox" data-column="6" checked>
+                    <label class="form-check-label">Enrollment</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input column-toggle" type="checkbox" data-column="7" checked>
+                    <label class="form-check-label">Capacity</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input column-toggle" type="checkbox" data-column="8" checked>
+                    <label class="form-check-label">Status</label>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmRemoveBtn">Remove</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="applyColumnVisibility">Apply</button>
             </div>
         </div>
     </div>
@@ -359,486 +721,1351 @@
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        // Enhanced JavaScript for Semester Details
+        $(document).ready(function() {
+            console.log("Enhanced semester details loaded");
+
+            // Initialize all features
+            initializeEnhancedFeatures();
+            initializeTableSorting();
+            initializeExportFunctionality();
+            initializeCourseSelection();
+            initializeEnrollmentManagement();
+            initializeModalFunctionality();
+
             // Initialize tooltips
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        });
+
+        // Enhanced Features Initialization
+        function initializeEnhancedFeatures() {
+            // Filter functionality
+            $('#courseSearch').on('input', filterCourses);
+            $('#departmentFilter, #statusFilter, #enrollmentFilter, #creditsFilter').on('change', filterCourses);
+
+            // Clear filters
+            $('#clearFilters').on('click', function() {
+                $('#courseSearch').val('');
+                $('#departmentFilter').val('');
+                $('#statusFilter').val('');
+                $('#enrollmentFilter').val('');
+                $('#creditsFilter').val('');
+                filterCourses();
             });
 
-            // Course selection functionality
-            const selectAllCourses = document.getElementById('selectAllCourses');
-            const courseCheckboxes = document.querySelectorAll('.course-checkbox');
-            const removeSelectedBtn = document.getElementById('removeSelectedCoursesBtn');
-            const removeAllBtn = document.getElementById('removeAllCoursesBtn');
-            const bulkEnrollBtn = document.getElementById('bulkEnrollBtn');
+            // Column visibility
+            $('#toggleColumnVisibility').on('click', function() {
+                $('#columnVisibilityModal').modal('show');
+            });
 
-            const removeModal = new bootstrap.Modal(document.getElementById('removeConfirmModal'));
-            const bulkEnrollModal = new bootstrap.Modal(document.getElementById('bulkEnrollModal'));
-            const addCoursesModal = new bootstrap.Modal(document.getElementById('addCoursesModal'));
+            $('#applyColumnVisibility').on('click', function() {
+                $('.column-toggle:checked').each(function() {
+                    const column = $(this).data('column');
+                    $(`#coursesTable th:nth-child(${column}), #coursesTable td:nth-child(${column})`).show();
+                });
+                $('.column-toggle:not(:checked)').each(function() {
+                    const column = $(this).data('column');
+                    $(`#coursesTable th:nth-child(${column}), #coursesTable td:nth-child(${column})`).hide();
+                });
+                $('#columnVisibilityModal').modal('hide');
+            });
 
-            let currentRemoveAction = '';
-            let selectedCourseIds = [];
-            let selectedStudentIds = [];
+            // Select all functionality
+            $('#selectAllBtn').on('click', function() {
+                const allChecked = $('.course-checkbox:checked').length === $('.course-checkbox').length;
+                $('.course-checkbox').prop('checked', !allChecked);
+                updateCourseSelectionUI();
+            });
+        }
 
-            function updateCourseSelectionUI() {
-                const selectedCount = document.querySelectorAll('.course-checkbox:checked').length;
+        // Enhanced Filter Function
+        function filterCourses() {
+            const searchTerm = $('#courseSearch').val().toLowerCase();
+            const department = $('#departmentFilter').val();
+            const status = $('#statusFilter').val();
+            const enrollment = $('#enrollmentFilter').val();
+            const credits = $('#creditsFilter').val();
 
-                if (selectedCount > 0) {
-                    removeSelectedBtn.style.display = 'inline-block';
-                    removeSelectedBtn.innerHTML = `<i class="fas fa-trash me-1"></i>Remove Selected (${selectedCount})`;
-                    bulkEnrollBtn.disabled = false;
-                } else {
-                    removeSelectedBtn.style.display = 'none';
-                    bulkEnrollBtn.disabled = true;
+            let visibleCount = 0;
+
+            $('tr[data-course-id]').each(function() {
+                const $row = $(this);
+                const courseName = $row.find('td:nth-child(3)').text().toLowerCase();
+                const courseCode = $row.find('td:nth-child(2)').text().toLowerCase();
+                const rowDepartment = $row.data('department');
+                const rowStatus = $row.data('status');
+                const rowEnrollment = $row.data('enrollment');
+                const rowCredits = $row.data('credits').toString();
+
+                const matchesSearch = !searchTerm ||
+                    courseName.includes(searchTerm) ||
+                    courseCode.includes(searchTerm);
+                const matchesDepartment = !department || rowDepartment === department;
+                const matchesStatus = !status || rowStatus === status;
+                const matchesEnrollment = !enrollment || rowEnrollment === enrollment;
+                const matchesCredits = !credits || rowCredits === credits;
+
+                const isVisible = matchesSearch && matchesDepartment && matchesStatus && matchesEnrollment && matchesCredits;
+                $row.toggle(isVisible);
+
+                if (isVisible) visibleCount++;
+            });
+
+            $('#filterCount').text(`Showing ${visibleCount} of ${$('tr[data-course-id]').length} courses`);
+        }
+
+        // Enhanced Table Sorting
+        function initializeTableSorting() {
+            let currentSort = { column: 'courseCode', order: 'asc' };
+
+            $('.sortable').on('click', function() {
+                const column = $(this).data('sort');
+                const $th = $(this);
+
+                // Determine new order
+                let newOrder = 'asc';
+                if (currentSort.column === column) {
+                    newOrder = currentSort.order === 'asc' ? 'desc' : 'asc';
                 }
 
-                selectedCourseIds = Array.from(document.querySelectorAll('.course-checkbox:checked'))
-                    .map(cb => parseInt(cb.value));
+                // Update current sort
+                currentSort = { column: column, order: newOrder };
+
+                // Update UI indicators
+                $('.sortable').find('.sort-indicator').remove();
+                $th.append(`<span class="sort-indicator">${newOrder === 'asc' ? '🔺' : '🔻'}</span>`);
+
+                // Sort the table
+                sortTable(column, newOrder);
+            });
+        }
+
+        function sortTable(column, order) {
+            const $table = $('#coursesTable');
+            const $rows = $table.find('tbody tr').get();
+
+            $rows.sort(function(a, b) {
+                const aVal = $(a).find(`td[data-sort-value]`).eq(getColumnIndex(column)).data('sort-value') ||
+                             $(a).find('td').eq(getColumnIndex(column)).text().trim();
+                const bVal = $(b).find(`td[data-sort-value]`).eq(getColumnIndex(column)).data('sort-value') ||
+                             $(b).find('td').eq(getColumnIndex(column)).text().trim();
+
+                // Handle different data types
+                if (column === 'credits' || column === 'enrollment' || column === 'capacity') {
+                    const aNum = parseFloat(aVal) || 0;
+                    const bNum = parseFloat(bVal) || 0;
+                    return order === 'asc' ? aNum - bNum : bNum - aNum;
+                }
+
+                if (column === 'status') {
+                    const aStatus = aVal === 'Active' ? 1 : 0;
+                    const bStatus = bVal === 'Active' ? 1 : 0;
+                    return order === 'asc' ? aStatus - bStatus : bStatus - aStatus;
+                }
+
+                // Text sorting
+                return order === 'asc' ?
+                    aVal.toString().localeCompare(bVal.toString()) :
+                    bVal.toString().localeCompare(aVal.toString());
+            });
+
+            // Re-append sorted rows
+            $.each($rows, function(index, row) {
+                $table.children('tbody').append(row);
+            });
+        }
+
+        function getColumnIndex(column) {
+            const headers = {
+                'courseCode': 1,
+                'courseName': 2,
+                'credits': 3,
+                'department': 4,
+                'plannedSemester': 5,
+                'enrollment': 6,
+                'capacity': 7,
+                'status': 8
+            };
+            return headers[column] || 0;
+        }
+
+        // Export Functionality
+        function initializeExportFunctionality() {
+            // Export selected courses
+            $('#exportSelectedCourses').on('click', function(e) {
+                e.preventDefault();
+                const selectedCourses = $('.course-checkbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                if (selectedCourses.length === 0) {
+                    showToast('Warning', 'Please select at least one course to export.', 'warning');
+                    return;
+                }
+
+                exportCourses(selectedCourses.join(','), 'excel');
+            });
+
+            // Export all courses
+            $('#exportAllCourses').on('click', function(e) {
+                e.preventDefault();
+                exportCourses('all', 'excel');
+            });
+
+            // Export semester summary
+            $('#exportSemesterSummary').on('click', function(e) {
+                e.preventDefault();
+                exportSemesterData('summary');
+            });
+
+            // Export semester details
+            $('#exportSemesterDetails').on('click', function(e) {
+                e.preventDefault();
+                exportSemesterData('details');
+            });
+        }
+
+        function exportCourses(courseIds, exportType) {
+            const form = $('<form>', {
+                method: 'POST',
+                action: '@Url.Action("ExportCourses", "Semesters")'
+            });
+
+            form.append($('<input>', {
+                type: 'hidden',
+                name: 'semesterId',
+                value: '@Model.Id'
+            }));
+
+            form.append($('<input>', {
+                type: 'hidden',
+                name: 'courseIds',
+                value: courseIds
+            }));
+
+            form.append($('<input>', {
+                type: 'hidden',
+                name: 'exportType',
+                value: exportType
+            }));
+
+            $('body').append(form);
+            form.submit();
+            form.remove();
+
+            showToast('Success', `Exporting courses data...`, 'success');
+        }
+
+        function exportSemesterData(exportType) {
+            const form = $('<form>', {
+                method: 'POST',
+                action: '@Url.Action("ExportSemesterData", "Semesters")'
+            });
+
+            form.append($('<input>', {
+                type: 'hidden',
+                name: 'semesterId',
+                value: '@Model.Id'
+            }));
+
+            form.append($('<input>', {
+                type: 'hidden',
+                name: 'exportType',
+                value: exportType
+            }));
+
+            $('body').append(form);
+            form.submit();
+            form.remove();
+
+            showToast('Success', `Exporting semester ${exportType}...`, 'success');
+        }
+
+        // Course Selection Management
+        function initializeCourseSelection() {
+            let selectedCourseIds = [];
+
+            // Course selection management
+            function updateCourseSelectionUI() {
+                const selectedCount = $('.course-checkbox:checked').length;
+                const removeSelectedBtn = $('#removeSelectedCoursesBtn');
+                const bulkEnrollBtn = $('#bulkEnrollBtn');
+                const removeAllBtn = $('#removeAllCoursesBtn');
+
+                if (selectedCount > 0) {
+                    removeSelectedBtn.show();
+                    removeSelectedBtn.html(`<i class="fas fa-trash me-1"></i>Remove Selected (${selectedCount})`);
+                    bulkEnrollBtn.prop('disabled', false);
+                } else {
+                    removeSelectedBtn.hide();
+                    bulkEnrollBtn.prop('disabled', true);
+                }
+
+                // Enable/disable remove all button
+                const totalCount = $('.course-checkbox').length;
+                removeAllBtn.prop('disabled', totalCount === 0);
+
+                selectedCourseIds = $('.course-checkbox:checked').map(function() {
+                    return parseInt($(this).val());
+                }).get();
             }
 
-            // Select all courses
-            selectAllCourses?.addEventListener('change', function() {
-                courseCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
-                });
+            // Select all courses in main table
+            $('#selectAllCourses').on('change', function() {
+                $('.course-checkbox').prop('checked', this.checked);
                 updateCourseSelectionUI();
             });
 
-            courseCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', updateCourseSelectionUI);
-            });
+            $('.course-checkbox').on('change', updateCourseSelectionUI);
 
-            // Remove selected courses
-            removeSelectedBtn?.addEventListener('click', function() {
-                if (selectedCourseIds.length > 0) {
-                    showRemoveConfirmation('multiple', selectedCourseIds);
-                }
-            });
+            // Remove Selected Courses functionality
+            $('#removeSelectedCoursesBtn').on('click', function() {
+                const selectedCourses = $('.course-checkbox:checked').map(function() {
+                    return {
+                        id: parseInt($(this).val()),
+                        name: $(this).data('course-name')
+                    };
+                }).get();
 
-            // Remove all courses
-            removeAllBtn?.addEventListener('click', function() {
-                showRemoveConfirmation('all');
-            });
-
-            // Single course remove
-            document.querySelectorAll('.remove-course-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const courseId = parseInt(this.dataset.courseId);
-                    const courseName = this.dataset.courseName;
-                    showRemoveConfirmation('single', [courseId], courseName);
-                });
-            });
-
-            // Bulk enrollment
-                    // In Semester Details JavaScript - REPLACE THE BULK ENROLLMENT SECTION
-
-        // Bulk enrollment
-        bulkEnrollBtn?.addEventListener('click', function() {
-            if (selectedCourseIds.length > 0) {
-                showBulkEnrollmentModal();
-            } else {
-                alert('Please select at least one course to enroll students in.');
-            }
-        });
-
-        function showBulkEnrollmentModal() {
-            console.log('Showing bulk enrollment modal for courses:', selectedCourseIds);
-            document.getElementById('selectedCoursesCount').textContent = selectedCourseIds.length;
-
-            // Clear previous students
-            const select = document.getElementById('studentGroupSelect');
-            select.innerHTML = '<option value="">Loading students...</option>';
-
-            // Load student options
-            loadStudentsForBulkEnrollment();
-            bulkEnrollModal.show();
-        }
-
-        function loadStudentsForBulkEnrollment() {
-            console.log('Loading students for semester:', @Model.Id);
-
-            fetch('@Url.Action("GetStudentEnrollmentOptions", "Semesters")?semesterId=@Model.Id')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(students => {
-                    console.log('Loaded students:', students);
-                    const select = document.getElementById('studentGroupSelect');
-                    select.innerHTML = '';
-
-                    if (students && students.length > 0) {
-                        students.forEach(student => {
-                            const option = document.createElement('option');
-                            option.value = student.id;
-                            option.textContent = `${student.name} (${student.code}) - GPA: ${student.gpa}`;
-                            select.appendChild(option);
-                        });
-
-                        // Enable multi-select
-                        select.multiple = true;
-                        select.size = Math.min(8, students.length + 2);
-                    } else {
-                        const option = document.createElement('option');
-                        option.value = "";
-                        option.textContent = "No students found for this semester";
-                        option.disabled = true;
-                        select.appendChild(option);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading students:', error);
-                    const select = document.getElementById('studentGroupSelect');
-                    select.innerHTML = '<option value="">Error loading students</option>';
-                });
-        }
-
-        // Bulk enrollment confirmation
-        document.getElementById('confirmBulkEnroll')?.addEventListener('click', function() {
-            const select = document.getElementById('studentGroupSelect');
-            const selectedOptions = Array.from(select.selectedOptions);
-            const selectedStudentIds = selectedOptions
-                .map(option => parseInt(option.value))
-                .filter(id => !isNaN(id) && id > 0);
-
-            console.log('Selected student IDs:', selectedStudentIds);
-            console.log('Selected course IDs:', selectedCourseIds);
-
-            if (selectedStudentIds.length === 0) {
-                alert('Please select at least one student.');
-                return;
-            }
-
-            if (selectedCourseIds.length === 0) {
-                alert('Please select at least one course.');
-                return;
-            }
-
-            // Show loading state
-            const originalText = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
-            this.disabled = true;
-
-            // Create request data
-            const requestData = {
-                semesterId: @Model.Id,
-                courseIds: selectedCourseIds,
-                studentIds: selectedStudentIds
-            };
-
-            console.log('Sending bulk enrollment request:', requestData);
-
-            fetch('@Url.Action("BulkEnrollStudents", "Semesters")', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                },
-                body: JSON.stringify(requestData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Bulk enrollment response:', data);
-                if (data.success) {
-                    showToast('Success!', data.message, 'success');
-                    bulkEnrollModal.hide();
-                    // Optional: Refresh the page after success
-                    setTimeout(() => location.reload(), 2000);
-                } else {
-                    showToast('Error', data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error during bulk enrollment:', error);
-                showToast('Error', 'An error occurred during bulk enrollment: ' + error.message, 'error');
-            })
-            .finally(() => {
-                this.innerHTML = originalText;
-                this.disabled = false;
-            });
-        });
-
-            function showRemoveConfirmation(action, courseIds = [], courseName = '') {
-                currentRemoveAction = action;
-
-                // Reset modal content
-                document.getElementById('removeSingleContent').style.display = 'none';
-                document.getElementById('removeMultipleContent').style.display = 'none';
-                document.getElementById('removeAllContent').style.display = 'none';
-
-                if (action === 'single') {
-                    document.getElementById('removeSingleContent').style.display = 'block';
-                    document.getElementById('removeCourseName').textContent = courseName;
-                } else if (action === 'multiple') {
-                    document.getElementById('removeMultipleContent').style.display = 'block';
-                    document.getElementById('removeCount').textContent = courseIds.length;
-
-                    const courseList = document.getElementById('removeCourseList');
-                    courseList.innerHTML = '';
-                    courseIds.forEach(id => {
-                        const checkbox = document.querySelector(`.course-checkbox[value="${id}"]`);
-                        if (checkbox) {
-                            const courseName = checkbox.dataset.courseName;
-                            const div = document.createElement('div');
-                            div.className = 'border-bottom pb-1 mb-1';
-                            div.textContent = courseName;
-                            courseList.appendChild(div);
-                        }
-                    });
-                } else if (action === 'all') {
-                    document.getElementById('removeAllContent').style.display = 'block';
-                }
-
-                removeModal.show();
-            }
-
-            // Confirm remove action
-            document.getElementById('confirmRemoveBtn')?.addEventListener('click', function() {
-                if (currentRemoveAction === 'single' || currentRemoveAction === 'multiple') {
-                    removeCoursesFromSemester(selectedCourseIds);
-                } else if (currentRemoveAction === 'all') {
-                    removeAllCoursesFromSemester();
-                }
-            });
-
-            function removeCoursesFromSemester(courseIds) {
-                fetch('@Url.Action("RemoveCoursesFromSemester", "Semesters")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                    },
-                    body: JSON.stringify({
-                        semesterId: @Model.Id,
-                        courseIds: courseIds
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('Success!', data.message, 'success');
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showToast('Error', data.message, 'error');
-                    }
-                    removeModal.hide();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('Error', 'An error occurred while removing courses.', 'error');
-                    removeModal.hide();
-                });
-            }
-
-            function removeAllCoursesFromSemester() {
-                fetch('@Url.Action("RemoveAllCoursesFromSemester", "Semesters")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                    },
-                    body: JSON.stringify(@Model.Id)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('Success!', data.message, 'success');
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showToast('Error', data.message, 'error');
-                    }
-                    removeModal.hide();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('Error', 'An error occurred while removing all courses.', 'error');
-                    removeModal.hide();
-                });
-            }
-
-            // Load available courses for adding
-            function loadAvailableCourses() {
-                fetch('@Url.Action("GetAvailableCourses", "Semesters")?semesterId=@Model.Id')
-                    .then(response => response.json())
-                    .then(courses => {
-                        const tbody = document.getElementById('availableCoursesTable').querySelector('tbody');
-                        tbody.innerHTML = '';
-
-                        courses.forEach(course => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>
-                                    <div class="form-check">
-                                        <input class="form-check-input available-course-checkbox" type="checkbox" value="${course.id}">
-                                    </div>
-                                </td>
-                                <td>${course.courseCode}</td>
-                                <td>${course.courseName}</td>
-                                <td>${course.credits}</td>
-                                <td>${course.department}</td>
-                                <td>${course.currentSemester}</td>
-                                <td>
-                                    <span class="badge ${course.isActive ? 'bg-success' : 'bg-secondary'}">
-                                        ${course.isActive ? 'Active' : 'Inactive'}
-                                    </span>
-                                </td>
-                            `;
-                            tbody.appendChild(row);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error loading available courses:', error);
-                    });
-            }
-
-            // Initialize when add courses modal is shown
-            document.getElementById('addCoursesModal')?.addEventListener('show.bs.modal', loadAvailableCourses);
-
-            // Add selected courses to semester
-            document.getElementById('confirmAddCourses')?.addEventListener('click', function() {
-                const selectedCourseIds = Array.from(document.querySelectorAll('.available-course-checkbox:checked'))
-                    .map(cb => parseInt(cb.value));
-
-                if (selectedCourseIds.length === 0) {
-                    alert('Please select at least one course to add.');
+                if (selectedCourses.length === 0) {
+                    showToast('Warning', 'Please select at least one course to remove.', 'warning');
                     return;
                 }
 
-                fetch('@Url.Action("AddCoursesToSemester", "Semesters")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                    },
-                    body: JSON.stringify({
-                        semesterId: @Model.Id,
-                        courseIds: selectedCourseIds
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('Success!', data.message, 'success');
-                        addCoursesModal.hide();
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showToast('Error', data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('Error', 'An error occurred while adding courses.', 'error');
-                });
+                removeSelectedCourses(selectedCourses);
             });
 
-            // Bulk enrollment functionality
-            function showBulkEnrollmentModal() {
-                document.getElementById('selectedCoursesCount').textContent = selectedCourseIds.length;
+            // Remove All Courses functionality
+            $('#removeAllCoursesBtn').on('click', function() {
+                const allCourses = $('.course-checkbox').map(function() {
+                    return {
+                        id: parseInt($(this).val()),
+                        name: $(this).data('course-name')
+                    };
+                }).get();
 
-                // Load student options
-                fetch('@Url.Action("GetStudentEnrollmentOptions", "Semesters")?semesterId=@Model.Id')
-                    .then(response => response.json())
-                    .then(students => {
-                        const select = document.getElementById('studentGroupSelect');
-                        select.innerHTML = '';
-
-                        students.forEach(student => {
-                            const option = document.createElement('option');
-                            option.value = student.id;
-                            option.textContent = `${student.name} (${student.code}) - GPA: ${student.gpa}`;
-                            select.appendChild(option);
-                        });
-
-                        // Enable multi-select
-                        select.multiple = true;
-                        select.size = 6;
-                    })
-                    .catch(error => {
-                        console.error('Error loading students:', error);
-                    });
-
-                bulkEnrollModal.show();
-            }
-
-            // Bulk enrollment confirmation
-            document.getElementById('confirmBulkEnroll')?.addEventListener('click', function() {
-                const select = document.getElementById('studentGroupSelect');
-                const selectedStudentIds = Array.from(select.selectedOptions)
-                    .map(option => parseInt(option.value))
-                    .filter(id => !isNaN(id));
-
-                if (selectedStudentIds.length === 0) {
-                    alert('Please select at least one student.');
+                if (allCourses.length === 0) {
+                    showToast('Warning', 'There are no courses to remove.', 'warning');
                     return;
                 }
 
-                // Show loading state
-                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
-                this.disabled = true;
-
-                fetch('@Url.Action("BulkEnrollStudents", "Semesters")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                    },
-                    body: JSON.stringify({
-                        semesterId: @Model.Id,
-                        courseIds: selectedCourseIds,
-                        studentIds: selectedStudentIds
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('Success!', data.message, 'success');
-                        bulkEnrollModal.hide();
-                    } else {
-                        showToast('Error', data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('Error', 'An error occurred during bulk enrollment', 'error');
-                })
-                .finally(() => {
-                    this.innerHTML = '<i class="fas fa-user-plus me-1"></i>Start Bulk Enrollment';
-                    this.disabled = false;
-                });
+                if (confirm(`Are you sure you want to remove ALL ${allCourses.length} courses from this semester? This action cannot be undone.`)) {
+                    removeSelectedCourses(allCourses);
+                }
             });
-
-            function showToast(title, message, type) {
-                // Remove existing toasts
-                document.querySelectorAll('.alert-toast').forEach(toast => toast.remove());
-
-                const toast = document.createElement('div');
-                toast.className = `alert alert-${type} alert-dismissible fade show alert-toast`;
-                toast.style.position = 'fixed';
-                toast.style.top = '20px';
-                toast.style.right = '20px';
-                toast.style.zIndex = '1060';
-                toast.style.minWidth = '300px';
-                toast.innerHTML = `
-                    <strong>${title}</strong> ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.body.appendChild(toast);
-
-                setTimeout(() => {
-                    toast.remove();
-                }, 5000);
-            }
 
             // Initialize
             updateCourseSelectionUI();
+        }
+
+        // Remove Courses Functionality
+        function removeSelectedCourses(courses) {
+            // First check if any of the selected courses have enrollments
+            checkMultipleCoursesEnrollments(courses);
+        }
+
+        function checkMultipleCoursesEnrollments(courses) {
+            let coursesWithEnrollments = [];
+            let checkedCount = 0;
+            const totalCourses = courses.length;
+
+            // Check each course for enrollments
+            courses.forEach(course => {
+                $.get('@Url.Action("GetCourseEnrollmentCount", "Semesters")', {
+                    courseId: course.id,
+                    semesterId: @Model.Id
+                })
+                .done(function(result) {
+                    checkedCount++;
+
+                    if (result.enrollmentCount > 0) {
+                        coursesWithEnrollments.push({
+                            ...course,
+                            enrollmentCount: result.enrollmentCount
+                        });
+                    }
+
+                    // When all courses are checked, proceed with appropriate action
+                    if (checkedCount === totalCourses) {
+                        if (coursesWithEnrollments.length > 0) {
+                            showBulkRemoveOptionsDialog(courses, coursesWithEnrollments);
+                        } else {
+                            // No courses have enrollments, proceed with bulk removal
+                            confirmBulkRemoveCourses(courses, true);
+                        }
+                    }
+                })
+                .fail(function() {
+                    checkedCount++;
+                    // If check fails, assume no enrollments and continue
+                    if (checkedCount === totalCourses) {
+                        confirmBulkRemoveCourses(courses, true);
+                    }
+                });
+            });
+        }
+
+        function showBulkRemoveOptionsDialog(allCourses, coursesWithEnrollments) {
+            const totalEnrollments = coursesWithEnrollments.reduce((sum, course) => sum + course.enrollmentCount, 0);
+
+            const dialogHtml = `
+                <div class="modal fade" id="bulkRemoveOptionsModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Courses Have Active Enrollments
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>${coursesWithEnrollments.length} of ${allCourses.length}</strong> selected courses have active student enrollments.</p>
+                                <p>Total active enrollments: <span class="badge bg-danger">${totalEnrollments}</span></p>
+
+                                <div class="mt-3">
+                                    <strong>Courses with enrollments:</strong>
+                                    <ul class="small mt-2">
+                                        ${coursesWithEnrollments.map(course =>
+                                            `<li>${course.name} <span class="badge bg-danger">${course.enrollmentCount} enrollment(s)</span></li>`
+                                        ).join('')}
+                                    </ul>
+                                </div>
+
+                                <div class="alert alert-info mt-3">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Auto-Unenroll:</strong> Removes courses and automatically unenrolls all students.<br>
+                                    <strong>Remove Only Empty Courses:</strong> Only removes courses without enrollments.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-outline-primary" id="removeEmptyOnlyBtn">
+                                    <i class="fas fa-filter me-1"></i>Remove Empty Courses Only
+                                </button>
+                                <button type="button" class="btn btn-warning" id="bulkAutoUnenrollBtn">
+                                    <i class="fas fa-bolt me-1"></i>Auto-Unenroll & Remove All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#bulkRemoveOptionsModal').remove();
+            $('body').append(dialogHtml);
+
+            const modal = new bootstrap.Modal(document.getElementById('bulkRemoveOptionsModal'));
+            modal.show();
+
+            // Handle remove empty courses only
+            $('#removeEmptyOnlyBtn').on('click', function() {
+                modal.hide();
+                const emptyCourses = allCourses.filter(course =>
+                    !coursesWithEnrollments.some(c => c.id === course.id)
+                );
+
+                if (emptyCourses.length > 0) {
+                    confirmBulkRemoveCourses(emptyCourses, true);
+                } else {
+                    showToast('Info', 'No empty courses to remove.', 'info');
+                }
+            });
+
+            // Handle bulk auto-unenroll
+            $('#bulkAutoUnenrollBtn').on('click', function() {
+                modal.hide();
+                if (confirm(`This will remove ${allCourses.length} courses and automatically unenroll ${totalEnrollments} student(s). This action cannot be undone. Continue?`)) {
+                    confirmBulkRemoveCourses(allCourses, true);
+                }
+            });
+        }
+
+        function confirmBulkRemoveCourses(courses, autoUnenroll) {
+            if (courses.length === 0) {
+                showToast('Warning', 'No courses selected for removal.', 'warning');
+                return;
+            }
+
+            // Show loading state for remove selected button
+            const $removeBtn = $('#removeSelectedCoursesBtn');
+            const originalHtml = $removeBtn.html();
+            $removeBtn.html('<i class="fas fa-spinner fa-spin me-1"></i>Removing...');
+            $removeBtn.prop('disabled', true);
+
+            // Remove courses one by one with delay to avoid overwhelming the server
+            removeCoursesSequentially(courses, 0, autoUnenroll, function() {
+                // Re-enable button
+                $removeBtn.html(originalHtml);
+                $removeBtn.prop('disabled', false);
+                updateCourseSelectionUI();
+            });
+        }
+
+        function removeCoursesSequentially(courses, index, autoUnenroll, callback) {
+            if (index >= courses.length) {
+                callback();
+                return;
+            }
+
+            const course = courses[index];
+
+            removeCourseFromSemester(course.id, course.name, autoUnenroll, function(success) {
+                if (success) {
+                    // Course removed successfully, continue with next
+                    setTimeout(() => {
+                        removeCoursesSequentially(courses, index + 1, autoUnenroll, callback);
+                    }, 500); // Small delay between removals
+                } else {
+                    // Stop if one removal fails
+                    callback();
+                }
+            });
+        }
+
+        // Individual course removal
+        $('.remove-course-btn').on('click', function() {
+            const courseId = $(this).data('course-id');
+            const courseName = $(this).data('course-name');
+
+            // First check if there are enrollments
+            checkCourseEnrollments(courseId, courseName);
+        });
+
+        function checkCourseEnrollments(courseId, courseName) {
+            $.get('@Url.Action("GetCourseEnrollmentCount", "Semesters")', {
+                courseId: courseId,
+                semesterId: @Model.Id
+            })
+            .done(function(result) {
+                if (result.enrollmentCount > 0) {
+                    // Show options dialog for courses with enrollments
+                    showRemoveOptionsDialog(courseId, courseName, result.enrollmentCount);
+                } else {
+                    // No enrollments, proceed with normal removal
+                    if (confirm(`Are you sure you want to remove "${courseName}" from this semester?`)) {
+                        removeCourseFromSemester(courseId, courseName, true); // autoUnenroll = true
+                    }
+                }
+            })
+            .fail(function() {
+                // If check fails, proceed with normal removal
+                if (confirm(`Are you sure you want to remove "${courseName}" from this semester?`)) {
+                    removeCourseFromSemester(courseId, courseName, true);
+                }
+            });
+        }
+
+        function showRemoveOptionsDialog(courseId, courseName, enrollmentCount) {
+            const dialogHtml = `
+                <div class="modal fade" id="removeOptionsModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Course Has Active Enrollments
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>"${courseName}"</strong> has <span class="badge bg-danger">${enrollmentCount}</span> active student enrollment(s).</p>
+                                <p>How would you like to proceed?</p>
+
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Auto-Unenroll:</strong> Removes course and automatically unenrolls all students.<br>
+                                    <strong>Manual Unenroll:</strong> Manage enrollments first, then remove course.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-outline-primary" id="manualUnenrollBtn">
+                                    <i class="fas fa-users me-1"></i>Manage Enrollments First
+                                </button>
+                                <button type="button" class="btn btn-warning" id="autoUnenrollBtn">
+                                    <i class="fas fa-bolt me-1"></i>Auto-Unenroll & Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#removeOptionsModal').remove();
+            $('body').append(dialogHtml);
+
+            const modal = new bootstrap.Modal(document.getElementById('removeOptionsModal'));
+            modal.show();
+
+            // Handle auto-unenroll option
+            $('#autoUnenrollBtn').on('click', function() {
+                modal.hide();
+                if (confirm(`This will remove "${courseName}" and automatically unenroll ${enrollmentCount} student(s). Continue?`)) {
+                    removeCourseFromSemester(courseId, courseName, true);
+                }
+            });
+
+            // Handle manual unenroll option
+            $('#manualUnenrollBtn').on('click', function() {
+                modal.hide();
+                showCourseEnrollments(courseId, courseName);
+            });
+        }
+
+        function removeCourseFromSemester(courseId, courseName, autoUnenroll, callback) {
+            console.log(`Removing course ${courseId} with autoUnenroll: ${autoUnenroll}`);
+
+            // Show loading state
+            const $button = $(`.remove-course-btn[data-course-id="${courseId}"]`);
+            const originalHtml = $button.html();
+            $button.html('<i class="fas fa-spinner fa-spin"></i>');
+            $button.prop('disabled', true);
+
+            $.ajax({
+                url: '@Url.Action("RemoveCourseFromSemester", "Semesters")',
+                type: 'POST',
+                data: {
+                    semesterId: @Model.Id,
+                    courseId: courseId,
+                    autoUnenroll: autoUnenroll
+                },
+                success: function(result) {
+                    if (result.success) {
+                        showToast('Success', result.message, 'success');
+                        // Remove the table row
+                        $(`tr[data-course-id="${courseId}"]`).fadeOut(300, function() {
+                            $(this).remove();
+                            updateCourseSelectionUI();
+                            // Refresh page if no courses left
+                            if ($('tr[data-course-id]').length === 0) {
+                                setTimeout(() => location.reload(), 1000);
+                            }
+                        });
+                        if (callback) callback(true);
+                    } else {
+                        if (result.hasEnrollments) {
+                            // Show the options dialog again with current enrollment count
+                            showRemoveOptionsDialog(courseId, courseName, result.enrollmentCount);
+                        } else {
+                            showToast('Error', result.message, 'error');
+                        }
+                        $button.html(originalHtml);
+                        $button.prop('disabled', false);
+                        if (callback) callback(false);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Remove course error:', error, xhr.responseText);
+
+                    let errorMessage = 'Failed to remove course';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else {
+                        errorMessage += `: ${error}`;
+                    }
+
+                    showToast('Error', errorMessage, 'error');
+                    $button.html(originalHtml);
+                    $button.prop('disabled', false);
+                    if (callback) callback(false);
+                }
+            });
+        }
+
+        // Enrollment Management
+        function initializeEnrollmentManagement() {
+            // Initialize course selector
+            initializeCourseSelector();
+
+            $('#viewEnrollmentsBtn').on('click', function() {
+                const courseId = $('#courseSelector').val();
+                const selectedOption = $('#courseSelector option:selected');
+                const selectedText = selectedOption.text().trim();
+
+                console.log('View Enrollments clicked:', {
+                    courseId: courseId,
+                    selectedText: selectedText,
+                    isPlaceholder: selectedText === 'Choose a course...' || selectedText === 'No courses available in this semester'
+                });
+
+                // Validate selection
+                if (!courseId || courseId === '' || selectedText === 'Choose a course...' || selectedText === 'No courses available in this semester') {
+                    showToast('Warning', 'Please select a valid course from the dropdown list.', 'warning');
+                    $('#courseSelector').focus();
+                    return;
+                }
+
+                const courseName = selectedOption.text();
+                console.log('Loading enrollments for:', courseId, courseName);
+                loadCourseEnrollments(courseId, courseName);
+            });
+        }
+
+        function initializeCourseSelector() {
+            const $selector = $('#courseSelector');
+            const $viewBtn = $('#viewEnrollmentsBtn');
+
+            console.log('Initializing course selector...');
+
+            // Check if there are any actual courses (not just the placeholder)
+            const hasValidCourses = $selector.find('option[value!=""][value!="0"]:not([disabled])').length > 0;
+
+            console.log('Has valid courses:', hasValidCourses);
+
+            if (!hasValidCourses) {
+                $viewBtn.prop('disabled', true)
+                       .attr('title', 'No courses available in this semester')
+                       .addClass('disabled');
+                $selector.prop('disabled', true);
+                return;
+            }
+
+            // Enable/disable view button based on selection
+            $selector.on('change', function() {
+                const selectedValue = $(this).val();
+                const selectedText = $(this).find('option:selected').text().trim();
+                const isValidSelection = selectedValue &&
+                                        selectedValue !== '' &&
+                                        selectedText !== 'Choose a course...' &&
+                                        selectedText !== 'No courses available in this semester';
+
+                console.log('Selection changed - valid:', isValidSelection, 'value:', selectedValue, 'text:', selectedText);
+
+                $viewBtn.prop('disabled', !isValidSelection);
+
+                if (!isValidSelection) {
+                    $('#enrollmentsSection').hide();
+                }
+            });
+
+            // Initial state
+            $viewBtn.prop('disabled', true);
+        }
+
+        function loadCourseEnrollments(courseId, courseName) {
+            console.log('Loading enrollments for course:', courseId, courseName);
+
+            // Show loading state
+            $('#enrollmentsBody').html(`
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <div class="d-flex justify-content-center align-items-center">
+                            <i class="fas fa-spinner fa-spin me-2"></i>
+                            <span>Loading enrollments for ${courseName}...</span>
+                        </div>
+                    </td>
+                </tr>
+            `);
+
+            // Show the section and update header
+            $('#enrollmentsSection').show();
+            $('#selectedCourseTitle').html(`<i class="fas fa-book me-2"></i>${courseName}`);
+            $('#enrollmentCount').html('<i class="fas fa-spinner fa-spin me-1"></i>Loading...');
+            $('#unenrollAllBtn').hide();
+
+            $.get('@Url.Action("GetCourseEnrollments", "Semesters")', {
+                courseId: courseId,
+                semesterId: @Model.Id
+            })
+            .done(function(enrollments) {
+                console.log('Enrollments loaded:', enrollments);
+                displayEnrollments(enrollments, courseName);
+            })
+            .fail(function(xhr, status, error) {
+                console.error('Error loading enrollments:', error, xhr.responseText);
+                $('#enrollmentsBody').html(`
+                    <tr>
+                        <td colspan="5" class="text-center text-danger py-4">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error loading enrollments: ${error}
+                        </td>
+                    </tr>
+                `);
+                $('#enrollmentCount').html('<span class="text-danger">Error loading data</span>');
+            });
+        }
+
+        function displayEnrollments(enrollments, courseName) {
+            const tbody = $('#enrollmentsBody');
+            tbody.empty();
+
+            if (!enrollments || enrollments.length === 0) {
+                tbody.html(`
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox me-2"></i>
+                            No active enrollments found for this course.
+                        </td>
+                    </tr>
+                `);
+                $('#enrollmentCount').html('<span class="text-muted">No enrollments</span>');
+                $('#unenrollAllBtn').hide();
+                return;
+            }
+
+            // Update count
+            $('#enrollmentCount').html(`<strong>${enrollments.length}</strong> student(s) enrolled`);
+            $('#unenrollAllBtn').show().data('course-id', $('#courseSelector').val()).data('course-name', courseName);
+
+            // Populate table
+            enrollments.forEach(enrollment => {
+                const statusBadge = enrollment.status === 'Active' ?
+                    '<span class="badge bg-success">Active</span>' :
+                    '<span class="badge bg-secondary">' + enrollment.status + '</span>';
+
+                const row = `
+                    <tr data-enrollment-id="${enrollment.id}">
+                        <td class="fw-bold">${enrollment.studentCode}</td>
+                        <td>${enrollment.studentName}</td>
+                        <td>${statusBadge}</td>
+                        <td><small class="text-muted">${new Date(enrollment.enrollmentDate).toLocaleDateString()}</small></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger unenroll-btn"
+                                    data-enrollment-id="${enrollment.id}"
+                                    data-student-name="${enrollment.studentName}"
+                                    title="Unenroll Student">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+
+            // Bind unenroll events
+            $('.unenroll-btn').on('click', function() {
+                const enrollmentId = $(this).data('enrollment-id');
+                const studentName = $(this).data('student-name');
+
+                if (confirm(`Are you sure you want to unenroll "${studentName}" from this course?`)) {
+                    unenrollStudent(enrollmentId, studentName);
+                }
+            });
+
+            // Bind bulk unenroll
+            $('#unenrollAllBtn').off('click').on('click', function() {
+                const courseId = $(this).data('course-id');
+                const courseName = $(this).data('course-name');
+                const enrollmentCount = enrollments.length;
+
+                if (confirm(`Are you sure you want to unenroll ALL ${enrollmentCount} students from "${courseName}"? This action cannot be undone.`)) {
+                    unenrollAllFromCourse(courseId, courseName);
+                }
+            });
+        }
+
+        function unenrollStudent(enrollmentId, studentName) {
+            const $button = $(`[data-enrollment-id="${enrollmentId}"] .unenroll-btn`);
+            const originalHtml = $button.html();
+
+            $button.html('<i class="fas fa-spinner fa-spin"></i>');
+            $button.prop('disabled', true);
+
+            $.post('@Url.Action("UnenrollStudent", "Semesters")', { enrollmentId: enrollmentId })
+                .done(function(result) {
+                    if (result.success) {
+                        showToast('Success', result.message, 'success');
+                        // Reload enrollments for current course
+                        const currentCourseId = $('#courseSelector').val();
+                        const currentCourseName = $('#courseSelector option:selected').text();
+                        setTimeout(() => loadCourseEnrollments(currentCourseId, currentCourseName), 1000);
+                    } else {
+                        showToast('Error', result.message, 'error');
+                        $button.html(originalHtml);
+                        $button.prop('disabled', false);
+                    }
+                })
+                .fail(function(xhr, status, error) {
+                    showToast('Error', 'Failed to unenroll student: ' + error, 'error');
+                    $button.html(originalHtml);
+                    $button.prop('disabled', false);
+                });
+        }
+
+        function unenrollAllFromCourse(courseId, courseName) {
+            const $button = $('#unenrollAllBtn');
+            const originalHtml = $button.html();
+
+            $button.html('<i class="fas fa-spinner fa-spin me-1"></i>Unenrolling...');
+            $button.prop('disabled', true);
+
+            $.post('@Url.Action("UnenrollAllFromCourse", "Semesters")', {
+                courseId: courseId,
+                semesterId: @Model.Id
+            })
+            .done(function(result) {
+                if (result.success) {
+                    showToast('Success', result.message, 'success');
+                    // Reload enrollments to show empty state
+                    setTimeout(() => loadCourseEnrollments(courseId, courseName), 1000);
+                } else {
+                    showToast('Error', result.message, 'error');
+                    $button.html(originalHtml);
+                    $button.prop('disabled', false);
+                }
+            })
+            .fail(function(xhr, status, error) {
+                showToast('Error', 'Failed to unenroll students: ' + error, 'error');
+                $button.html(originalHtml);
+                $button.prop('disabled', false);
+            });
+        }
+
+        // Modal Functionality
+        function initializeModalFunctionality() {
+            let availableCourses = [];
+
+            // Load available courses for modal
+            function loadAvailableCourses() {
+                $('#availableCoursesBody').html(`
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading available courses...
+                        </td>
+                    </tr>
+                `);
+
+                $.get('@Url.Action("GetAvailableCoursesForSemester", "Semesters")', { semesterId: @Model.Id })
+                    .done(function(courses) {
+                        availableCourses = courses;
+                        renderAvailableCourses(courses);
+                    })
+                    .fail(function(xhr, status, error) {
+                        console.error('Error loading courses:', error);
+                        $('#availableCoursesBody').html(`
+                            <tr>
+                                <td colspan="7" class="text-center text-danger">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Failed to load courses: ${xhr.responseJSON?.message || error}
+                                </td>
+                            </tr>
+                        `);
+                    });
+            }
+
+            // Render available courses in modal
+            function renderAvailableCourses(courses) {
+                const tbody = $('#availableCoursesBody');
+                tbody.empty();
+
+                if (courses.length === 0) {
+                    tbody.html(`
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                <i class="fas fa-inbox me-2"></i>No available courses found.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                courses.forEach(course => {
+                    const row = `
+                        <tr class="available-course-row" data-course-id="${course.id}">
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input available-course-checkbox" type="checkbox"
+                                           value="${course.id}" data-course-name="${course.courseName}">
+                                </div>
+                            </td>
+                            <td class="fw-bold">${course.courseCode}</td>
+                            <td>${course.courseName}</td>
+                            <td class="text-center">
+                                <span class="badge bg-info">${course.credits}</span>
+                            </td>
+                            <td>${course.department}</td>
+                            <td>
+                                ${course.plannedSemesterName || '<span class="text-muted">Not assigned</span>'}
+                            </td>
+                            <td>
+                                ${course.isActive ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}
+                            </td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+
+                // Initialize available course checkboxes
+                $('.available-course-checkbox').on('change', updateAvailableSelection);
+            }
+
+            // Filter available courses
+            $('#courseSearchFilter').on('input', function() {
+                const searchTerm = $(this).val().toLowerCase();
+                const activeOnly = $('#filterActiveOnly').is(':checked');
+
+                $('.available-course-row').each(function() {
+                    const text = $(this).text().toLowerCase();
+                    const isActive = $(this).find('.badge').hasClass('bg-success');
+
+                    const matchesSearch = text.includes(searchTerm);
+                    const matchesActive = !activeOnly || isActive;
+
+                    $(this).toggle(matchesSearch && matchesActive);
+                });
+            });
+
+            $('#filterActiveOnly').on('change', function() {
+                $('#courseSearchFilter').trigger('input');
+            });
+
+            // Available course selection
+            $('#selectAllAvailableCourses').on('change', function() {
+                $('.available-course-checkbox').prop('checked', this.checked);
+            });
+
+            function updateAvailableSelection() {
+                const selectedCount = $('.available-course-checkbox:checked').length;
+                const totalCount = $('.available-course-checkbox').length;
+                $('#selectAllAvailableCourses').prop('checked', selectedCount === totalCount && totalCount > 0);
+            }
+
+            // Modal events
+            $('#addCoursesModal').on('show.bs.modal', function() {
+                loadAvailableCourses();
+            });
+
+            $('#confirmAddCourses').on('click', function() {
+                const selectedCourses = $('.available-course-checkbox:checked').map(function() {
+                    return {
+                        id: parseInt($(this).val()),
+                        name: $(this).data('course-name')
+                    };
+                }).get();
+
+                if (selectedCourses.length === 0) {
+                    showToast('Warning', 'Please select at least one course to add.', 'warning');
+                    return;
+                }
+
+                addCoursesToSemester(selectedCourses);
+            });
+
+            function addCoursesToSemester(courses) {
+                const courseIds = courses.map(c => c.id);
+
+                $.ajax({
+                    url: '@Url.Action("AddCoursesToSemester", "Semesters")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        semesterId: @Model.Id,
+                        courseIds: courseIds
+                    }),
+                    success: function(result) {
+                        if (result.success) {
+                            showToast('Success', result.message, 'success');
+                            $('#addCoursesModal').modal('hide');
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            showToast('Error', result.message, 'error');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        showToast('Error', 'Failed to add courses: ' + error, 'error');
+                    }
+                });
+            }
+
+            // Bulk enrollment
+            $('#bulkEnrollBtn').on('click', function() {
+                const selectedCourseIds = $('.course-checkbox:checked').map(function() {
+                    return parseInt($(this).val());
+                }).get();
+
+                if (selectedCourseIds.length > 0) {
+                    // Redirect to bulk enrollment page with preselected courses
+                    const url = '@Url.Action("BulkEnrollment", "Enrollment")' +
+                                `?semesterId=@Model.Id&preselectedCourses=${selectedCourseIds.join(',')}`;
+                    window.location.href = url;
+                } else {
+                    showToast('Warning', 'Please select at least one course for bulk enrollment.', 'warning');
+                }
+            });
+        }
+
+        // Utility Functions
+        function showCourseEnrollments(courseId, courseName) {
+            const modalHtml = `
+                <div class="modal fade" id="enrollmentManagementModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-users me-2"></i>
+                                    Manage Enrollments: ${courseName}
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6>Active Student Enrollments</h6>
+                                    <button class="btn btn-sm btn-outline-danger" id="unenrollAllBtn">
+                                        <i class="fas fa-user-times me-1"></i>Unenroll All
+                                    </button>
+                                </div>
+                                <div class="table-responsive" style="max-height: 70vh; overflow: auto;">
+                                    <table class="table table-sm table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Student ID</th>
+                                                <th>Student Name</th>
+                                                <th>Enrollment Date</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="courseEnrollmentsBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center">
+                                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading enrollments...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-success" id="removeCourseAfterUnenroll">
+                                    <i class="fas fa-check me-1"></i>Remove Course Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#enrollmentManagementModal').remove();
+            $('body').append(modalHtml);
+
+            const modal = new bootstrap.Modal(document.getElementById('enrollmentManagementModal'));
+            modal.show();
+
+            // Load enrollments
+            loadCourseEnrollmentsForModal(courseId);
+
+            // Handle unenroll all
+            $('#unenrollAllBtn').on('click', function() {
+                if (confirm(`Unenroll ALL students from "${courseName}"?`)) {
+                    unenrollAllFromCourse(courseId, courseName, function() {
+                        loadCourseEnrollmentsForModal(courseId);
+                    });
+                }
+            });
+
+            // Handle remove course after unenroll
+            $('#removeCourseAfterUnenroll').on('click', function() {
+                modal.hide();
+                removeCourseFromSemester(courseId, courseName, false);
+            });
+        }
+
+        function loadCourseEnrollmentsForModal(courseId) {
+            $.get('@Url.Action("GetCourseEnrollments", "Semesters")', {
+                courseId: courseId,
+                semesterId: @Model.Id
+            })
+            .done(function(enrollments) {
+                const tbody = $('#courseEnrollmentsBody');
+                tbody.empty();
+
+                if (enrollments.length === 0) {
+                    tbody.html('<tr><td colspan="4" class="text-center text-muted">No active enrollments</td></tr>');
+                    $('#unenrollAllBtn').prop('disabled', true);
+                    return;
+                }
+
+                enrollments.forEach(enrollment => {
+                    const studentCode = enrollment.studentCode === "N/A" ?
+                        '<span class="text-muted">N/A</span>' : enrollment.studentCode;
+
+                    const studentName = enrollment.studentName === "Unknown Student" ?
+                        '<span class="text-muted"><i>Unknown Student</i></span>' : enrollment.studentName;
+
+                    const row = `
+                        <tr data-enrollment-id="${enrollment.id}">
+                            <td>${studentCode}</td>
+                            <td>${studentName}</td>
+                            <td>${new Date(enrollment.enrollmentDate).toLocaleDateString()}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger unenroll-single-btn"
+                                        data-enrollment-id="${enrollment.id}"
+                                        data-student-name="${enrollment.studentName}">
+                                    <i class="fas fa-user-minus"></i> Unenroll
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+
+                // Bind individual unenroll events
+                $('.unenroll-single-btn').on('click', function() {
+                    const enrollmentId = $(this).data('enrollment-id');
+                    const studentName = $(this).data('student-name');
+
+                    if (confirm(`Unenroll ${studentName}?`)) {
+                        unenrollStudent(enrollmentId, studentName, function() {
+                            loadCourseEnrollmentsForModal(courseId);
+                        });
+                    }
+                });
+            })
+            .fail(function() {
+                $('#courseEnrollmentsBody').html('<tr><td colspan="4" class="text-center text-danger">Error loading enrollments</td></tr>');
+            });
+        }
+
+        // Enhanced Toast Notification
+        function showToast(title, message, type) {
+            // Remove existing toasts
+            $('.alert-toast').remove();
+
+            const toast = $(`
+                <div class="alert alert-${type} alert-dismissible fade show alert-toast position-fixed"
+                     style="top: 20px; right: 20px; z-index: 1060; min-width: 300px;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-${getToastIcon(type)} me-2 fs-5"></i>
+                        <div class="flex-grow-1">
+                            <strong>${title}</strong> ${message}
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            `);
+
+            $('body').append(toast);
+
+            setTimeout(() => {
+                toast.alert('close');
+            }, 5000);
+        }
+
+        function getToastIcon(type) {
+            switch(type) {
+                case 'success': return 'check-circle';
+                case 'warning': return 'exclamation-triangle';
+                case 'error': return 'exclamation-circle';
+                default: return 'info-circle';
+            }
+        }
+
+        // Debug functionality
+        $(document).ready(function() {
+            console.log('=== COURSE SELECTOR DEBUG ===');
+            console.log('Dropdown options:', $('#courseSelector option').map(function() {
+                return {
+                    value: $(this).val(),
+                    text: $(this).text().trim(),
+                    selected: $(this).is(':selected')
+                };
+            }).get());
+
+            console.log('Currently selected:', {
+                value: $('#courseSelector').val(),
+                text: $('#courseSelector option:selected').text().trim()
+            });
+
+            // Test selection change
+            $('#courseSelector').on('change', function() {
+                console.log('Selection changed to:', {
+                    value: $(this).val(),
+                    text: $(this).find('option:selected').text().trim()
+                });
+            });
         });
     </script>
+
+    <style>
+        .info-item {
+            margin-bottom: 1rem;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+
+        .progress {
+            min-width: 80px;
+        }
+
+        .alert-toast {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .sortable {
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+
+            .sortable:hover {
+                background-color: #e9ecef;
+            }
+
+        .sort-indicator {
+            margin-left: 5px;
+            font-size: 0.8em;
+        }
+
+        .bg-gradient-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* Enhanced badge styles */
+        .badge {
+            font-size: 0.75em;
+        }
+
+        /* Progress bar enhancements */
+        .progress {
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            border-radius: 10px;
+        }
+
+        /* Filter section styling */
+        .form-label.small {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        /* Analytics card enhancements */
+        .card.bg-primary,
+        .card.bg-success,
+        .card.bg-warning,
+        .card.bg-info {
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .btn-group .btn {
+                margin-bottom: 0.5rem;
+            }
+
+            .dropdown {
+                margin-bottom: 0.5rem;
+            }
+        }
+    </style>
 }

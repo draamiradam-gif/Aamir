@@ -1,0 +1,110 @@
+﻿@{
+    ViewData["Title"] = "Student Portal Login";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white text-center">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-graduation-cap me-2"></i>Student Portal Login
+                </h3>
+            </div>
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <img src="~/images/student-portal.png" alt="Student Portal" class="img-fluid mb-3" style="max-height: 100px;">
+                    <h4>Welcome to Student Portal</h4>
+                    <p class="text-muted">Please enter your credentials to access your student account</p>
+                </div>
+
+                <form asp-action="StudentLogin" method="post">
+                    <div class="form-group mb-3">
+                        <label for="studentId" class="form-label">Student ID *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-id-card"></i>
+                            </span>
+                            <input type="text" class="form-control" id="studentId" name="studentId"
+                                   placeholder="Enter your student ID" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="email" class="form-label">Email Address *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-envelope"></i>
+                            </span>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   placeholder="Enter your email address" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login to Student Portal
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-info-circle me-2"></i>Demo Student Accounts
+                        </h6>
+                        <hr>
+                        <div class="small">
+                            <strong>For testing purposes:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Student ID: <code>s12345</code>, Email: <code>john.smith@student.edu</code></li>
+                                <li>Student ID: <code>s67890</code>, Email: <code>jane.doe@student.edu</code></li>
+                                <li>Student ID: <code>test</code>, Email: <code>test@student.edu</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted mb-2">Need help accessing your account?</p>
+                    <a href="#" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-question-circle me-1"></i>Contact Support
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer text-center text-muted">
+                <small>Student Management System &copy; @DateTime.Now.Year</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .card {
+            border: none;
+            border-radius: 15px;
+        }
+
+        .card-header {
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .input-group-text {
+            border-radius: 8px 0 0 8px;
+        }
+    </style>
+}

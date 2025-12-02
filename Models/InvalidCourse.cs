@@ -1,6 +1,6 @@
 ﻿namespace StudentManagementSystem.Models
 {
-    public class InvalidCourse
+    public class InvalidCourse : BaseEntity
     {
         public int RowNumber { get; set; }
         public string? CourseCode { get; set; }

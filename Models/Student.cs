@@ -115,10 +115,11 @@ namespace StudentManagementSystem.Models
         [NotMapped]
         public int CurrentEnrollments => CourseEnrollments?.Count(e => e.IsActive && !e.IsCompleted) ?? 0;
 
-        [NotMapped]
-        public bool IsActive => true; // You might want to add an IsActive property
+        //[NotMapped]
+        //public bool IsActive => true; // You might want to add an IsActive property
 
-
+        //[Display(Name = "Active")]
+       // public bool IsActive { get; set; } = true;
 
         [Display(Name = "Grade Level")]
         [Range(1, 12)]

@@ -1,0 +1,115 @@
+﻿@model List<AdminApplicationViewModel>
+@{
+    ViewData["Title"] = "Admin Applications";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-clipboard-list me-2"></i>Admin Applications</h1>
+        <div>
+            <a href="@Url.Action("Index")" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left me-2"></i>Back to Admins
+            </a>
+            <a href="@Url.Action("ExportApplications")" class="btn btn-success">
+                <i class="fas fa-file-export me-2"></i>Export
+            </a>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card card-modern">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h4>No Pending Applications</h4>
+                <p class="text-muted">There are no pending admin applications at this time.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card card-modern">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Pending Applications (@Model.Count)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-modern">
+                        <thead>
+                            <tr>
+                                <th>Applicant</th>
+                                <th>Contact</th>
+                                <th>Requested Role</th>
+                                <th>Scope</th>
+                                <th>Applied</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var application in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@application.ApplicantName</strong>
+                                        <br>
+                                        <small class="text-muted">@application.DaysSinceApplied</small>
+                                    </td>
+                                    <td>
+                                        <div>@application.Email</div>
+                                        <small class="text-muted">@application.Phone</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge
+                                                    @(application.AppliedAdminType == AdminType.UniversityAdmin ? "bg-primary" :
+                                                                                            application.AppliedAdminType == AdminType.FacultyAdmin ? "bg-info" :
+                                                                                            application.AppliedAdminType == AdminType.DepartmentAdmin ? "bg-success" :
+                                                                                            application.AppliedAdminType == AdminType.FinanceAdmin ? "bg-warning" : "bg-secondary")">
+                                    @application.AppliedAdminTypeName
+                                </span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(application.UniversityName))
+                                        {
+                                            <small>Univ: @application.UniversityName</small>
+                                
+                                            <br>
+                                        }
+                                        @if (!string.IsNullOrEmpty(application.FacultyName))
+                                        {
+                                            <small>Faculty: @application.FacultyName</small>
+                                
+                                            <br>
+                                        }
+                                        @if (!string.IsNullOrEmpty(application.DepartmentName))
+                                        {
+                                            <small>Dept: @application.DepartmentName</small>
+                                        }
+                                        @if (string.IsNullOrEmpty(application.UniversityName) &&
+                                                                        string.IsNullOrEmpty(application.FacultyName) &&
+                                                                        string.IsNullOrEmpty(application.DepartmentName))
+                                        {
+                                            <small class="text-muted">Global Access</small>
+                                        }
+                                    </td>
+                                    <td>@application.AppliedDate.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        <span class="@application.StatusBadgeClass">@application.Status</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="@Url.Action("ReviewApplication", new { id = application.Id })"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>Review
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,219 @@
+﻿@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
+        <div>
+            <a href="@Url.Action("ExportDashboard")" class="btn btn-success me-2">
+                <i class="fas fa-file-export me-2"></i>Export Report
+            </a>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fas fa-cog me-2"></i>Manage Admins
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-50 small">Total Admins</div>
+                            <div class="fs-4 fw-bold">@Model.TotalAdmins</div>
+                        </div>
+                        <i class="fas fa-user-shield fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-dark-50 small">Pending Applications</div>
+                            <div class="fs-4 fw-bold">@Model.PendingApplications</div>
+                        </div>
+                        <i class="fas fa-clock fa-2x text-dark-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-50 small">Active Admins</div>
+                            <div class="fs-4 fw-bold">@Model.ActiveAdmins</div>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-50 small">Total Users</div>
+                            <div class="fs-4 fw-bold">@Model.TotalUsers</div>
+                        </div>
+                        <i class="fas fa-users fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Analytics -->
+    <div class="row">
+        <!-- Admin Type Distribution -->
+        <div class="col-lg-6 mb-4">
+            <div class="card card-modern h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Admin Type Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="adminTypeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-6 mb-4">
+            <div class="card card-modern h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Admin Activity</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.RecentAdmins.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var admin in Model.RecentAdmins.Take(5))
+                            {
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">@admin.AdminName</h6>
+                                        <small class="text-muted">@admin.CreatedDate.ToString("MMM dd")</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <span class="badge @GetAdminTypeBadgeClass(admin.AdminType)">@admin.AdminTypeName</span>
+                                    </p>
+                                    <small class="text-muted">@admin.PermissionCount</small>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <p>No recent admin activity</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="@Url.Action("Create")" class="btn btn-outline-primary w-100 h-100 py-3">
+                                <i class="fas fa-user-plus fa-2x mb-2"></i>
+                                <h6>Create Admin</h6>
+                                <small class="text-muted">Add new administrator</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="@Url.Action("Applications")" class="btn btn-outline-warning w-100 h-100 py-3">
+                                <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                                <h6>Review Applications</h6>
+                                <small class="text-muted">@Model.PendingApplications pending</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="@Url.Action("BulkOperations")" class="btn btn-outline-info w-100 h-100 py-3">
+                                <i class="fas fa-cogs fa-2x mb-2"></i>
+                                <h6>Bulk Operations</h6>
+                                <small class="text-muted">Manage multiple admins</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="@Url.Action("AuditLogs")" class="btn btn-outline-secondary w-100 h-100 py-3">
+                                <i class="fas fa-clipboard-check fa-2x mb-2"></i>
+                                <h6>Audit Logs</h6>
+                                <small class="text-muted">View system activity</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Admin Type Distribution Chart
+            const ctx = document.getElementById('adminTypeChart');
+            if (ctx) {
+                // Prepare chart data safely
+                const chartLabels = @Html.Raw(Json.Serialize(Model.AdminsByType?.Keys.ToList() ?? new List<string>()));
+                const chartData = @Html.Raw(Json.Serialize(Model.AdminsByType?.Values.ToList() ?? new List<int>()));
+
+                const adminTypeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            data: chartData,
+                            backgroundColor: [
+                                '#dc3545', '#0d6efd', '#20c997', '#ffc107', '#6f42c1', '#fd7e14'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}
+
+@functions {
+    public string GetAdminTypeBadgeClass(AdminType adminType)
+    {
+        return adminType switch
+        {
+            AdminType.SuperAdmin => "bg-danger",
+            AdminType.UniversityAdmin => "bg-primary",
+            AdminType.FacultyAdmin => "bg-info",
+            AdminType.DepartmentAdmin => "bg-success",
+            AdminType.FinanceAdmin => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+}

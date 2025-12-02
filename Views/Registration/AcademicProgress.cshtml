@@ -1,0 +1,316 @@
+﻿@model StudentManagementSystem.Models.Student
+@{
+    ViewData["Title"] = "Academic Progress";
+    Layout = "_StudentLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-6">
+        <i class="fas fa-tasks me-2"></i>Academic Progress
+    </h1>
+    <div class="dropdown">
+        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="fas fa-download me-2"></i>Export
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf me-2"></i>PDF Report</a></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-file-excel me-2"></i>Excel Report</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Progress Overview -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Degree Progress
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <h2 class="text-primary">@((Model.PassedHours / 120.0 * 100).ToString("F1"))%</h2>
+                    <p class="text-muted">Overall Degree Completion</p>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-success" role="progressbar"
+                             style="width: @((Model.PassedHours / 120.0) * 100)%"
+                             aria-valuenow="@Model.PassedHours" aria-valuemin="0" aria-valuemax="120">
+                        </div>
+                    </div>
+                    <small class="text-muted">@Model.PassedHours of 120 credits completed</small>
+                </div>
+
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4 class="text-info">@Model.GPA.ToString("F2")</h4>
+                        <small class="text-muted">Current GPA</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-success">@Model.PassedHours</h4>
+                        <small class="text-muted">Completed Credits</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-warning">@(120 - Model.PassedHours)</h4>
+                        <small class="text-muted">Remaining Credits</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-primary">@(Model.PassedHours / 30 + 1)</h4>
+                        <small class="text-muted">Academic Level</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bullseye me-2"></i>Progress Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    @if (Model.GPA >= 3.5m)
+                    {
+                        <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
+                        <h5 class="text-success">Excellent Standing</h5>
+                        <p class="text-muted">Dean's List Candidate</p>
+                    }
+                    else if (Model.GPA >= 3.0m)
+                    {
+                        <i class="fas fa-star fa-3x text-primary mb-3"></i>
+                        <h5 class="text-primary">Good Standing</h5>
+                        <p class="text-muted">Strong academic performance</p>
+                    }
+                    else if (Model.GPA >= 2.0m)
+                    {
+                        <i class="fas fa-check-circle fa-3x text-info mb-3"></i>
+                        <h5 class="text-info">Satisfactory Standing</h5>
+                        <p class="text-muted">Meeting academic requirements</p>
+                    }
+                    else
+                    {
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <h5 class="text-warning">Academic Warning</h5>
+                        <p class="text-muted">Please meet with your advisor</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Requirements Progress -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-layer-group me-2"></i>Program Requirements
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.ProgramRequirements != null)
+                {
+                    foreach (var requirement in ViewBag.ProgramRequirements)
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>@requirement.Category</span>
+                                <span>@requirement.Completed/@requirement.Required</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width: @requirement.Percentage%"
+                                     aria-valuenow="@requirement.Percentage" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                            <small class="text-muted">@requirement.Percentage% complete</small>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>Requirements Checklist
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.RequirementsChecklist != null)
+                {
+                    foreach (var item in ViewBag.RequirementsChecklist)
+                    {
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" @(item.Completed ? "checked" : "") disabled>
+                            <label class="form-check-label @(item.Completed ? "text-success" : "text-muted")">
+                                @item.Description
+                            </label>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GPA Trend -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-chart-area me-2"></i>GPA Trend
+        </h5>
+    </div>
+    <div class="card-body">
+        @if (ViewBag.ProgressData != null && ((List<dynamic>)ViewBag.ProgressData).Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Semester</th>
+                            <th>GPA</th>
+                            <th>Credits</th>
+                            <th>Trend</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var semester in ViewBag.ProgressData)
+                        {
+                            <tr>
+                                <td>@semester.Semester</td>
+                                <td>
+                                    <strong>@semester.GPA.ToString("F2")</strong>
+                                </td>
+                                <td>@semester.Credits</td>
+                                <td>
+                                    @GetTrendIcon(semester.GPA, GetPreviousGPA(ViewBag.ProgressData, semester.Semester))
+                                </td>
+                                <td>
+                                    <span class="badge @GetGPAStatusBadge(semester.GPA)">
+                                        @GetGPAStatus(semester.GPA)
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-3">
+                <i class="fas fa-chart-line fa-2x text-muted mb-3"></i>
+                <p class="text-muted">No GPA history available yet.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Recommendations -->
+<div class="card">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-lightbulb me-2"></i>Academic Recommendations
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-graduation-cap me-2"></i>Graduation Planning</h6>
+                    <p class="mb-2">Based on your current progress, you are on track to graduate in:</p>
+                    <h5 class="text-primary">@CalculateExpectedGraduation(Model.PassedHours)</h5>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-clock me-2"></i>Next Steps</h6>
+                    <ul class="mb-0">
+                        <li>Meet with your academic advisor to review your progress</li>
+                        <li>Register for next semester's courses during priority registration</li>
+                        <li>Complete any outstanding general education requirements</li>
+                        <li>Consider internship opportunities for practical experience</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.GPA < 2.0m)
+        {
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Important Notice</h6>
+                <p class="mb-2">
+                    Your current GPA is below the minimum requirement for good academic standing.
+                    Please schedule a meeting with your academic advisor immediately to discuss an improvement plan.
+                </p>
+            </div>
+        }
+        else if (Model.GPA < 2.5m)
+        {
+            <div class="alert alert-warning">
+                <h6><i class="fas fa-info-circle me-2"></i>Improvement Opportunity</h6>
+                <p class="mb-2">
+                    Consider utilizing campus resources like tutoring services and academic workshops
+                    to improve your academic performance.
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    private string GetTrendIcon(decimal currentGPA, decimal? previousGPA)
+    {
+        if (!previousGPA.HasValue) return "<i class='fas fa-minus text-secondary'></i>";
+
+        if (currentGPA > previousGPA.Value)
+            return "<i class='fas fa-arrow-up text-success'></i>";
+        else if (currentGPA < previousGPA.Value)
+            return "<i class='fas fa-arrow-down text-danger'></i>";
+        else
+            return "<i class='fas fa-minus text-secondary'></i>";
+    }
+
+    private decimal? GetPreviousGPA(List<dynamic> progressData, string currentSemester)
+    {
+        var semesters = progressData.Select(p => p.Semester.ToString()).ToList();
+        var currentIndex = semesters.IndexOf(currentSemester);
+        return currentIndex > 0 ? progressData[currentIndex - 1].GPA : (decimal?)null;
+    }
+
+    private string GetGPAStatus(decimal gpa)
+    {
+        return gpa switch
+        {
+            >= 3.5m => "Excellent",
+            >= 3.0m => "Good",
+            >= 2.0m => "Satisfactory",
+            _ => "Needs Improvement"
+        };
+    }
+
+    private string GetGPAStatusBadge(decimal gpa)
+    {
+        return gpa switch
+        {
+            >= 3.5m => "bg-success",
+            >= 3.0m => "bg-primary",
+            >= 2.0m => "bg-info",
+            _ => "bg-warning"
+        };
+    }
+
+    private string CalculateExpectedGraduation(int passedHours)
+    {
+        var remainingCredits = 120 - passedHours;
+        var semestersRemaining = (int)Math.Ceiling(remainingCredits / 15.0);
+        var graduationDate = DateTime.Now.AddMonths(semestersRemaining * 6);
+        return graduationDate.ToString("MMMM yyyy");
+    }
+}

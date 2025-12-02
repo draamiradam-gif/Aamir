@@ -1,0 +1,153 @@
+﻿@model List<StudentManagementSystem.Models.Course>
+@{
+    ViewData["Title"] = "Available Courses";
+    var semester = ViewBag.Semester as StudentManagementSystem.Models.Semester;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-book me-2"></i>Available Courses
+            @if (semester != null)
+            {
+                <span class="h4 text-muted">- @semester.Name</span>
+            }
+        </h2>
+        <div>
+            <a href="@Url.Action("MyEnrollments", new { semesterId = semester?.Id })" class="btn btn-outline-primary">
+                <i class="fas fa-list me-1"></i>My Enrollments
+            </a>
+        </div>
+    </div>
+
+    @if (semester == null)
+    {
+        <div class="alert alert-warning">
+            <h5>No Active Semester</h5>
+            <p>Please contact administration to set up an active semester.</p>
+        </div>
+    }
+    else if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <h5>No Available Courses</h5>
+            <p>There are no available courses for the current semester or you are already enrolled in all available courses.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var course in Model)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 course-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">@course.CourseCode</h5>
+                            <span class="badge @course.StatusBadge">@course.StatusText</span>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">@course.CourseName</h6>
+                            <p class="card-text text-muted small">
+                                @(string.IsNullOrEmpty(course.Description) ? "No description available." :
+                                                        course.Description.Length > 150 ? course.Description.Substring(0, 150) + "..." : course.Description)
+                    </p>
+
+                            <div class="course-details">
+                                <div class="row small text-muted">
+                                    <div class="col-6">
+                                        <i class="fas fa-graduation-cap me-1"></i>@course.Credits Credits
+                                    </div>
+                                    <div class="col-6">
+                                        <i class="fas fa-building me-1"></i>@course.Department
+                                    </div>
+                                    <div class="col-6">
+                                        <i class="fas fa-users me-1"></i>@course.CurrentEnrollment/@course.MaxStudents
+                                    </div>
+                                    <div class="col-6">
+                                        <i class="fas fa-layer-group me-1"></i>Level @course.GradeLevel
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Requirements -->
+                    @if (course.MinGPA.HasValue || course.MinPassedHours.HasValue)
+                            {
+                                <div class="requirements mt-3 p-2 bg-light rounded">
+                                    <h6 class="small fw-bold mb-2">Requirements:</h6>
+                                    @if (course.MinGPA.HasValue)
+                                    {
+                                        <div class="small">
+                                            <i class="fas fa-chart-line me-1"></i>Min GPA: @course.MinGPA.Value.ToString("0.00")
+                                        </div>
+                                    }
+                                    @if (course.MinPassedHours.HasValue)
+                                    {
+                                        <div class="small">
+                                            <i class="fas fa-clock me-1"></i>Min Passed Hours: @course.MinPassedHours
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Prerequisites -->
+                            @if (!string.IsNullOrEmpty(course.PrerequisitesString))
+                            {
+                                <div class="prerequisites mt-2">
+                                    <h6 class="small fw-bold mb-1">Prerequisites:</h6>
+                                    <p class="small text-muted">@course.PrerequisitesString</p>
+                                </div>
+                            }
+                        </div>
+                        <div class="card-footer">
+                            <form method="post" asp-action="Enroll" class="d-grid">
+                                <input type="hidden" name="courseId" value="@course.Id" />
+                                <input type="hidden" name="semesterId" value="@semester.Id" />
+                                <button type="submit" class="btn btn-success btn-sm"
+                                        @(!course.HasAvailableSeats ? "disabled" : "")>
+                                    <i class="fas fa-plus me-1"></i>
+                                    @if (course.HasAvailableSeats)
+                                    {
+                                        <text>Enroll Now</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Course Full</text>
+                                    }
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .course-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+            .course-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+
+        .requirements, .prerequisites {
+            font-size: 0.85rem;
+        }
+
+        .bg-success {
+            background-color: #28a745 !important;
+        }
+
+        .bg-warning {
+            background-color: #ffc107 !important;
+        }
+
+        .bg-secondary {
+            background-color: #6c757d !important;
+        }
+    </style>
+}

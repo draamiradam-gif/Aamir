@@ -1,0 +1,311 @@
+﻿@model StudentManagementSystem.Models.Student
+@{
+    ViewData["Title"] = "Course Materials";
+    Layout = "_StudentLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-6">
+        <i class="fas fa-folder me-2"></i>Course Materials
+    </h1>
+    <div class="dropdown">
+        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="fas fa-filter me-2"></i>Filter by Course
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" data-course="all">All Courses</a></li>
+            @if (ViewBag.CourseMaterials != null)
+            {
+                foreach (var course in (List<dynamic>)ViewBag.CourseMaterials)
+                {
+                    <li>
+                        <a class="dropdown-item" href="#" data-course="@course.CourseCode">
+                            @course.CourseCode
+                        </a>
+                    </li>
+                }
+            }
+        </ul>
+    </div>
+</div>
+
+@if (ViewBag.CourseMaterials != null && ((List<dynamic>)ViewBag.CourseMaterials).Any())
+{
+    foreach (var course in (List<dynamic>)ViewBag.CourseMaterials)
+    {
+        <div class="card mb-4 course-materials" data-course="@course.CourseCode">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-book me-2"></i>@course.CourseCode - @course.CourseName
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (course.Materials != null && ((List<dynamic>)course.Materials).Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Document Name</th>
+                                    <th>Upload Date</th>
+                                    <th>Size</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var material in (List<dynamic>)course.Materials)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge @GetMaterialTypeBadge(material.Type?.ToString())">
+                                                @material.Type
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>@material.Name</strong>
+                                        </td>
+                                        <td>
+                                            <small>@material.UploadDate.ToString("MMM dd, yyyy")</small>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">@material.Size</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye me-1"></i>Preview
+                                                </button>
+                                                <button class="btn btn-outline-success">
+                                                    <i class="fas fa-download me-1"></i>Download
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-3">
+                        <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">No materials available for this course yet.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Course Materials Available</h5>
+            <p class="text-muted">Course materials will appear here once your instructors upload them.</p>
+        </div>
+    </div>
+}
+
+<!-- Quick Access Section -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-paperclip me-2"></i>Recent Uploads
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-pdf text-danger me-3"></i>
+                            <div>
+                                <small class="text-muted">Today</small>
+                                <p class="mb-0 small">CS101 - Week 1 Slides</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-word text-primary me-3"></i>
+                            <div>
+                                <small class="text-muted">Yesterday</small>
+                                <p class="mb-0 small">MATH101 - Assignment 1</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-excel text-success me-3"></i>
+                            <div>
+                                <small class="text-muted">2 days ago</small>
+                                <p class="mb-0 small">ENG102 - Research Template</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-download me-2"></i>Download Stats
+                </h6>
+            </div>
+            <div class="card-body">
+                @{
+                    int totalMaterials = 0;
+                    int syllabusCount = 0;
+                    int lectureCount = 0;
+                    int assignmentCount = 0;
+
+                    if (ViewBag.CourseMaterials != null)
+                    {
+                        foreach (var course in (List<dynamic>)ViewBag.CourseMaterials)
+                        {
+                            var materials = (List<dynamic>)course.Materials;
+                            totalMaterials += materials?.Count ?? 0;
+
+                            if (materials != null)
+                            {
+                                foreach (var material in materials)
+                                {
+                                    var type = material.Type?.ToString();
+                                    if (type == "Syllabus") syllabusCount++;
+                                    else if (type == "Lecture") lectureCount++;
+                                    else if (type == "Assignment") assignmentCount++;
+                                }
+                            }
+                        }
+                    }
+                }
+                <div class="text-center">
+                    <h3 class="text-primary">@totalMaterials</h3>
+                    <p class="text-muted mb-0">Total Materials Available</p>
+                </div>
+                <hr>
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Syllabus Files:</span>
+                        <strong>@syllabusCount</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Lecture Materials:</span>
+                        <strong>@lectureCount</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Assignments:</span>
+                        <strong>@assignmentCount</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Materials Guide
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info small">
+                    <h6>Using Course Materials:</h6>
+                    <ul class="mb-0 ps-3">
+                        <li>Download materials before class for preparation</li>
+                        <li>Check for updates regularly</li>
+                        <li>Contact instructor for missing materials</li>
+                        <li>Keep backup copies of important files</li>
+                    </ul>
+                </div>
+                <div class="alert alert-warning small">
+                    <h6>File Types Supported:</h6>
+                    <div class="row small">
+                        <div class="col-6">
+                            <i class="fas fa-file-pdf text-danger me-1"></i> PDF<br>
+                            <i class="fas fa-file-word text-primary me-1"></i> DOC<br>
+                            <i class="fas fa-file-powerpoint text-warning me-1"></i> PPT
+                        </div>
+                        <div class="col-6">
+                            <i class="fas fa-file-excel text-success me-1"></i> XLS<br>
+                            <i class="fas fa-file-image text-info me-1"></i> IMG<br>
+                            <i class="fas fa-file-video text-secondary me-1"></i> VID
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Course filtering
+        document.querySelectorAll('.dropdown-item[data-course]').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const courseCode = this.getAttribute('data-course');
+
+                document.querySelectorAll('.course-materials').forEach(card => {
+                    if (courseCode === 'all' || card.getAttribute('data-course') === courseCode) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Update dropdown text
+                document.querySelector('.dropdown-toggle').innerHTML =
+                    `<i class="fas fa-filter me-2"></i>${courseCode === 'all' ? 'All Courses' : courseCode}`;
+            });
+        });
+
+        // Download buttons
+        document.querySelectorAll('.btn-outline-success').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const fileName = row.cells[1].textContent.trim();
+
+                // Simulate download
+                alert(`Downloading: ${fileName}`);
+            });
+        });
+
+        // Preview buttons
+        document.querySelectorAll('.btn-outline-primary').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const fileName = row.cells[1].textContent.trim();
+                const fileType = row.cells[0].textContent.trim();
+
+                alert(`Previewing ${fileType}: ${fileName}`);
+            });
+        });
+    </script>
+}
+
+@functions {
+    private string GetMaterialTypeBadge(string type)
+    {
+        if (string.IsNullOrEmpty(type)) return "bg-dark";
+
+        return type.ToLower() switch
+        {
+            "syllabus" => "bg-primary",
+            "lecture" => "bg-info",
+            "assignment" => "bg-warning",
+            "textbook" => "bg-success",
+            "exam" => "bg-danger",
+            "project" => "bg-secondary",
+            _ => "bg-dark"
+        };
+    }
+}

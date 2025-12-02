@@ -1,0 +1,112 @@
+﻿@model StudentManagementSystem.Controllers.GradingDashboardViewModel
+@{
+    ViewData["Title"] = "Grading Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4">Grading Dashboard</h1>
+            <partial name="_AlertMessages" />
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Active Courses</h5>
+                    <h2 class="card-text">@Model.Courses.Count</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Active Semesters</h5>
+                    <h2 class="card-text">@Model.Semesters.Count</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Activities</h5>
+                    <h2 class="card-text">@Model.RecentGradingActivities.Count</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Actions</h5>
+                    <div class="btn-group-vertical w-100">
+                        <a href="@Url.Action("ManageComponents")" class="btn btn-light mb-2">Manage Components</a>
+                        <a href="@Url.Action("Reports")" class="btn btn-light">Generate Reports</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Courses</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Courses.Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var course in Model.Courses.Take(5))
+                            {
+                                <a href="@Url.Action("ManageComponents", new { courseId = course.Id })"
+                                   class="list-group-item list-group-item-action">
+                                    <strong>@course.CourseCode</strong> - @course.CourseName
+                                    <span class="badge bg-primary float-end">@course.Credits Credits</span>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No courses available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Active Semesters</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Semesters.Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var semester in Model.Semesters.Take(5))
+                            {
+                                <div class="list-group-item">
+                                    <strong>@semester.Name</strong>
+                                    <br />
+                                    <small class="text-muted">
+                                        @semester.StartDate.ToString("MMM dd, yyyy") - @semester.EndDate.ToString("MMM dd, yyyy")
+                                    </small>
+                                    <span class="badge @(semester.IsRegistrationOpen ? "bg-success" : "bg-secondary") float-end">
+                                        @(semester.IsRegistrationOpen ? "Open" : "Closed")
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No active semesters.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

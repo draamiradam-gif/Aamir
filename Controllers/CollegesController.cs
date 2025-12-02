@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace StudentManagementSystem.Controllers
 {
-    public class CollegesController : Controller
+    public class CollegesController : BaseController
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<CollegesController> _logger;
@@ -24,6 +24,10 @@ namespace StudentManagementSystem.Controllers
         // GET: Colleges
         public async Task<IActionResult> Index()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
             var colleges = await _context.Colleges
                 .Include(c => c.University)
                 .Include(c => c.Departments)
@@ -62,6 +66,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,CollegeCode,Description,UniversityId,IsActive")] College college)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (ModelState.IsValid)
             {
                 // Check if college name already exists in the same university
@@ -91,6 +100,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Colleges/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var college = await _context.Colleges.FindAsync(id);
@@ -105,6 +119,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,CollegeCode,Description,UniversityId,IsActive")] College college)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id != college.Id) return NotFound();
 
             if (ModelState.IsValid)
@@ -191,6 +210,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Colleges/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null)
             {
                 return NotFound();
@@ -220,6 +244,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var college = await _context.Colleges
                 .Include(c => c.Departments)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -244,6 +273,11 @@ namespace StudentManagementSystem.Controllers
         // GET: Colleges/Duplicate/5
         public async Task<IActionResult> Duplicate(int? id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id == null) return NotFound();
 
             var college = await _context.Colleges
@@ -270,6 +304,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Duplicate(int id, DuplicateViewModel model)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id != model.SourceId) return NotFound();
 
             var sourceCollege = await _context.Colleges
@@ -350,6 +389,11 @@ namespace StudentManagementSystem.Controllers
 
         public async Task<IActionResult> Create(int? universityId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (universityId.HasValue)
             {
                 var university = await _context.Universities.FindAsync(universityId);

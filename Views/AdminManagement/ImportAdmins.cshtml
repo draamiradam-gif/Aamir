@@ -1,0 +1,146 @@
+﻿@model AdminImportViewModel
+@{
+    ViewData["Title"] = "Import Admins";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-file-import me-2"></i>Import Admins</h1>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+
+    <!-- Validation Summary -->
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Please fix the following errors:</h5>
+            <ul class="mb-0">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card card-modern">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Import Admin Data</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" asp-action="ImportAdmins">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-4">
+                            <label asp-for="ImportFile" class="form-label fw-bold"></label>
+                            <input asp-for="ImportFile" class="form-control" accept=".xlsx,.xls,.csv" required />
+                            <span asp-validation-for="ImportFile" class="text-danger"></span>
+                            <small class="text-muted">Supported formats: Excel (.xlsx, .xls), CSV (max 10MB)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="OverwriteExisting" class="form-check-input" />
+                                <label asp-for="OverwriteExisting" class="form-check-label fw-medium"></label>
+                            </div>
+                            <small class="text-muted">If checked, existing admins with same email will be updated</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input asp-for="SendWelcomeEmail" class="form-check-input" />
+                                <label asp-for="SendWelcomeEmail" class="form-check-label fw-medium"></label>
+                            </div>
+                            <small class="text-muted">Send welcome email with credentials to new admins</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-upload me-2"></i>Import Admins
+                            </button>
+                            <a href="@Url.Action("DownloadTemplate")" class="btn btn-outline-info">
+                                <i class="fas fa-download me-2"></i>Download Template
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card card-modern">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Import Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success mb-3">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Tip:</strong> Download the template first to see the correct format
+                    </div>
+
+                    <h6><i class="fas fa-check-circle text-success me-2"></i>Required Columns:</h6>
+                    <ul class="small">
+                        <li><strong>Email</strong> (Valid email address)</li>
+                        <li><strong>FullName</strong> (Display name)</li>
+                        <li><strong>AdminType</strong> (SuperAdmin, UniversityAdmin, FacultyAdmin, DepartmentAdmin, FinanceAdmin, StudentAdmin)</li>
+                        <li><strong>Password</strong> (Min 6 chars, uppercase, lowercase, number)</li>
+                    </ul>
+
+                    <h6><i class="fas fa-star text-warning me-2"></i>Optional Columns:</h6>
+                    <ul class="small">
+                        <li><strong>Permissions</strong> (comma-separated: Courses.View, Students.Create, etc.)</li>
+                        <li><strong>UniversityScope</strong> (ID number for university scope)</li>
+                        <li><strong>FacultyScope</strong> (ID number for faculty scope)</li>
+                        <li><strong>DepartmentScope</strong> (ID number for department scope)</li>
+                    </ul>
+
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> Passwords will be set as provided. Ensure they meet complexity requirements.
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <a href="@Url.Action("DownloadTemplate")" class="btn btn-success btn-sm">
+                            <i class="fas fa-download me-1"></i>Get Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // File size validation
+            $('input[type="file"]').change(function() {
+                var file = this.files[0];
+                if (file) {
+                    if (file.size > 10 * 1024 * 1024) { // 10MB
+                        alert('File size exceeds 10MB limit. Please select a smaller file.');
+                        $(this).val('');
+                    }
+
+                    // Show file name
+                    var fileName = file.name;
+                    $(this).next('.custom-file-label').html(fileName);
+                }
+            });
+
+            // Form submission confirmation
+            $('form').submit(function() {
+                var fileInput = $('#ImportFile');
+                if (!fileInput.val()) {
+                    alert('Please select a file to upload.');
+                    return false;
+                }
+                return confirm('Are you sure you want to import admins? This may overwrite existing data.');
+            });
+        });
+    </script>
+}

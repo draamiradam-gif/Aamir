@@ -12,7 +12,7 @@ using StudentManagementSystem.ViewModels;
 namespace StudentManagementSystem.Controllers
 {
     [Authorize]
-    public class QRCodeController : Controller
+    public class QRCodeController : BaseController
     {
         private readonly IQRCodeService _qrCodeService;
         private readonly ICourseService _courseService;
@@ -40,6 +40,11 @@ namespace StudentManagementSystem.Controllers
 
         public async Task<IActionResult> Create()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var courses = await _courseService.GetAllCoursesAsync();
             ViewBag.Courses = new SelectList(courses, "Id", "CourseCodeName");
             return View();
@@ -49,6 +54,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(QRCodeSession session)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 if (ModelState.IsValid)
@@ -259,6 +269,11 @@ namespace StudentManagementSystem.Controllers
         [HttpPost]
         public async Task<IActionResult> ExportSessionExcel(int sessionId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var fileBytes = await _qrCodeService.ExportAttendanceToExcelAsync(sessionId);
@@ -280,6 +295,11 @@ namespace StudentManagementSystem.Controllers
         [HttpPost]
         public async Task<IActionResult> ExportSessionPdf(int sessionId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var fileBytes = await _qrCodeService.ExportAttendanceToPdfAsync(sessionId);
@@ -298,6 +318,11 @@ namespace StudentManagementSystem.Controllers
 
         public async Task<IActionResult> ExportAllSessions(DateTime? startDate, DateTime? endDate)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var fileBytes = await _qrCodeService.ExportAllSessionsToExcelAsync(startDate, endDate);
@@ -325,6 +350,11 @@ namespace StudentManagementSystem.Controllers
 
         public IActionResult ImportAttendance()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             return View();
         }
 
@@ -332,6 +362,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ImportAttendance(IFormFile file)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 if (file == null || file.Length == 0)
@@ -399,6 +434,11 @@ namespace StudentManagementSystem.Controllers
 
         public IActionResult BulkExport()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             return View();
         }
 
@@ -408,6 +448,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EndSession(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var session = await _qrCodeService.GetSessionByIdAsync(id);
@@ -507,6 +552,11 @@ namespace StudentManagementSystem.Controllers
         // ADD THIS METHOD TO YOUR QRCodeController:
         public async Task<IActionResult> Reports()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var sessions = await _qrCodeService.GetActiveSessionsAsync();
@@ -540,6 +590,11 @@ namespace StudentManagementSystem.Controllers
         [HttpPost]
         public async Task<IActionResult> ReopenSession(int id, int additionalMinutes = 15)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var success = await _qrCodeService.ReopenSessionAsync(id, additionalMinutes);
@@ -565,6 +620,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteSession(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var success = await _qrCodeService.DeleteSessionWithAttendanceAsync(id);
@@ -604,6 +664,11 @@ namespace StudentManagementSystem.Controllers
         // In QRCodeController.cs
         public async Task<IActionResult> Edit(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var session = await _qrCodeService.GetSessionByIdAsync(id);
             if (session == null)
             {
@@ -620,6 +685,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, QRCodeSession session)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             if (id != session.Id)
             {
                 return NotFound();
@@ -692,6 +762,11 @@ namespace StudentManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportAttendance(int sessionId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var fileBytes = await _qrCodeService.ExportAttendanceToExcelAsync(sessionId);

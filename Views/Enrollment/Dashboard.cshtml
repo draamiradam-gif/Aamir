@@ -1,0 +1,257 @@
+﻿@model StudentManagementSystem.Models.EnrollmentReport
+@{
+    ViewData["Title"] = "Enrollment Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-chart-line me-2"></i>Enrollment Dashboard
+        </h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" id="refreshDashboard">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <a href="@Url.Action("GenerateReport", "Enrollment")" class="btn btn-success">
+                <i class="fas fa-download"></i> Export Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.TotalEnrollments</h4>
+                            <p class="mb-0">Total Enrollments</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.ActiveEnrollments</h4>
+                            <p class="mb-0">Active Enrollments</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.WaitlistedEnrollments</h4>
+                            <p class="mb-0">Waitlisted</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.CourseStats.Count</h4>
+                            <p class="mb-0">Active Courses</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-book fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Enrollment Statistics -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Course Enrollment Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="max-height: 70vh; overflow: auto;">
+                        <table class="table table-striped" id="courseStatsTable">
+                            <thead>
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Current/Max</th>
+                                    <th>Waitlist</th>
+                                    <th>Utilization</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var stat in Model.CourseStats)
+                                {
+                                    var utilization = stat.MaxCapacity > 0 ? (stat.CurrentEnrollment * 100.0) / stat.MaxCapacity : 0;
+                                    <tr>
+                                        <td>@stat.CourseCode</td>
+                                        <td>@stat.CourseName</td>
+                                        <td>@stat.CurrentEnrollment / @stat.MaxCapacity</td>
+                                        <td>
+                                            <span class="badge bg-warning">@stat.WaitlistCount</span>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar @(utilization >= 90 ? "bg-danger" : utilization >= 70 ? "bg-warning" : "bg-success")"
+                                                     style="width: @(utilization)%"
+                                                     title="@utilization.ToString("0.0")%">
+                                                </div>
+                                            </div>
+                                            <small>@utilization.ToString("0.0")%</small>
+                                        </td>
+                                        <td>
+                                            @if (utilization >= 90)
+                                            {
+                                                <span class="badge bg-danger">Full</span>
+                                            }
+                                            else if (utilization >= 70)
+                                            {
+                                                <span class="badge bg-warning">High Demand</span>
+                                            }
+                                            else if (stat.WaitlistCount > 0)
+                                            {
+                                                <span class="badge bg-info">Waitlist</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">Available</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Quick Actions -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("BulkEnrollment", "Enrollment")" class="btn btn-primary">
+                            <i class="fas fa-users me-1"></i> Bulk Enrollment
+                        </a>
+                        <a href="@Url.Action("WaitlistManagement", "Enrollment")" class="btn btn-warning">
+                            <i class="fas fa-clock me-1"></i> Manage Waitlists
+                        </a>
+                        <a href="@Url.Action("ConflictResolution", "Enrollment")" class="btn btn-info">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Resolve Conflicts
+                        </a>
+                        <button class="btn btn-success" id="processWaitlistsBtn">
+                            <i class="fas fa-cog me-1"></i> Process Waitlists
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Enrollment Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recentActivity">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Refresh dashboard
+            $('#refreshDashboard').on('click', function() {
+                location.reload();
+            });
+
+            // Process waitlists - FIXED: Use API endpoint
+            $('#processWaitlistsBtn').on('click', function() {
+                const btn = $(this);
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Processing...');
+
+                // Use API endpoint for processing waitlists
+                $.post('@Url.Action("ProcessAllWaitlists", "Enrollment")')  // CHANGED: Using 0/0 for "all"
+                    .done(function(result) {
+                        showToast('Success', 'Waitlists processed successfully!', 'success');
+                        setTimeout(() => location.reload(), 2000);
+                    })
+                    .fail(function(xhr, status, error) {
+                        showToast('Error', 'Failed to process waitlists: ' + error, 'error');
+                    })
+                    .always(function() {
+                        btn.prop('disabled', false).html('<i class="fas fa-cog me-1"></i> Process Waitlists');
+                    });
+            });
+
+            // Load recent activity - FIXED: Use API endpoint
+            loadRecentActivity();
+
+            function loadRecentActivity() {
+                $.get('/api/EnrollmentApi/recent-activity')  // CHANGED
+                    .done(function(data) {
+                        $('#recentActivity').html(data);
+                    })
+                    .fail(function() {
+                        $('#recentActivity').html('<div class="text-center text-danger">Failed to load activity</div>');
+                    });
+            }
+
+            function showToast(title, message, type) {
+                // Toast implementation
+                const toastClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+
+                const toast = document.createElement('div');
+                toast.className = `alert ${toastClass} alert-dismissible fade show alert-toast`;
+                toast.style.position = 'fixed';
+                toast.style.top = '20px';
+                toast.style.right = '20px';
+                toast.style.zIndex = '1060';
+                toast.style.minWidth = '300px';
+                toast.innerHTML = `
+                    <strong>${title}</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 5000);
+            }
+        });
+    </script>
+}
+}

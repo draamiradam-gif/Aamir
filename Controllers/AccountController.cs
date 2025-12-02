@@ -1,5 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using StudentManagementSystem.Models;
+using StudentManagementSystem.Services;
+using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 
 namespace StudentManagementSystem.Controllers
 {
@@ -7,93 +11,96 @@ namespace StudentManagementSystem.Controllers
     {
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IAdminService _adminService;
 
-        public AccountController(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
+        public AccountController(
+            SignInManager<IdentityUser> signInManager,
+            UserManager<IdentityUser> userManager,
+            IAdminService adminService)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _adminService = adminService;
         }
 
         [HttpGet]
-        public IActionResult Login(string? returnUrl = null)
+        public IActionResult Login(string? returnUrl = null) // Add ? to make it nullable
         {
-            ViewData["ReturnUrl"] = returnUrl;
+            ViewData["ReturnUrl"] = returnUrl ?? Url.Content("~/"); // Provide default value
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(string username, string password, string? returnUrl = null)
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null) // Add ? to make it nullable
         {
-            returnUrl ??= Url.Content("~/");
+            ViewData["ReturnUrl"] = returnUrl ?? Url.Content("~/"); // Provide default value
 
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            if (ModelState.IsValid)
             {
-                ModelState.AddModelError(string.Empty, "Username and password are required.");
-                return View();
+                var result = await _signInManager.PasswordSignInAsync(
+                    model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+
+                if (result.Succeeded)
+                {
+                    // Check if user is admin and redirect accordingly
+                    var user = await _userManager.FindByEmailAsync(model.Email);
+                    if (user != null)
+                    {
+                        // Check if user has any admin privileges
+                        var isSuperAdmin = await _adminService.IsSuperAdminAsync(user.Id);
+                        var adminPrivilege = await _adminService.GetAdminPrivilegeAsync(user.Id);
+
+                        if (isSuperAdmin || adminPrivilege != null)
+                        {
+                            return RedirectToAction("Index", "AdminManagement");
+                        }
+                    }
+
+                    return RedirectToLocal(returnUrl);
+                }
+
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             }
 
-            var result = await _signInManager.PasswordSignInAsync(username, password, isPersistent: false, lockoutOnFailure: false);
+            return View(model);
+        }
 
-            if (result.Succeeded)
+        private IActionResult RedirectToLocal(string? returnUrl)
+        {
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
-                return LocalRedirect(returnUrl);
+                return Redirect(returnUrl);
             }
             else
             {
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                ViewData["ReturnUrl"] = returnUrl;
-                return View();
+                return RedirectToAction("Index", "Home");
             }
         }
 
-        [HttpGet]
-        public IActionResult Register(string? returnUrl = null)
-        {
-            ViewData["ReturnUrl"] = returnUrl;
-            return View();
-        }
+        //private IActionResult RedirectToLocal(string returnUrl)
+        //{
+        //    if (Url.IsLocalUrl(returnUrl))
+        //    {
+        //        return Redirect(returnUrl);
+        //    }
+        //    else
+        //    {
+        //        return RedirectToAction("Index", "Home");
+        //    }
+        //}
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> Register(string username, string password, string? returnUrl = null)
-        {
-            returnUrl ??= Url.Content("~/");
+    public class LoginViewModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
 
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
-            {
-                ModelState.AddModelError(string.Empty, "Username and password are required.");
-                ViewData["ReturnUrl"] = returnUrl;
-                return View();
-            }
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = string.Empty;
 
-            var user = new IdentityUser { UserName = username };
-            var result = await _userManager.CreateAsync(user, password);
-
-            if (result.Succeeded)
-            {
-                await _signInManager.SignInAsync(user, isPersistent: false);
-                return LocalRedirect(returnUrl);
-            }
-
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
-
-            ViewData["ReturnUrl"] = returnUrl;
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Logout()
-        {
-            await _signInManager.SignOutAsync();
-            return RedirectToAction("Index", "Home");
-        }
-
-        public IActionResult AccessDenied()
-        {
-            return View();
-        }
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
     }
 }

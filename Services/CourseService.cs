@@ -1,12 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-using StudentManagementSystem.Data;
-using StudentManagementSystem.Models;
-using StudentManagementSystem.Models.ViewModels;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using StudentManagementSystem.Data;
+using StudentManagementSystem.Models;
+using StudentManagementSystem.Models.ViewModels;
 using System.Drawing;
 
 
@@ -1200,9 +1201,10 @@ namespace StudentManagementSystem.Services
 
         ///////////////////////
         ///
+
         //public async Task<ImportResult> AnalyzeExcelImportAsync(Stream stream, ImportSettings? settings = null)
         //{
-        //    return await Task.Run(() =>
+        //    return await Task.Run(async () =>
         //    {
         //        var result = new ImportResult();
 
@@ -1241,6 +1243,9 @@ namespace StudentManagementSystem.Services
         //            var errors = new List<string>();
         //            var previewData = new List<Dictionary<string, object>>();
 
+        //            // Get default semester ID
+        //            var defaultSemesterId = await GetDefaultSemesterId();
+
         //            // Process ALL rows from 2 to rowCount
         //            for (int row = 2; row <= rowCount; row++)
         //            {
@@ -1250,6 +1255,8 @@ namespace StudentManagementSystem.Services
         //                    var course = new Course();
         //                    var rowData = new Dictionary<string, object>();
         //                    string? prerequisitesValue = null;
+        //                    string? courseSpecValue = null;
+        //                    string? iconValue = null;
 
         //                    // Map columns by header name
         //                    for (int col = 1; col <= headers.Count; col++)
@@ -1262,10 +1269,12 @@ namespace StudentManagementSystem.Services
 
         //                        switch (header)
         //                        {
+        //                            case "coursecode (required)":
         //                            case "coursecode":
         //                            case "كود المادة":
         //                                course.CourseCode = value;
         //                                break;
+        //                            case "coursename (required)":
         //                            case "coursename":
         //                            case "اسم المادة":
         //                                course.CourseName = value;
@@ -1278,6 +1287,8 @@ namespace StudentManagementSystem.Services
         //                            case "الساعات المعتمدة":
         //                                if (int.TryParse(value, out int credits))
         //                                    course.Credits = credits;
+        //                                else if (string.IsNullOrEmpty(value))
+        //                                    course.Credits = 3; // Default value
         //                                break;
         //                            case "department":
         //                            case "القسم":
@@ -1285,27 +1296,55 @@ namespace StudentManagementSystem.Services
         //                                break;
         //                            case "semester":
         //                            case "الفصل الدراسي":
-        //                                if (int.TryParse(value, out int semester))
-        //                                    course.Semester = semester;
+        //                                // ✅ FIXED: Use SemesterId instead of Semester
+        //                                if (int.TryParse(value, out int semesterId))
+        //                                {
+        //                                    // Check if this semester ID exists
+        //                                    var semesterExists = await _context.Semesters.AnyAsync(s => s.Id == semesterId) || semesterId == 0;
+        //                                    if (semesterExists)
+        //                                    {
+        //                                        course.SemesterId = semesterId;
+        //                                    }
+        //                                    else
+        //                                    {
+        //                                        course.SemesterId = defaultSemesterId;
+        //                                    }
+        //                                }
+        //                                else if (string.IsNullOrEmpty(value))
+        //                                {
+        //                                    course.SemesterId = defaultSemesterId; // Default semester
+        //                                }
         //                                break;
         //                            case "maxstudents":
         //                            case "الحد الأقصى للطلاب":
         //                                if (int.TryParse(value, out int maxStudents))
         //                                    course.MaxStudents = maxStudents;
+        //                                else if (string.IsNullOrEmpty(value))
+        //                                    course.MaxStudents = 1000; // Default value
         //                                break;
         //                            case "mingpa":
         //                            case "الحد الأدنى للمعدل التراكمي":
         //                                if (decimal.TryParse(value, out decimal minGPA))
         //                                    course.MinGPA = minGPA;
+        //                                else if (string.IsNullOrEmpty(value))
+        //                                    course.MinGPA = 2.0m; // Default value
         //                                break;
         //                            case "minpassedhours":
         //                            case "الحد الأدنى للساعات المنجزة":
         //                                if (int.TryParse(value, out int minPassedHours))
         //                                    course.MinPassedHours = minPassedHours;
+        //                                else if (string.IsNullOrEmpty(value))
+        //                                    course.MinPassedHours = 0; // Default value
         //                                break;
         //                            case "prerequisites":
         //                            case "المتطلبات السابقة":
         //                                prerequisitesValue = value;
+        //                                break;
+        //                            case "coursespecification":
+        //                                courseSpecValue = value;
+        //                                break;
+        //                            case "icon":
+        //                                iconValue = value;
         //                                break;
         //                            case "isactive":
         //                            case "نشط":
@@ -1315,23 +1354,30 @@ namespace StudentManagementSystem.Services
         //                                    "نعم" => true,
         //                                    "true" => true,
         //                                    "1" => true,
+        //                                    "y" => true,
         //                                    _ => false
         //                                };
         //                                break;
         //                        }
         //                    }
 
-        //                    // ✅ STORE PREREQUISITES DATA FOR LATER PROCESSING
+        //                    // ✅ STORE NEW FIELDS
         //                    if (!string.IsNullOrEmpty(prerequisitesValue))
         //                    {
-        //                        // Store prerequisites in a property that can be used later
-        //                        // You can add a temporary property to Course or store in rowData
-        //                        rowData["PrerequisitesRaw"] = prerequisitesValue;
+        //                        course.PrerequisitesString = prerequisitesValue;
+        //                    }
+        //                    if (!string.IsNullOrEmpty(courseSpecValue))
+        //                    {
+        //                        course.CourseSpecification = courseSpecValue;
+        //                    }
+        //                    if (!string.IsNullOrEmpty(iconValue))
+        //                    {
+        //                        course.Icon = iconValue;
         //                    }
 
         //                    string? validationError = null;
 
-        //                    // Validate required fields
+        //                    // ✅ FIXED VALIDATION: Updated for SemesterId
         //                    if (string.IsNullOrEmpty(course.CourseCode))
         //                    {
         //                        validationError = "Course Code is required";
@@ -1344,9 +1390,16 @@ namespace StudentManagementSystem.Services
         //                    {
         //                        validationError = "Credits must be between 1 and 6";
         //                    }
-        //                    else if (course.Semester < 1 || course.Semester > 8)
+        //                    // ❌ PROBLEMATIC CODE - COMMENTED OUT
+        //                    // This was forcing SemesterId = 0 (unassigned) to be changed to defaultSemesterId (1)
+        //                    // else if (course.SemesterId < 1) // ✅ Changed from Semester to SemesterId
+        //                    // {
+        //                    //     course.SemesterId = await GetDefaultSemesterId();
+        //                    //     //validationError = "Semester ID must be a valid semester";
+        //                    // }
+        //                    else if (course.MaxStudents < 1 || course.MaxStudents > 1000)
         //                    {
-        //                        validationError = "Semester must be between 1 and 8";
+        //                        validationError = "Max Students must be between 1 and 1000";
         //                    }
 
         //                    if (validationError != null)
@@ -1377,10 +1430,13 @@ namespace StudentManagementSystem.Services
         //                            ["Description"] = course.Description ?? "N/A",
         //                            ["Credits"] = course.Credits,
         //                            ["Department"] = course.Department ?? "N/A",
-        //                            ["Semester"] = course.Semester,
+        //                            ["SemesterId"] = course.SemesterId, // ✅ Changed from Semester
         //                            ["MaxStudents"] = course.MaxStudents,
-        //                            ["MinGPA"] = course.MinGPA,
-        //                            ["Prerequisites"] = prerequisitesValue ?? "None", // ✅ ADD PREREQUISITES TO PREVIEW
+        //                            ["MinGPA"] = course.MinGPA ?? 0,
+        //                            ["MinPassedHours"] = course.MinPassedHours ?? 0,
+        //                            ["Prerequisites"] = prerequisitesValue ?? "None",
+        //                            ["CourseSpecification"] = courseSpecValue ?? "None",
+        //                            ["Icon"] = iconValue ?? "None",
         //                            ["IsActive"] = course.IsActive ? "Yes" : "No"
         //                        };
         //                        previewData.Add(previewRow);
@@ -1422,6 +1478,7 @@ namespace StudentManagementSystem.Services
         //    });
         //}
 
+        //////////////
         public async Task<ImportResult> AnalyzeExcelImportAsync(Stream stream, ImportSettings? settings = null)
         {
             return await Task.Run(async () =>
@@ -1464,7 +1521,8 @@ namespace StudentManagementSystem.Services
                     var previewData = new List<Dictionary<string, object>>();
 
                     // Get default semester ID
-                    var defaultSemesterId = await GetDefaultSemesterId();
+                    // ❌ PROBLEMATIC: Comment out this line - it gets default semester (1)
+                    // var defaultSemesterId = await GetDefaultSemesterId();
 
                     // Process ALL rows from 2 to rowCount
                     for (int row = 2; row <= rowCount; row++)
@@ -1520,19 +1578,25 @@ namespace StudentManagementSystem.Services
                                         if (int.TryParse(value, out int semesterId))
                                         {
                                             // Check if this semester ID exists
-                                            var semesterExists = await _context.Semesters.AnyAsync(s => s.Id == semesterId);
+                                            var semesterExists = await _context.Semesters.AnyAsync(s => s.Id == semesterId) || semesterId == 0;
                                             if (semesterExists)
                                             {
                                                 course.SemesterId = semesterId;
                                             }
                                             else
                                             {
-                                                course.SemesterId = defaultSemesterId;
+                                                // ❌ PROBLEMATIC: Comment out - don't use default semester
+                                                // course.SemesterId = defaultSemesterId;
+                                                // ✅ FIX: Use the Excel value even if semester doesn't exist
+                                                course.SemesterId = semesterId;
                                             }
                                         }
                                         else if (string.IsNullOrEmpty(value))
                                         {
-                                            course.SemesterId = defaultSemesterId; // Default semester
+                                            // ❌ PROBLEMATIC: Comment out - don't use default semester for empty values
+                                            // course.SemesterId = defaultSemesterId;
+                                            // ✅ FIX: Use 0 (unassigned) for empty values
+                                            course.SemesterId = 0;
                                         }
                                         break;
                                     case "maxstudents":
@@ -1610,11 +1674,12 @@ namespace StudentManagementSystem.Services
                             {
                                 validationError = "Credits must be between 1 and 6";
                             }
-                            else if (course.SemesterId < 1) // ✅ Changed from Semester to SemesterId
-                            {
-                                course.SemesterId = await GetDefaultSemesterId();
-                                //validationError = "Semester ID must be a valid semester";
-                            }
+                            // ❌ PROBLEMATIC: Comment out this entire block - it forces default semester
+                            // else if (course.SemesterId < 1) 
+                            // {
+                            //     course.SemesterId = await GetDefaultSemesterId();
+                            //     //validationError = "Semester ID must be a valid semester";
+                            // }
                             else if (course.MaxStudents < 1 || course.MaxStudents > 1000)
                             {
                                 validationError = "Max Students must be between 1 and 1000";
@@ -1648,10 +1713,10 @@ namespace StudentManagementSystem.Services
                                     ["Description"] = course.Description ?? "N/A",
                                     ["Credits"] = course.Credits,
                                     ["Department"] = course.Department ?? "N/A",
-                                    ["SemesterId"] = course.SemesterId, // ✅ Changed from Semester
+                                    ["SemesterId"] = course.SemesterId?.ToString() ?? "null", // ✅ Changed from Semester
                                     ["MaxStudents"] = course.MaxStudents,
-                                    ["MinGPA"] = course.MinGPA??0,
-                                    ["MinPassedHours"] = course.MinPassedHours?? 0,
+                                    ["MinGPA"] = course.MinGPA ?? 0,
+                                    ["MinPassedHours"] = course.MinPassedHours ?? 0,
                                     ["Prerequisites"] = prerequisitesValue ?? "None",
                                     ["CourseSpecification"] = courseSpecValue ?? "None",
                                     ["Icon"] = iconValue ?? "None",
@@ -1695,6 +1760,8 @@ namespace StudentManagementSystem.Services
                 return result;
             });
         }
+        /////////////////
+
 
         // Add this method to process prerequisites after courses are imported
         private async Task ProcessPrerequisitesAsync(List<Course> importedCourses, Dictionary<string, string> prerequisitesMapping)
@@ -2170,5 +2237,8 @@ namespace StudentManagementSystem.Services
                 await _context.SaveChangesAsync();
             }
         }
+
+        
+
     }
 }

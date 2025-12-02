@@ -1,0 +1,317 @@
+﻿@model StudentManagementSystem.Models.Student
+@{
+    ViewData["Title"] = "Student Dashboard";
+    Layout = "_StudentLayout";
+}
+
+<div class="row">
+    <!-- Student Info Sidebar -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-graduate me-2"></i>Student Profile
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-user-circle fa-4x text-primary"></i>
+                </div>
+                <h4>@Model.Name</h4>
+                <p class="text-muted">@Model.StudentId</p>
+                <div class="row text-start">
+                    <div class="col-6">
+                        <small class="text-muted">Department:</small>
+                        <p class="mb-2">@Model.StudentDepartment?.Name</p>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Grade Level:</small>
+                        <p class="mb-2">@(Model.PassedHours / 30 + 1)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Academic Summary -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Academic Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-primary mb-1">@Model.GPA.ToString("F2")</h3>
+                            <small class="text-muted">GPA</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-success mb-1">@Model.PassedHours</h3>
+                            <small class="text-muted">Passed Hours</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress mb-2">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width: @((Model.PassedHours / 120.0) * 100)%"
+                         aria-valuenow="@Model.PassedHours" aria-valuemin="0" aria-valuemax="120">
+                    </div>
+                </div>
+                <small class="text-muted">@Model.PassedHours of 120 credits completed</small>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-rocket me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-controller="Registration" asp-action="StudentPortal" asp-route-studentId="@Model.Id"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-book me-2"></i>Course Registration
+                    </a>
+                    <a asp-controller="Registration" asp-action="MyGrades" asp-route-studentId="@Model.Id"
+                       class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-chart-bar me-2"></i>View Grades
+                    </a>
+                    <a asp-controller="Registration" asp-action="MySchedule" asp-route-studentId="@Model.Id"
+                       class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-calendar me-2"></i>My Schedule
+                    </a>
+                    <a asp-controller="Registration" asp-action="Transcript" asp-route-studentId="@Model.Id"
+                       class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-file-alt me-2"></i>Unofficial Transcript
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-8">
+        <!-- Welcome Card -->
+        <div class="card mb-4 bg-gradient-primary text-white">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-8">
+                        <h3>Welcome back, @Model.Name!</h3>
+                        <p class="mb-0">Here's your academic overview for this semester.</p>
+                    </div>
+                    <div class="col-4 text-end">
+                        <i class="fas fa-graduation-cap fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Courses -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-book-open me-2"></i>Current Courses
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.CourseEnrollments.Any(ce => ce.IsActive && !ce.IsCompleted))
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Credits</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var enrollment in Model.CourseEnrollments.Where(ce => ce.IsActive && !ce.IsCompleted))
+                                {
+                                    <tr>
+                                        <td>@enrollment.Course?.CourseCode</td>
+                                        <td>@enrollment.Course?.CourseName</td>
+                                        <td>@enrollment.Course?.Credits</td>
+                                        <td>
+                                            <span class="badge bg-success">In Progress</span>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar" role="progressbar" style="width: 45%"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-3">
+                        <i class="fas fa-book fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">No active courses this semester.</p>
+                        <a asp-controller="Registration" asp-action="StudentPortal" asp-route-studentId="@Model.Id"
+                           class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i>Register for Courses
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Academic Progress -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-tasks me-2"></i>Requirements Progress
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>Core Courses</small>
+                                <small>75%</small>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-primary" style="width: 75%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>Electives</small>
+                                <small>50%</small>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-info" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>General Education</small>
+                                <small>100%</small>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-bell me-2"></i>Notifications
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item px-0">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-info-circle text-primary me-3"></i>
+                                    <div>
+                                        <small class="text-muted">Today</small>
+                                        <p class="mb-0 small">Registration for next semester opens soon</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="list-group-item px-0">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-triangle text-warning me-3"></i>
+                                    <div>
+                                        <small class="text-muted">2 days ago</small>
+                                        <p class="mb-0 small">Assignment due in CS101</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="list-group-item px-0">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <div>
+                                        <small class="text-muted">1 week ago</small>
+                                        <p class="mb-0 small">Your grade has been posted for MATH101</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Deadlines -->
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-times me-2"></i>Upcoming Deadlines
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Assignment</th>
+                                <th>Due Date</th>
+                                <th>Days Left</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>CS101</td>
+                                <td>Programming Project 2</td>
+                                <td>@DateTime.Now.AddDays(3).ToString("MMM dd")</td>
+                                <td><span class="badge bg-warning">3 days</span></td>
+                            </tr>
+                            <tr>
+                                <td>MATH101</td>
+                                <td>Chapter 5 Quiz</td>
+                                <td>@DateTime.Now.AddDays(5).ToString("MMM dd")</td>
+                                <td><span class="badge bg-info">5 days</span></td>
+                            </tr>
+                            <tr>
+                                <td>ENG102</td>
+                                <td>Research Paper Draft</td>
+                                <td>@DateTime.Now.AddDays(7).ToString("MMM dd")</td>
+                                <td><span class="badge bg-success">7 days</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .bg-gradient-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3) !important;
+        }
+
+        .progress {
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            border-radius: 10px;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+    </style>
+}

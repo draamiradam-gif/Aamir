@@ -1,0 +1,282 @@
+﻿@model StudentManagementSystem.Models.Student
+@{
+    ViewData["Title"] = "Unofficial Transcript";
+    Layout = "_StudentLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-6">
+        <i class="fas fa-file-alt me-2"></i>Unofficial Transcript
+    </h1>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fas fa-print me-2"></i>Print Transcript
+    </button>
+</div>
+
+<!-- Transcript Header -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <h2 class="text-primary">@Model.StudentDepartment?.University?.Name</h2>
+                <h4>Unofficial Academic Transcript</h4>
+                <p class="text-muted mb-0">Generated on: @DateTime.Now.ToString("MMMM dd, yyyy")</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="border rounded p-3 bg-light">
+                    <h5 class="mb-1">@Model.Name</h5>
+                    <p class="mb-1">Student ID: @Model.StudentId</p>
+                    <p class="mb-1">Program: @Model.StudentDepartment?.Name</p>
+                    <p class="mb-0">Cumulative GPA: <strong>@Model.GPA.ToString("F2")</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Academic Summary -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">@Model.GPA.ToString("F2")</h3>
+                <p class="text-muted mb-0">Cumulative GPA</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">@ViewBag.TotalCredits</h3>
+                <p class="text-muted mb-0">Total Credits</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-info">@Model.PassedHours</h3>
+                <p class="text-muted mb-0">Passed Hours</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">@(120 - Model.PassedHours)</h3>
+                <p class="text-muted mb-0">Remaining Hours</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transcript Data -->
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-graduation-cap me-2"></i>Academic Record
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        @if (ViewBag.TranscriptData != null && ((List<StudentManagementSystem.Models.FinalGrade>)ViewBag.TranscriptData).Any())
+        {
+            var transcriptData = (List<StudentManagementSystem.Models.FinalGrade>)ViewBag.TranscriptData;
+            var semesters = transcriptData.GroupBy(t => t.Semester).OrderBy(g => g.Key?.StartDate);
+
+            foreach (var semester in semesters)
+            {
+                <div class="p-3 border-bottom">
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-calendar me-2"></i>@semester.Key?.Name
+                        <small class="text-muted">
+                            (@semester.Key?.StartDate.ToString("MMM yyyy") - @semester.Key?.EndDate.ToString("MMM yyyy"))
+                        </small>
+                    </h6>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless">
+                            <thead>
+                                <tr class="table-light">
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th class="text-center">Credits</th>
+                                    <th class="text-center">Grade</th>
+                                    <th class="text-center">Grade Points</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var grade in semester.OrderBy(g => g.Course?.CourseCode))
+                                {
+                                    <tr>
+                                        <td>@grade.Course?.CourseCode</td>
+                                        <td>@grade.Course?.CourseName</td>
+                                        <td class="text-center">@grade.Course?.Credits</td>
+                                        <td class="text-center">
+                                            <span class="badge @GetGradeBadgeClass(grade.FinalGradeLetter)">
+                                                @grade.FinalGradeLetter
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <strong>@(grade.FinalGradePoints?.ToString("F2") ?? "-")</strong>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge @GetStatusBadgeClass(grade.GradeStatus)">
+                                                @grade.GradeStatus
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="2"><strong>Semester Summary</strong></td>
+                                    <td class="text-center">
+                                        <strong>@semester.Sum(g => g.Course?.Credits ?? 0)</strong>
+                                    </td>
+                                    <td class="text-center">-</td>
+                                    <td class="text-center">
+                                        <strong>@CalculateSemesterGPA(semester.ToList()).ToString("F2")</strong>
+                                    </td>
+                                    <td class="text-center">-</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center py-4">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No transcript data available</h5>
+                <p class="text-muted">Your academic record will appear here once you complete courses.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="card-title mb-0">Grade Legend</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">A</span>
+                            <small>4.0 points</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">B</span>
+                            <small>3.0 points</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-info me-2">C</span>
+                            <small>2.0 points</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-warning me-2">D</span>
+                            <small>1.0 points</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-danger me-2">F</span>
+                            <small>0.0 points</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-secondary me-2">W</span>
+                            <small>Withdrawn</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="card-title mb-0">Transcript Notes</h6>
+            </div>
+            <div class="card-body">
+                <ul class="small mb-0">
+                    <li>This is an unofficial transcript for advising purposes</li>
+                    <li>Official transcripts must be requested from the Registrar's Office</li>
+                    <li>Grades are subject to change during the grade submission period</li>
+                    <li>Contact your advisor with any questions about your academic record</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .btn {
+                display: none !important;
+            }
+
+            .card {
+                border: 1px solid #000 !important;
+            }
+
+            .badge {
+                border: 1px solid #000 !important;
+                color: #000 !important;
+                background: white !important;
+            }
+        }
+    </style>
+}
+
+@functions {
+    private string GetGradeBadgeClass(string grade)
+    {
+        if (string.IsNullOrEmpty(grade)) return "bg-secondary";
+
+        return grade.ToUpper() switch
+        {
+            "A" or "A+" => "bg-success",
+            "A-" => "bg-success",
+            "B+" => "bg-primary",
+            "B" => "bg-primary",
+            "B-" => "bg-primary",
+            "C+" => "bg-info",
+            "C" => "bg-info",
+            "C-" => "bg-info",
+            "D+" => "bg-warning",
+            "D" => "bg-warning",
+            "F" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetStatusBadgeClass(GradeStatus status)
+    {
+        return status switch
+        {
+            GradeStatus.Completed => "bg-success",
+            GradeStatus.InProgress => "bg-warning",
+            GradeStatus.Withdrawn => "bg-secondary",
+            GradeStatus.Failed => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private decimal CalculateSemesterGPA(List<StudentManagementSystem.Models.FinalGrade> grades)
+    {
+        var completedGrades = grades.Where(g => g.GradeStatus == GradeStatus.Completed && g.FinalGradePoints.HasValue).ToList();
+        if (!completedGrades.Any()) return 0;
+
+        var totalPoints = completedGrades.Sum(g => (g.Course?.Credits ?? 0) * (g.FinalGradePoints ?? 0m));
+        var totalCredits = completedGrades.Sum(g => g.Course?.Credits ?? 0);
+
+        return totalCredits > 0 ? totalPoints / totalCredits : 0;
+    }
+}

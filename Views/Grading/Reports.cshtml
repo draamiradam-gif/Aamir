@@ -1,0 +1,104 @@
+﻿@model StudentManagementSystem.Controllers.GradeReportsViewModel
+@{
+    ViewData["Title"] = "Grade Reports";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4">Grade Reports</h1>
+            <partial name="_AlertMessages" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Generate Course Report</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="GenerateReport">
+                        <div class="mb-3">
+                            <label class="form-label">Select Course</label>
+                            <select name="courseId" class="form-select" required>
+                                <option value="">-- Select Course --</option>
+                                @foreach (var course in Model.Courses)
+                                {
+                                    <option value="@course.Id">@course.CourseCode - @course.CourseName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Select Semester</label>
+                            <select name="semesterId" class="form-select" required>
+                                <option value="">-- Select Semester --</option>
+                                @foreach (var semester in Model.Semesters)
+                                {
+                                    <option value="@semester.Id">@semester.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Report Type</label>
+                            <select name="reportType" class="form-select" required>
+                                <option value="summary">Summary Report</option>
+                                <option value="detailed">Detailed Report</option>
+                                <option value="transcript">Student Transcripts</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-chart-bar"></i> Generate Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Quick Reports</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("FinalGrades")" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> View All Final Grades
+                        </a>
+                        <a href="@Url.Action("ImportExport")" class="btn btn-outline-success">
+                            <i class="fas fa-file-import"></i> Import/Export Grades
+                        </a>
+                        <button class="btn btn-outline-info" onclick="generateSummaryReport()">
+                            <i class="fas fa-chart-pie"></i> Semester Summary
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Templates -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Report Templates</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-download"></i> Download Excel Template
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-download"></i> Download CSV Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function generateSummaryReport() {
+            alert('Semester summary report feature coming soon!');
+        }
+    </script>
+}

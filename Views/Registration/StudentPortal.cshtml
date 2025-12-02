@@ -1,0 +1,333 @@
+﻿@model StudentManagementSystem.ViewModels.StudentPortalViewModel
+@{
+    ViewData["Title"] = "Student Registration Portal";
+    Layout = "_StudentLayout";
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <!-- Student Info Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-graduate me-2"></i>Student Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> @Model.Student?.Name</p>
+                <p><strong>Student ID:</strong> @Model.Student?.StudentId</p>
+                <p><strong>GPA:</strong> <span class="badge bg-info">@Model.Student?.GPA.ToString("F2")</span></p>
+                <p><strong>Passed Hours:</strong> @Model.Student?.PassedHours</p>
+                <p><strong>Current Semester:</strong> @Model.CurrentSemester?.Name</p>
+            </div>
+        </div>
+
+        <!-- Eligibility Status -->
+        <div class="card mb-4">
+            <div class="card-header @(Model.Eligibility.IsEligible ? "bg-success" : "bg-warning") text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>Eligibility Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="@(Model.Eligibility.IsEligible ? "text-success" : "text-warning")">
+                    <strong>@(Model.Eligibility.IsEligible ? "Eligible for Registration" : "Registration Restrictions")</strong>
+                </p>
+                <p><strong>Current Credits:</strong> @Model.Eligibility.CurrentCredits</p>
+                <p><strong>Max Allowed Credits:</strong> @Model.Eligibility.MaxAllowedCredits</p>
+
+                @foreach (var reason in Model.Eligibility.EligibilityReasons)
+                {
+                    <small class="d-block">• @reason</small>
+                }
+            </div>
+        </div>
+
+        <!-- Active Registration Periods -->
+        @if (Model.ActivePeriods.Any())
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Active Registration Periods
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var period in Model.ActivePeriods)
+                    {
+                        <div class="mb-2 p-2 border rounded">
+                            <strong>@period.PeriodName</strong>
+                            <br>
+                            <small>@period.StartDate.ToString("MMM dd") - @period.EndDate.ToString("MMM dd, yyyy")</small>
+                            <br>
+                            <span class="badge bg-success">Open</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-md-8">
+        <!-- Current Registrations -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-alt me-2"></i>Current Registrations
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.CurrentRegistrations.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Credits</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var registration in Model.CurrentRegistrations)
+                                {
+                                    <tr>
+                                        <td>@registration.Course?.CourseCode</td>
+                                        <td>@registration.Course?.CourseName</td>
+                                        <td>@registration.Course?.Credits</td>
+                                        <td>
+                                            <span class="badge @GetStatusBadgeClass(registration.Status)">
+                                                @registration.Status
+                                            </span>
+                                        </td>
+                                        <td>@registration.RegistrationDate.ToString("MMM dd, yyyy")</td>
+                                        <td>
+                                            @if (registration.Status == RegistrationStatus.Pending || registration.Status == RegistrationStatus.Approved)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                        data-bs-toggle="modal" data-bs-target="#dropModal"
+                                                        data-registration-id="@registration.Id"
+                                                        data-course-name="@registration.Course?.CourseCode">
+                                                    Drop
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No current registrations.</p>
+                }
+            </div>
+        </div>
+
+        <!-- Available Courses -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-book me-2"></i>Available Courses
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="RegisterCourses" method="post" id="registrationForm">
+                    <input type="hidden" name="StudentId" value="@Model.Student?.Id" />
+                    <input type="hidden" name="SemesterId" value="@Model.CurrentSemester?.Id" />
+                    <input type="hidden" name="RegistrationType" value="@RegistrationType.Regular" />
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll" />
+                                    </th>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Credits</th>
+                                    <th>Seats</th>
+                                    <th>Eligibility</th>
+                                    <th>Requirements</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var course in Model.EligibleCourses)
+                                {
+                                    <tr class="@(course.IsEligible ? "" : "table-warning")">
+                                        <td>
+                                            @if (course.IsEligible && course.HasSeatsAvailable)
+                                            {
+                                                <input type="checkbox" name="CourseIds" value="@course.CourseId"
+                                                       class="course-checkbox" />
+                                            }
+                                        </td>
+                                        <td>@course.CourseCode</td>
+                                        <td>@course.CourseName</td>
+                                        <td>@course.Credits</td>
+                                        <td>
+                                            @if (course.HasSeatsAvailable)
+                                            {
+                                                <span class="badge bg-success">Available</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Full</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (course.IsEligible)
+                                            {
+                                                <span class="badge bg-success">Eligible</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Not Eligible</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (course.MissingPrerequisites.Any())
+                                            {
+                                                <small class="text-danger">
+                                                    Missing: @string.Join(", ", course.MissingPrerequisites)
+                                                </small>
+                                            }
+                                            else if (course.Requirements.Any())
+                                            {
+                                                <small class="text-success">
+                                                    @string.Join(", ", course.Requirements)
+                                                </small>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label for="Notes">Registration Notes (Optional):</label>
+                                    <textarea class="form-control" name="Notes" rows="2"
+                                              placeholder="Any additional notes for the registration..."></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg" id="registerBtn">
+                                        <i class="fas fa-paper-plane me-2"></i>Register Selected Courses
+                                    </button>
+                                    <div id="selectedCredits" class="text-center text-muted small mt-1">
+                                        Selected: 0 credits
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Drop Course Modal -->
+<div class="modal fade" id="dropModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Drop Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="DropCourse" method="post">
+                <input type="hidden" name="registrationId" id="dropRegistrationId" />
+                <input type="hidden" name="studentId" value="@Model.Student?.Id" />
+                <div class="modal-body">
+                    <p>Are you sure you want to drop <strong id="dropCourseName"></strong>?</p>
+                    <div class="form-group">
+                        <label for="dropReason">Reason for dropping:</label>
+                        <textarea class="form-control" name="reason" rows="3" required
+                                  placeholder="Please provide a reason for dropping this course..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Drop Course</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Select All functionality
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.course-checkbox');
+            checkboxes.forEach(checkbox => {
+                if (!checkbox.disabled) {
+                    checkbox.checked = this.checked;
+                }
+            });
+            updateSelectedCredits();
+        });
+
+        // Update selected credits
+        function updateSelectedCredits() {
+            let totalCredits = 0;
+            document.querySelectorAll('.course-checkbox:checked').forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const credits = parseInt(row.cells[3].textContent);
+                totalCredits += credits;
+            });
+            document.getElementById('selectedCredits').textContent = `Selected: ${totalCredits} credits`;
+        }
+
+        // Attach event listeners to checkboxes
+        document.querySelectorAll('.course-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedCredits);
+        });
+
+        // Drop modal setup
+        const dropModal = document.getElementById('dropModal');
+        dropModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const registrationId = button.getAttribute('data-registration-id');
+            const courseName = button.getAttribute('data-course-name');
+
+            document.getElementById('dropRegistrationId').value = registrationId;
+            document.getElementById('dropCourseName').textContent = courseName;
+        });
+
+        // Form validation
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            const selectedCourses = document.querySelectorAll('.course-checkbox:checked');
+            if (selectedCourses.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one course to register.');
+            }
+        });
+    </script>
+}
+
+@functions {
+    private string GetStatusBadgeClass(RegistrationStatus status)
+    {
+        return status switch
+        {
+            RegistrationStatus.Approved => "bg-success",
+            RegistrationStatus.Pending => "bg-warning",
+            RegistrationStatus.Rejected => "bg-danger",
+            RegistrationStatus.Waitlisted => "bg-info",
+            RegistrationStatus.Dropped => "bg-secondary",
+            RegistrationStatus.Completed => "bg-primary",
+            _ => "bg-secondary"
+        };
+    }
+}

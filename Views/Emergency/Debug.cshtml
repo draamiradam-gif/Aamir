@@ -1,0 +1,57 @@
+﻿@model dynamic
+@{
+    ViewData["Title"] = "Debug Information";
+}
+
+<div class="container mt-5">
+    <h1 class="text-danger">Debug Information</h1>
+
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5>System Status</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <tr>
+                    <td><strong>Database Connected:</strong></td>
+                    <td class="@(Model.DatabaseConnected ? "text-success" : "text-danger")">
+                        @Model.DatabaseConnected
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Students Count:</strong></td>
+                    <td>@Model.StudentsCount</td>
+                </tr>
+                <tr>
+                    <td><strong>Courses Count:</strong></td>
+                    <td>@Model.CoursesCount</td>
+                </tr>
+                <tr>
+                    <td><strong>Users Count:</strong></td>
+                    <td>@Model.UsersCount</td>
+                </tr>
+                <tr>
+                    <td><strong>Roles Count:</strong></td>
+                    <td>@Model.RolesCount</td>
+                </tr>
+                @if (!string.IsNullOrEmpty(Model.Error))
+                {
+                    <tr>
+                        <td><strong>Error:</strong></td>
+                        <td class="text-danger">@Model.Error</td>
+                    </tr>
+                }
+            </table>
+
+            <div class="mt-3">
+                <a href="/" class="btn btn-primary">Go to Home</a>
+                <a href="/health" class="btn btn-success">Health Check</a>
+                <form asp-controller="Emergency" asp-action="ResetDatabase" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure? This will reset the database!')">
+                        Reset Database
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

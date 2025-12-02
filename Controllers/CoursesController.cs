@@ -1,4 +1,5 @@
-﻿using DocumentFormat.OpenXml.InkML;
+﻿// Controllers/CoursesController.cs (UPDATED - Import Methods Removed)
+using DocumentFormat.OpenXml.InkML;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -16,12 +17,7 @@ using Microsoft.Data.SqlClient;
 namespace StudentManagementSystem.Controllers
 {
     [Authorize]
-    //[Route("Courses")]
-    //[Route("[controller]")]
-    //[Route("[controller]/[action]")]
-    //[Route("Courses/[action]")]
-    //[ApiController]
-    public class CoursesController : Controller
+    public class CoursesController : BaseController
     {
         private readonly ICourseService _courseService;
         private readonly IStudentService _studentService;
@@ -38,10 +34,12 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses
         [HttpGet]
-        //[Route("")]
-        //[Route("Index")]
         public async Task<IActionResult> Index(string searchString, string department, int? semester, string sortBy = "CourseCode", string sortOrder = "asc")
         {
+            // ✅ Simple admin check
+            //var redirectResult = RedirectIfNoPermission("Courses.View");
+            //if (redirectResult != null) return redirectResult;
+
             try
             {
                 // ✅ USE DIRECT DB CONTEXT TO INCLUDE PREREQUISITES
@@ -123,12 +121,16 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-
         // GET: Courses/Create
         [HttpGet]
-        //[HttpGet("Create")]
         public async Task<IActionResult> Create(int? semesterId, int? copyFromCourseId)
         {
+            if (!HasPermission("Courses.Create"))
+            {
+                SetErrorMessage("You don't have permission to create courses.");
+                return RedirectToAction("Index");
+            }
+
             var course = new Course();
 
             if (semesterId.HasValue)
@@ -189,6 +191,12 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Course course)
         {
+            if (!HasPermission("Courses.Create"))
+            {
+                SetErrorMessage("You don't have permission to create courses.");
+                return RedirectToAction("Index");
+            }
+
             if (ModelState.IsValid)
             {
                 try
@@ -240,12 +248,157 @@ namespace StudentManagementSystem.Controllers
             return View(course);
         }
 
+        // GET: Courses/Details/5
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {            
+            try
+            {
+                var course = await _courseService.GetCourseByIdAsync(id);
+                if (course == null)
+                {
+                    return NotFound();
+                }
 
+                var enrollments = await _courseService.GetCourseEnrollmentsAsync(id);
+                ViewBag.Enrollments = enrollments;
 
-        // POST: Courses/Delete
+                return View(course);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading course details");
+                TempData["Error"] = "Error loading course details.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // GET: Courses/Edit/5
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            if (!HasPermission("Courses.Edit"))
+            {
+                SetErrorMessage("You don't have permission to edit courses.");
+                return RedirectToAction("Index");
+            }
+
+            try
+            {
+                var course = await _context.Courses
+                    .Include(c => c.Prerequisites)
+                        .ThenInclude(p => p.PrerequisiteCourse)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+
+                if (course == null)
+                {
+                    return NotFound();
+                }
+
+                // Load selected prerequisites
+                course.SelectedPrerequisiteIds = course.Prerequisites
+                    .Select(p => p.PrerequisiteCourseId)
+                    .ToList();
+
+                await LoadAvailablePrerequisites(course);
+                await PopulateDropdowns();
+                return View(course);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading course for edit");
+                TempData["Error"] = "Error loading course.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // POST: Courses/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Course course)
+        {
+            if (!HasPermission("Courses.Edit"))
+            {
+                SetErrorMessage("You don't have permission to edit courses.");
+                return RedirectToAction("Index");
+            }
+
+            if (id != course.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    // Get existing course with prerequisites
+                    var existingCourse = await _context.Courses
+                        .Include(c => c.Prerequisites)
+                        .FirstOrDefaultAsync(c => c.Id == id);
+
+                    if (existingCourse == null)
+                    {
+                        return NotFound();
+                    }
+
+                    // Update course properties
+                    existingCourse.CourseCode = course.CourseCode;
+                    existingCourse.CourseName = course.CourseName;
+                    existingCourse.Description = course.Description;
+                    existingCourse.Credits = course.Credits;
+                    existingCourse.Department = course.Department;
+                    existingCourse.DepartmentId = course.DepartmentId;
+                    existingCourse.SemesterId = course.SemesterId;
+                    existingCourse.GradeLevel = course.GradeLevel;
+                    existingCourse.IsActive = course.IsActive;
+                    existingCourse.MaxStudents = course.MaxStudents;
+                    existingCourse.MinGPA = course.MinGPA;
+                    existingCourse.MinPassedHours = course.MinPassedHours;
+                    existingCourse.PrerequisitesString = course.PrerequisitesString;
+
+                    // Update prerequisites
+                    await UpdateCoursePrerequisites(existingCourse, course.SelectedPrerequisiteIds);
+
+                    _context.Update(existingCourse);
+                    await _context.SaveChangesAsync();
+
+                    TempData["SuccessMessage"] = $"Course '{course.CourseName}' updated successfully!";
+                    return RedirectToAction(nameof(Details), new { id = existingCourse.Id });
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!CourseExists(course.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error updating course {CourseId}", id);
+                    TempData["ErrorMessage"] = $"An error occurred while updating the course: {ex.Message}";
+                }
+            }
+
+            await PopulateDropdowns();
+            await LoadAvailablePrerequisites(course);
+            return View(course);
+        }
+
+        // GET: Courses/Delete/5
         [HttpGet]
         public async Task<IActionResult> Delete(int? id)
         {
+            if (!HasPermission("Courses.Delete"))
+            {
+                SetErrorMessage("You don't have permission to delete courses.");
+                return RedirectToAction("Index");
+            }
+
             if (id == null)
             {
                 return NotFound();
@@ -275,6 +428,12 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            if (!HasPermission("Courses.Delete"))
+            {
+                SetErrorMessage("You don't have permission to delete courses.");
+                return RedirectToAction("Index");
+            }
+
             try
             {
                 var course = await _context.Courses
@@ -310,10 +469,8 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-
         // GET: Courses/Prerequisites/5
         [HttpGet]
-        //[HttpGet("Prerequisites/{id}")]
         public async Task<IActionResult> Prerequisites(int id)
         {
             try
@@ -344,7 +501,6 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/AddPrerequisite
         [HttpPost]
-        //[HttpPost("AddPrerequisite")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddPrerequisite(int courseId, int prerequisiteCourseId, decimal? minGrade)
         {
@@ -364,7 +520,6 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/RemovePrerequisite
         [HttpPost]
-        //[HttpPost("RemovePrerequisite/{prerequisiteId}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemovePrerequisite(int prerequisiteId, int courseId)
         {
@@ -384,9 +539,14 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/Enroll/5
         [HttpGet]
-        //[Route("Enroll/{id}")]
         public async Task<IActionResult> Enroll(int id)
         {
+            if (!HasPermission("Courses.Enroll"))
+            {
+                SetErrorMessage("You don't have permission to enroll students.");
+                return RedirectToAction("Index");
+            }
+
             try
             {
                 var course = await _courseService.GetCourseByIdAsync(id);
@@ -414,10 +574,17 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
+        // POST: Courses/EnrollStudent
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnrollStudent(int courseId, int[] studentIds)
         {
+            if (!HasPermission("Courses.Enroll"))
+            {
+                SetErrorMessage("You don't have permission to enroll students.");
+                return RedirectToAction("Index");
+            }
+
             try
             {
                 if (studentIds == null || !studentIds.Any())
@@ -497,67 +664,16 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        // POST: Courses/EnrollStudent
-        [HttpPost]
-        //[HttpPost("EnrollMultipleStudents")]
-        public async Task<IActionResult> EnrollMultipleStudents(int courseId, int[] studentIds)
-        {
-            try
-            {
-                if (studentIds == null || !studentIds.Any())
-                {
-                    TempData["Error"] = "Please select at least one student to enroll.";
-                    return RedirectToAction(nameof(Enroll), new { id = courseId });
-                }
-
-                int successCount = 0;
-                foreach (var studentId in studentIds)
-                {
-                    try
-                    {
-                        var canEnroll = await _courseService.CanStudentEnrollAsync(studentId, courseId);
-                        if (canEnroll)
-                        {
-                            await _courseService.EnrollStudentAsync(courseId, studentId);
-                            successCount++;
-                        }
-                        else
-                        {
-                            var missingPrerequisites = await _courseService.GetMissingPrerequisitesAsync(studentId, courseId);
-                            _logger.LogWarning($"Student {studentId} cannot enroll due to missing prerequisites: {string.Join(", ", missingPrerequisites)}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Error enrolling student {studentId} in course {courseId}");
-                    }
-                }
-
-                if (successCount > 0)
-                {
-                    TempData["Success"] = $"Successfully enrolled {successCount} student(s)!";
-                }
-                else
-                {
-                    TempData["Error"] = "No students were enrolled. Check if students meet prerequisites.";
-                }
-
-                return RedirectToAction(nameof(Details), new { id = courseId });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error enrolling students");
-                TempData["Error"] = $"Error enrolling students: {ex.Message}";
-                return RedirectToAction(nameof(Enroll), new { id = courseId });
-            }
-        }
-
         // POST: Courses/UnenrollStudent
         [HttpPost]
-        //[HttpPost("UnenrollStudent")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UnenrollStudent(int enrollmentId, int courseId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 await _courseService.UnenrollStudentAsync(enrollmentId);
@@ -573,10 +689,14 @@ namespace StudentManagementSystem.Controllers
         }
 
         // GET: Courses/UpdateGrade/5
-        //[HttpGet("UpdateGrade/{id}")]
         [HttpGet]
         public async Task<IActionResult> UpdateGrade(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var enrollment = await _courseService.GetCourseEnrollmentsAsync(id);
@@ -599,10 +719,15 @@ namespace StudentManagementSystem.Controllers
 
         // POST: Courses/UpdateGrade
         [HttpPost]
-        //[HttpPost("UpdateGrade")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateGrade(int enrollmentId, decimal grade, string gradeLetter)
         {
+            if (!HasPermission("Grading.UpdateGrade"))
+            {
+                SetErrorMessage("You don't have permission to UpdateGrades.");
+                return RedirectToAction("Index");
+            }
+
             try
             {
                 await _courseService.UpdateGradeAsync(enrollmentId, grade, gradeLetter);
@@ -621,70 +746,16 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        // GET: Courses/Import
-        [HttpGet]
-        //[Route("Import")]
-        public IActionResult Import()
-        {
-            return View();
-        }
-
-        // POST: Courses/Import
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Import(IFormFile file)
-        {
-            try
-            {
-                Console.WriteLine($"=== IMPORT STARTED ===");
-                Console.WriteLine($"File: {file?.FileName}, Size: {file?.Length}");
-
-                if (file == null || file.Length == 0)
-                {
-                    ViewBag.Error = "Please select a file.";
-                    return View();
-                }
-
-                var extension = Path.GetExtension(file.FileName).ToLower();
-                if (extension != ".xlsx" && extension != ".xls")
-                {
-                    ViewBag.Error = "Please select an Excel file (.xlsx or .xls).";
-                    return View();
-                }
-
-                using var stream = new MemoryStream();
-                await file.CopyToAsync(stream);
-                stream.Position = 0;
-
-                Console.WriteLine($"Calling AnalyzeExcelImportAsync...");
-                var analysisResult = await _courseService.AnalyzeExcelImportAsync(stream);
-                Console.WriteLine($"Analysis Result - Success: {analysisResult.Success}, Message: {analysisResult.Message}");
-                Console.WriteLine($"Valid Courses: {analysisResult.ValidCourses?.Count}, Invalid Courses: {analysisResult.InvalidCourses?.Count}");
-
-                if (analysisResult.Success)
-                {
-                    // Store in session for review
-                    HttpContext.Session.SetString("ImportAnalysis", System.Text.Json.JsonSerializer.Serialize(analysisResult));
-                    Console.WriteLine($"Redirecting to ImportReview...");
-                    return RedirectToAction("ImportReview");
-                }
-
-                ViewBag.Error = analysisResult.Message;
-                return View();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"IMPORT ERROR: {ex}");
-                ViewBag.Error = $"Import failed: {ex.Message}";
-                return View();
-            }
-        }
-
         // GET: Courses/Export
         [HttpGet]
-        //[HttpGet("Export")]
         public async Task<IActionResult> Export()
         {
+            if (!HasPermission("Courses.Export"))
+            {
+                SetErrorMessage("You don't have permission to export courses.");
+                return RedirectToAction("Index");
+            }
+
             try
             {
                 var fileBytes = await _courseService.ExportCoursesToExcelAsync();
@@ -702,9 +773,14 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/ExportPdf
         [HttpGet]
-        //[Route("ExportPdf")]
         public async Task<IActionResult> ExportPdf()
         {
+            if (!HasPermission("Courses.Export"))
+            {
+                SetErrorMessage("You don't have permission to export courses.");
+                return RedirectToAction("Index");
+            }
+
             try
             {
                 var fileBytes = await _courseService.ExportCoursesToPdfAsync();
@@ -722,9 +798,14 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/ExportCoursePdf/5
         [HttpGet]
-        //[Route("ExportCoursePdf")]
         public async Task<IActionResult> ExportCoursePdf(int id)
         {
+            if (!HasPermission("Courses.Export"))
+            {
+                SetErrorMessage("You don't have permission to export courses.");
+                return RedirectToAction("Index");
+            }
+
             try
             {
                 var fileBytes = await _courseService.ExportCourseDetailsToPdfAsync(id);
@@ -743,9 +824,13 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/ExportEnrollments/5
         [HttpGet]
-        //[Route("ExportEnrollments")]
         public async Task<IActionResult> ExportEnrollments(int id)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var fileBytes = await _courseService.ExportCourseEnrollmentsToExcelAsync(id);
@@ -764,9 +849,13 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses/SelectFromExisting
         [HttpGet]
-        //[Route("SelectFromExisting")]
         public async Task<IActionResult> SelectFromExisting(int? semesterId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var courses = await _context.Courses
                 .Include(c => c.CourseDepartment)
                 .Include(c => c.CourseSemester)
@@ -778,12 +867,16 @@ namespace StudentManagementSystem.Controllers
             return View(courses);
         }
 
-        /// POST: Courses/AddToSemester
+        // POST: Courses/AddToSemester
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[Route("AddToSemester")]
         public async Task<IActionResult> AddToSemester(int courseId, int semesterId)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var course = await _context.Courses
@@ -859,464 +952,17 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction(nameof(SelectFromExisting), new { semesterId });
             }
         }
-        [HttpGet]
-        //[Route("PopulateDropdowns")]
-        private async Task PopulateDropdowns()
-        {
-            ViewBag.Departments = await _context.Departments
-                .Where(d => d.IsActive)
-                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
-                .ToListAsync();
-
-            ViewBag.Semesters = await _context.Semesters
-                .Where(s => s.IsActive)
-                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
-                .ToListAsync();
-        }
-
-        [HttpGet]
-        //[Route("PopulatePrerequisites")]
-        private async Task PopulatePrerequisites(Course course)
-        {
-            // Get all active courses except the current one (if it exists)
-            var allCourses = await _context.Courses
-                .Where(c => c.IsActive && c.Id != course.Id)
-                .OrderBy(c => c.CourseCode)
-                .ToListAsync();
-
-            course.AvailablePrerequisites = allCourses;
-
-            // If we have selected prerequisites, get their codes for display
-            if (course.SelectedPrerequisiteIds != null && course.SelectedPrerequisiteIds.Any())
-            {
-                var prerequisiteCourses = await _context.Courses
-                    .Where(c => course.SelectedPrerequisiteIds.Contains(c.Id))
-                    .Select(c => c.CourseCode)
-                    .ToListAsync();
-
-                course.PrerequisiteCodes = string.Join(", ", prerequisiteCourses);
-            }
-        }
-
-        [HttpGet]
-        private async Task LoadAvailablePrerequisites(Course course)
-        {
-            var allCourses = await _context.Courses
-                .Where(c => c.IsActive && c.Id != course.Id)
-                .OrderBy(c => c.CourseCode)
-                .ToListAsync();
-
-            ViewBag.AvailableCourses = allCourses;
-        }
-
-        // Helper method to check for unique constraint violations
-        [HttpGet]
-        //[Route("IsUniqueConstraintViolation")]
-        private bool IsUniqueConstraintViolation(DbUpdateException ex)
-        {
-            return ex.InnerException is SqlException sqlException &&
-                   (sqlException.Number == 2601 || sqlException.Number == 2627);
-        }
-
-        ////////////
-        ///
-
-        // GET: Courses/ImportReview
-        [HttpGet]
-        public IActionResult ImportReview()
-        {
-            try
-            {
-                var analysisJson = HttpContext.Session.GetString("ImportAnalysis");
-                if (string.IsNullOrEmpty(analysisJson))
-                {
-                    TempData["Error"] = "Import session expired. Please upload the file again.";
-                    return RedirectToAction(nameof(Import));
-                }
-
-                var analysisResult = System.Text.Json.JsonSerializer.Deserialize<ImportResult>(analysisJson);
-                if (analysisResult == null)
-                {
-                    TempData["Error"] = "Invalid import data.";
-                    return RedirectToAction(nameof(Import));
-                }
-
-                Console.WriteLine($"ImportReview - Valid: {analysisResult.ValidCourses?.Count}, Invalid: {analysisResult.InvalidCourses?.Count}");
-
-                // Add serial numbers
-                if (analysisResult.ValidCourses != null)
-                {
-                    int serial = 1;
-                    foreach (var course in analysisResult.ValidCourses)
-                    {
-                        course.SerialNumber = serial++;
-                    }
-                }
-
-                var viewModel = new ImportReviewViewModel
-                {
-                    ImportResult = analysisResult,
-                    ImportSettings = new ImportSettings()
-                };
-
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"IMPORT REVIEW ERROR: {ex}");
-                TempData["Error"] = "Error loading import preview.";
-                return RedirectToAction(nameof(Import));
-            }
-        }
-
-        // POST: Courses/ImportExecute
-        [HttpPost]
-        //[HttpPost("ImportExecute")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ImportExecute(ImportSettings settings)
-        {
-            try
-            {
-                var analysisJson = HttpContext.Session.GetString("ImportAnalysis");
-                if (string.IsNullOrEmpty(analysisJson))
-                {
-                    TempData["Error"] = "Import session expired. Please upload the file again.";
-                    return RedirectToAction(nameof(Import));
-                }
-
-                var analysisResult = System.Text.Json.JsonSerializer.Deserialize<ImportResult>(analysisJson);
-                if (analysisResult == null || !analysisResult.Success)
-                {
-                    TempData["Error"] = "Invalid import data.";
-                    return RedirectToAction(nameof(Import));
-                }
-
-                var importResult = await _courseService.ExecuteImportAsync(analysisResult, settings);
-
-                // Clean up session data
-                HttpContext.Session.Remove("ImportAnalysis");
-                HttpContext.Session.Remove("FileName");
-
-                // Store import results for display on Index page
-                if (importResult.Success)
-                {
-                    TempData["ImportResult"] = importResult.Message;
-                    TempData["ImportedCount"] = importResult.ImportedCount;
-                    TempData["ErrorCount"] = importResult.ErrorCount;
-                }
-
-                TempData[importResult.Success ? "Success" : "Error"] = importResult.Message;
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Import execution failed: {ex.Message}";
-                return RedirectToAction(nameof(Import));
-            }
-        }
-        // GET: Courses/DownloadTemplate
-        [HttpGet]
-        //[Route("DownloadTemplate")]
-        public IActionResult DownloadTemplate()
-        {
-            try
-            {
-                var templateBytes = GenerateExcelTemplate();
-                return File(templateBytes,
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    "Course_Import_Template.xlsx");
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Failed to download template: {ex.Message}";
-                return RedirectToAction(nameof(Import));
-            }
-        }
-
-        private byte[] GenerateExcelTemplate()
-        {
-            using var package = new ExcelPackage();
-            var worksheet = package.Workbook.Worksheets.Add("Courses Template");
-
-            // Headers with instructions - UPDATED WITH NEW FIELDS
-            string[] headers = {
-        "CourseCode (Required)",
-        "CourseName (Required)",
-        "Description",
-        "Credits",
-        "Department",
-        "Semester",
-        "MaxStudents",
-        "MinGPA",
-        "MinPassedHours",
-        "Prerequisites", // ✅ NEW FIELD
-        "CourseSpecification", // ✅ NEW FIELD
-        "Icon", // ✅ NEW FIELD
-        "IsActive"
-    };
-
-            string[] descriptions = {
-        "Unique course identifier (e.g., CS101)",
-        "Course name (e.g., Introduction to Computer Science)",
-        "Course description (max 5000 characters)",
-        "Credit hours (1-6)",
-        "Department name (e.g., Computer Science)",
-        "Semester number (1-8)",
-        "Maximum students (1-1000)",
-        "Minimum GPA required (0.00-4.00)",
-        "Minimum passed hours required",
-        "Prerequisite course codes separated by commas (e.g., CS101,MATH201)", // ✅ NEW
-        "Course specification document link or text", // ✅ NEW
-        "Icon name or URL (e.g., fas fa-code)", // ✅ NEW
-        "Yes/No or true/false or 1/0"
-    };
-
-            // Add headers and descriptions
-            for (int i = 0; i < headers.Length; i++)
-            {
-                worksheet.Cells[1, i + 1].Value = headers[i];
-                worksheet.Cells[2, i + 1].Value = descriptions[i];
-
-                // Style headers
-                worksheet.Cells[1, i + 1].Style.Font.Bold = true;
-                worksheet.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                worksheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
-
-                // Style descriptions
-                worksheet.Cells[2, i + 1].Style.Font.Italic = true;
-                worksheet.Cells[2, i + 1].Style.Font.Color.SetColor(System.Drawing.Color.Gray);
-            }
-
-            // Add sample data - UPDATED WITH NEW FIELDS
-            var sampleCourses = new[]
-            {
-        new {
-            CourseCode = "CS101",
-            CourseName = "Introduction to Computer Science",
-            Description = "Basic concepts of computer science and programming",
-            Credits = 3,
-            Department = "Computer Science",
-            Semester = 1,
-            MaxStudents = 1000,
-            MinGPA = 2.0m,
-            MinPassedHours = 0,
-            Prerequisites = "",
-            CourseSpecification = "https://example.com/cs101-spec.pdf",
-            Icon = "fas fa-laptop-code",
-            IsActive = "Yes"
-        },
-        new {
-            CourseCode = "MATH201",
-            CourseName = "Calculus I",
-            Description = "Differential and integral calculus of single variable functions",
-            Credits = 4,
-            Department = "Mathematics",
-            Semester = 2,
-            MaxStudents = 1000,
-            MinGPA = 2.5m,
-            MinPassedHours = 30,
-            Prerequisites = "MATH101",
-            CourseSpecification = "https://example.com/math201-spec.pdf",
-            Icon = "fas fa-calculator",
-            IsActive = "Yes"
-        },
-        new {
-            CourseCode = "CS301",
-            CourseName = "Data Structures",
-            Description = "Advanced data structures and algorithms analysis",
-            Credits = 3,
-            Department = "Computer Science",
-            Semester = 3,
-            MaxStudents = 1000,
-            MinGPA = 3.0m,
-            MinPassedHours = 60,
-            Prerequisites = "CS101,CS201",
-            CourseSpecification = "https://example.com/cs301-spec.pdf",
-            Icon = "fas fa-diagram-project",
-            IsActive = "Yes"
-        }
-    };
-
-            // Add sample data to worksheet
-            for (int i = 0; i < sampleCourses.Length; i++)
-            {
-                var course = sampleCourses[i];
-                worksheet.Cells[i + 3, 1].Value = course.CourseCode;
-                worksheet.Cells[i + 3, 2].Value = course.CourseName;
-                worksheet.Cells[i + 3, 3].Value = course.Description;
-                worksheet.Cells[i + 3, 4].Value = course.Credits;
-                worksheet.Cells[i + 3, 5].Value = course.Department;
-                worksheet.Cells[i + 3, 6].Value = course.Semester;
-                worksheet.Cells[i + 3, 7].Value = course.MaxStudents;
-                worksheet.Cells[i + 3, 8].Value = course.MinGPA;
-                worksheet.Cells[i + 3, 9].Value = course.MinPassedHours;
-                worksheet.Cells[i + 3, 10].Value = course.Prerequisites; // ✅ NEW
-                worksheet.Cells[i + 3, 11].Value = course.CourseSpecification; // ✅ NEW
-                worksheet.Cells[i + 3, 12].Value = course.Icon; // ✅ NEW
-                worksheet.Cells[i + 3, 13].Value = course.IsActive;
-            }
-
-            // Add data validation for numeric fields
-            AddExcelDataValidation(worksheet);
-
-            // Auto-fit columns
-            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-
-            return package.GetAsByteArray();
-        }
-
-        private void AddExcelDataValidation(ExcelWorksheet worksheet)
-        {
-            // Credits validation (1-6)
-            var creditsValidation = worksheet.DataValidations.AddIntegerValidation("D4:D100");
-            creditsValidation.Formula.Value = 1;
-            creditsValidation.Formula2.Value = 6;
-            creditsValidation.ShowErrorMessage = true;
-            creditsValidation.ErrorTitle = "Invalid Credits";
-            creditsValidation.Error = "Credits must be between 1 and 6";
-
-            // Semester validation (1-8)
-            var semesterValidation = worksheet.DataValidations.AddIntegerValidation("F4:F100");
-            semesterValidation.Formula.Value = 1;
-            semesterValidation.Formula2.Value = 8;
-            semesterValidation.ShowErrorMessage = true;
-            semesterValidation.ErrorTitle = "Invalid Semester";
-            semesterValidation.Error = "Semester must be between 1 and 8";
-
-            // MaxStudents validation (1-1000)
-            var maxStudentsValidation = worksheet.DataValidations.AddIntegerValidation("G4:G100");
-            maxStudentsValidation.Formula.Value = 1;
-            maxStudentsValidation.Formula2.Value = 1000;
-            maxStudentsValidation.ShowErrorMessage = true;
-            maxStudentsValidation.ErrorTitle = "Invalid Max Students";
-            maxStudentsValidation.Error = "Max Students must be between 1 and 1000";
-
-            // MinGPA validation (0.00-4.00)
-            var minGPAValidation = worksheet.DataValidations.AddDecimalValidation("H4:H100");
-            minGPAValidation.Formula.Value = 0;
-            minGPAValidation.Formula2.Value = 4.00;
-            minGPAValidation.ShowErrorMessage = true;
-            minGPAValidation.ErrorTitle = "Invalid Min GPA";
-            minGPAValidation.Error = "Min GPA must be between 0.00 and 4.00";
-        }
-
-        
-
-        // POST: Courses/DeleteAll
-        [HttpPost]
-        //[HttpPost("DeleteAll")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteAll()
-        {
-            try
-            {
-                var courseCount = await _context.Courses.CountAsync();
-                await _courseService.DeleteAllCoursesAsync();
-                TempData["Success"] = $"Successfully deleted all {courseCount} courses.";
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Failed to delete all courses: {ex.Message}";
-                _logger.LogError(ex, "Error during mass course deletion");
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        // Helper method to delete course using raw SQL
-        [HttpPost]
-        //[HttpPost("DeleteCourseWithRawSql")]
-        private async Task DeleteCourseWithRawSql(int courseId)
-        {
-            var sql = @"
-        BEGIN TRANSACTION;
-        TRY
-            -- Delete from CoursePrerequisites where this course is the prerequisite
-            DELETE FROM CoursePrerequisites WHERE PrerequisiteCourseId = @courseId;
-            
-            -- Delete prerequisites for this course
-            DELETE FROM CoursePrerequisites WHERE CourseId = @courseId;
-            
-            -- Delete course enrollments
-            DELETE FROM CourseEnrollments WHERE CourseId = @courseId;
-            
-            -- Finally delete the course
-            DELETE FROM Courses WHERE Id = @courseId;
-            
-            COMMIT TRANSACTION;
-        CATCH
-            ROLLBACK TRANSACTION;
-            THROW;
-        END CATCH";
-
-            await _context.Database.ExecuteSqlRawAsync(sql, new SqlParameter("@courseId", courseId));
-        }
-
-        // Helper method to delete all courses using raw SQL
-        [HttpPost]
-        //[HttpPost("DeleteAllCoursesWithRawSql")]
-        private async Task DeleteAllCoursesWithRawSql()
-        {
-            var sql = @"
-        BEGIN TRANSACTION;
-        TRY
-            -- Delete all course prerequisites
-            DELETE FROM CoursePrerequisites;
-            
-            -- Delete all course enrollments
-            DELETE FROM CourseEnrollments;
-            
-            -- Delete all courses
-            DELETE FROM Courses;
-            
-            COMMIT TRANSACTION;
-        CATCH
-            ROLLBACK TRANSACTION;
-            THROW;
-        END CATCH";
-
-            await _context.Database.ExecuteSqlRawAsync(sql);
-        }
-
-
-        // POST: Courses/ExportSelected
-        [HttpPost]
-        //[HttpPost("ExportSelected")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ExportSelected(int[] selectedCourses)
-        {
-            try
-            {
-                if (selectedCourses == null || selectedCourses.Length == 0)
-                {
-                    TempData["Error"] = "No courses selected for export.";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                var fileBytes = await _courseService.ExportSelectedCoursesAsync(selectedCourses);
-
-                if (fileBytes == null || fileBytes.Length == 0)
-                {
-                    TempData["Error"] = "Export failed: No data generated";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                return File(fileBytes,
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    $"Selected_Courses_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Export failed: {ex.Message}";
-                return RedirectToAction(nameof(Index));
-            }
-        }
 
         // POST: Courses/BulkAddToSemester
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkAddToSemester(int semesterId, string courseIds)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 if (string.IsNullOrEmpty(courseIds))
@@ -1423,394 +1069,52 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
-        // GET: Semesters/Dashboard
-        [HttpGet]
-        public async Task<IActionResult> Dashboard()
-        {
-            var semesters = await _context.Semesters
-                .Include(s => s.Department)
-                .Include(s => s.Branch)
-                .Include(s => s.SubBranch)
-                .Where(s => s.IsActive)
-                .OrderByDescending(s => s.AcademicYear)
-                .ThenBy(s => s.StartDate)
-                .ToListAsync();
-
-            return View(semesters);
-        }
-
-
-        // In your CoursesController.cs
-
-        [HttpGet]
-        //[Route("GetCoursesBySemester")]
-        public async Task<IActionResult> GetCoursesBySemester(int semesterId)
-        {
-            try
-            {
-                var courses = await _context.Courses
-                    .Where(c => c.SemesterId == semesterId && c.IsActive)
-                    .Include(c => c.Prerequisites) // Include prerequisites
-                        .ThenInclude(p => p.PrerequisiteCourse) // Include prerequisite course details
-                    .Select(c => new
-                    {
-                        id = c.Id,
-                        courseName = c.CourseName,
-                        courseCode = c.CourseCode,
-                        credits = c.Credits,
-                        description = c.Description,
-                        isActive = c.IsActive,
-                        prerequisites = string.Join(", ", c.Prerequisites
-                            .Where(p => p.PrerequisiteCourse != null && !string.IsNullOrEmpty(p.PrerequisiteCourse.CourseCode))
-                            .Select(p => p.PrerequisiteCourse!.CourseCode!)) // Get prerequisite codes
-                    })
-                    .ToListAsync();
-
-                return Json(courses);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading courses for semester {SemesterId}", semesterId);
-                return Json(new List<object>());
-            }
-        }
-        
-        [HttpGet]
-        //[Route("GetAvailableCoursesForSemester")]
-        public async Task<IActionResult> GetAvailableCoursesForSemester(int semesterId)
-        {
-            try
-            {
-                var availableCourses = await _context.Courses
-                    .Where(c => c.SemesterId != semesterId && c.IsActive) // ✅ FIXED: Removed null check
-                    .Select(c => new
-                    {
-                        id = c.Id,
-                        courseCode = c.CourseCode,
-                        courseName = c.CourseName,
-                        credits = c.Credits,
-                        description = c.Description
-                    })
-                    .ToListAsync();
-
-                return Json(availableCourses);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading available courses for semester {SemesterId}", semesterId);
-                return Json(new List<object>());
-            }
-        }
-
-        [HttpGet]
-        //[Route("VerifyExists/{id}")]
-        public async Task<IActionResult> VerifyExists(int id)
-        {
-            var exists = await _context.Courses.AnyAsync(c => c.Id == id);
-            return Json(exists);
-        }
-
-        // GET: Courses/Details/5
-        [HttpGet]
-        //[HttpGet("Details/{id}")]
-        public async Task<IActionResult> Details(int id)
-        {
-            try
-            {
-                var course = await _courseService.GetCourseByIdAsync(id);
-                if (course == null)
-                {
-                    return NotFound();
-                }
-
-                var enrollments = await _courseService.GetCourseEnrollmentsAsync(id);
-                ViewBag.Enrollments = enrollments;
-
-                return View(course);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading course details");
-                TempData["Error"] = "Error loading course details.";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Edit(int id)
-        {
-            try
-            {
-                var course = await _context.Courses
-                    .Include(c => c.Prerequisites)
-                        .ThenInclude(p => p.PrerequisiteCourse)
-                    .FirstOrDefaultAsync(c => c.Id == id);
-
-                if (course == null)
-                {
-                    return NotFound();
-                }
-
-                // Load selected prerequisites
-                course.SelectedPrerequisiteIds = course.Prerequisites
-                    .Select(p => p.PrerequisiteCourseId)
-                    .ToList();
-
-                await LoadAvailablePrerequisites(course);
-                await PopulateDropdowns();
-                return View(course);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading course for edit");
-                TempData["Error"] = "Error loading course.";
-                return RedirectToAction(nameof(Index));
-            }
-        }
+        // POST: Courses/ExportSelected
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Course course)
+        public async Task<IActionResult> ExportSelected(int[] selectedCourses)
         {
-            if (id != course.Id)
+            if (!IsAdminUser())
             {
-                return NotFound();
+                return RedirectUnauthorized("Admin access required.");
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    // Get existing course with prerequisites
-                    var existingCourse = await _context.Courses
-                        .Include(c => c.Prerequisites)
-                        .FirstOrDefaultAsync(c => c.Id == id);
-
-                    if (existingCourse == null)
-                    {
-                        return NotFound();
-                    }
-
-                    // Update course properties
-                    existingCourse.CourseCode = course.CourseCode;
-                    existingCourse.CourseName = course.CourseName;
-                    existingCourse.Description = course.Description;
-                    existingCourse.Credits = course.Credits;
-                    existingCourse.Department = course.Department;
-                    existingCourse.DepartmentId = course.DepartmentId;
-                    existingCourse.SemesterId = course.SemesterId;
-                    existingCourse.GradeLevel = course.GradeLevel;
-                    existingCourse.IsActive = course.IsActive;
-                    existingCourse.MaxStudents = course.MaxStudents;
-                    existingCourse.MinGPA = course.MinGPA;
-                    existingCourse.MinPassedHours = course.MinPassedHours;
-                    existingCourse.PrerequisitesString = course.PrerequisitesString;
-
-                    // Update prerequisites
-                    await UpdateCoursePrerequisites(existingCourse, course.SelectedPrerequisiteIds);
-
-                    _context.Update(existingCourse);
-                    await _context.SaveChangesAsync();
-
-                    TempData["SuccessMessage"] = $"Course '{course.CourseName}' updated successfully!";
-                    return RedirectToAction(nameof(Details), new { id = existingCourse.Id });
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CourseExists(course.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error updating course {CourseId}", id);
-                    TempData["ErrorMessage"] = $"An error occurred while updating the course: {ex.Message}";
-                }
-            }
-
-            await PopulateDropdowns();
-            await LoadAvailablePrerequisites(course);
-            return View(course);
-        }
-
-
-        private async Task UpdateCoursePrerequisites(Course existingCourse, List<int> selectedPrerequisiteIds)
-        {
-            // Clear existing prerequisites
-            var existingPrerequisites = await _context.CoursePrerequisites
-                .Where(cp => cp.CourseId == existingCourse.Id)
-                .ToListAsync();
-
-            _context.CoursePrerequisites.RemoveRange(existingPrerequisites);
-            await _context.SaveChangesAsync(); // Save changes after removal
-
-            // Add new prerequisites
-            if (selectedPrerequisiteIds != null && selectedPrerequisiteIds.Any())
-            {
-                foreach (var prerequisiteId in selectedPrerequisiteIds)
-                {
-                    // Prevent self-referencing
-                    if (prerequisiteId != existingCourse.Id)
-                    {
-                        var prerequisite = new CoursePrerequisite
-                        {
-                            CourseId = existingCourse.Id,
-                            PrerequisiteCourseId = prerequisiteId,
-                            IsRequired = true
-                        };
-                        _context.CoursePrerequisites.Add(prerequisite);
-                    }
-                }
-                await _context.SaveChangesAsync(); // Save changes after adding
-            }
-        }
-
-
-
-
-
-        // In CoursesController.cs - Add this method
-        private bool CourseExists(int id)
-        {
-            return _context.Courses.Any(e => e.Id == id);
-        }
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteMultiple([FromBody] List<int> selectedCourses)
-        {
             try
             {
-                if (selectedCourses == null || !selectedCourses.Any())
+                if (selectedCourses == null || selectedCourses.Length == 0)
                 {
-                    return Json(new { success = false, message = "No courses selected for deletion." });
+                    TempData["Error"] = "No courses selected for export.";
+                    return RedirectToAction(nameof(Index));
                 }
 
-                var courses = await _context.Courses
-                    .Where(c => selectedCourses.Contains(c.Id))
-                    .ToListAsync();
+                var fileBytes = await _courseService.ExportSelectedCoursesAsync(selectedCourses);
 
-                // Check for courses with enrollments
-                var coursesWithEnrollments = new List<string>();
-                foreach (var course in courses)
+                if (fileBytes == null || fileBytes.Length == 0)
                 {
-                    var hasEnrollments = await _context.CourseEnrollments
-                        .AnyAsync(ce => ce.CourseId == course.Id && ce.IsActive);
-
-                    if (hasEnrollments)
-                    {
-                        coursesWithEnrollments.Add(course.CourseName);
-                    }
+                    TempData["Error"] = "Export failed: No data generated";
+                    return RedirectToAction(nameof(Index));
                 }
 
-                if (coursesWithEnrollments.Any())
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"Cannot delete {coursesWithEnrollments.Count} course(s) with active enrollments."
-                    });
-                }
-
-                _context.Courses.RemoveRange(courses);
-                await _context.SaveChangesAsync();
-
-                return Json(new
-                {
-                    success = true,
-                    message = $"{courses.Count} course(s) deleted successfully."
-                });
+                return File(fileBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"Selected_Courses_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting multiple courses");
-                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
-            }
-        }
-
-        [HttpPost("CreateDefaultSemester")]
-        public async Task<IActionResult> CreateDefaultSemester()
-        {
-            try
-            {
-                if (!await _context.Semesters.AnyAsync())
-                {
-                    var defaultSemester = new Semester
-                    {
-                        Name = "Fall " + DateTime.Now.Year,
-                        SemesterType = "Fall",
-                        AcademicYear = DateTime.Now.Year,
-                        StartDate = new DateTime(DateTime.Now.Year, 9, 1),
-                        EndDate = new DateTime(DateTime.Now.Year, 12, 31),
-                        RegistrationStartDate = DateTime.Now.AddDays(-30),
-                        RegistrationEndDate = DateTime.Now.AddDays(30),
-                        IsActive = true,
-                        IsCurrent = true,
-                        IsRegistrationOpen = true
-                    };
-
-                    _context.Semesters.Add(defaultSemester);
-                    await _context.SaveChangesAsync();
-
-                    TempData["Success"] = "Default semester created successfully!";
-                }
-                else
-                {
-                    TempData["Info"] = "Semesters already exist in the database.";
-                }
-
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error creating default semester: {ex.Message}";
+                TempData["Error"] = $"Export failed: {ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
         }
 
-        [HttpGet]
-        //[HttpGet("Debug")]
-        public IActionResult Debug()
-        {
-            var actions = new List<string>();
-
-            // List all public methods that might be causing conflicts
-            var methods = typeof(CoursesController).GetMethods()
-                .Where(m => m.IsPublic && !m.IsSpecialName)
-                .Select(m => m.Name)
-                .Distinct()
-                .ToList();
-
-            return Json(new
-            {
-                PublicMethods = methods,
-                Message = "Check for duplicate method names above"
-            });
-        }
-
-        [HttpGet("DebugRoutes")]
-        public IActionResult DebugRoutes()
-        {
-            var routes = new
-            {
-                Delete_GET = Url.Action("Delete", new { id = 1 }),
-                DeleteConfirmed_POST = Url.Action("DeleteConfirmed", new { id = 1 }),
-                Current_URL = $"{Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}"
-            };
-
-            return Json(routes);
-        }
-
-        //////////
-        ///
-        // GET: Courses/BulkDeleteConfirmation
         // GET: Courses/BulkDeleteConfirmation
         [HttpGet]
         public async Task<IActionResult> BulkDeleteConfirmation([FromQuery] List<int> selectedCourses)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 if (selectedCourses == null || !selectedCourses.Any())
@@ -1854,6 +1158,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkDeleteConfirmed(List<int> selectedCourses)
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 if (selectedCourses == null || !selectedCourses.Any())
@@ -1906,6 +1215,11 @@ namespace StudentManagementSystem.Controllers
         [HttpGet]
         public IActionResult DeleteAllConfirmation()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             var totalCourses = _context.Courses.Count();
             ViewBag.TotalCourses = totalCourses;
             return View();
@@ -1916,6 +1230,11 @@ namespace StudentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAllConfirmed()
         {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
             try
             {
                 var totalCourses = await _context.Courses.CountAsync();
@@ -1931,6 +1250,438 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction(nameof(DeleteAllConfirmation));
             }
         }
-    }
 
+        // POST: Courses/DeleteMultiple
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteMultiple([FromBody] List<int> selectedCourses)
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            try
+            {
+                if (selectedCourses == null || !selectedCourses.Any())
+                {
+                    return Json(new { success = false, message = "No courses selected for deletion." });
+                }
+
+                var courses = await _context.Courses
+                    .Where(c => selectedCourses.Contains(c.Id))
+                    .ToListAsync();
+
+                // Check for courses with enrollments
+                var coursesWithEnrollments = new List<string>();
+                foreach (var course in courses)
+                {
+                    var hasEnrollments = await _context.CourseEnrollments
+                        .AnyAsync(ce => ce.CourseId == course.Id && ce.IsActive);
+
+                    if (hasEnrollments)
+                    {
+                        coursesWithEnrollments.Add(course.CourseName);
+                    }
+                }
+
+                if (coursesWithEnrollments.Any())
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"Cannot delete {coursesWithEnrollments.Count} course(s) with active enrollments."
+                    });
+                }
+
+                _context.Courses.RemoveRange(courses);
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"{courses.Count} course(s) deleted successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting multiple courses");
+                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
+            }
+        }
+
+        // GET: Semesters/Dashboard
+        [HttpGet]
+        public async Task<IActionResult> Dashboard()
+        {
+            var semesters = await _context.Semesters
+                .Include(s => s.Department)
+                .Include(s => s.Branch)
+                .Include(s => s.SubBranch)
+                .Where(s => s.IsActive)
+                .OrderByDescending(s => s.AcademicYear)
+                .ThenBy(s => s.StartDate)
+                .ToListAsync();
+
+            return View(semesters);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCoursesBySemester(int semesterId)
+        {
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => c.SemesterId == semesterId && c.IsActive)
+                    .Include(c => c.Prerequisites)
+                        .ThenInclude(p => p.PrerequisiteCourse)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        courseName = c.CourseName,
+                        courseCode = c.CourseCode,
+                        credits = c.Credits,
+                        description = c.Description,
+                        isActive = c.IsActive,
+                        prerequisites = string.Join(", ", c.Prerequisites
+                            .Where(p => p.PrerequisiteCourse != null && !string.IsNullOrEmpty(p.PrerequisiteCourse.CourseCode))
+                            .Select(p => p.PrerequisiteCourse!.CourseCode!))
+                    })
+                    .ToListAsync();
+
+                return Json(courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading courses for semester {SemesterId}", semesterId);
+                return Json(new List<object>());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAvailableCoursesForSemester(int semesterId)
+        {
+            try
+            {
+                var availableCourses = await _context.Courses
+                    .Where(c => c.SemesterId != semesterId && c.IsActive)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        courseCode = c.CourseCode,
+                        courseName = c.CourseName,
+                        credits = c.Credits,
+                        description = c.Description
+                    })
+                    .ToListAsync();
+
+                return Json(availableCourses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading available courses for semester {SemesterId}", semesterId);
+                return Json(new List<object>());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourseEnrollments(int courseId, int semesterId)
+        {
+            try
+            {
+                var enrollments = await _context.CourseEnrollments
+                    .Include(ce => ce.Student)
+                    .Where(ce => ce.CourseId == courseId && ce.SemesterId == semesterId && ce.IsActive)
+                    .Select(ce => new
+                    {
+                        id = ce.Id,
+                        studentId = ce.StudentId,
+                        studentCode = ce.Student != null ? ce.Student.StudentId : "N/A",
+                        studentName = ce.Student != null ? ce.Student.Name : "Unknown Student",
+                        status = ce.EnrollmentStatus.ToString(),
+                        enrollmentDate = ce.CreatedDate
+                    })
+                    .ToListAsync();
+
+                return Json(enrollments);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting enrollments for course {CourseId}", courseId);
+                return Json(new List<object>());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> VerifyExists(int id)
+        {
+            var exists = await _context.Courses.AnyAsync(c => c.Id == id);
+            return Json(exists);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourseData(int id)
+        {            
+            var course = await _context.Courses
+                .Include(c => c.CourseSemester)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (course == null)
+            {
+                return NotFound();
+            }
+
+            var courseData = new Dictionary<string, object>
+            {
+                ["Id"] = course.Id,
+                ["CourseCode"] = course.CourseCode,
+                ["CourseName"] = course.CourseName,
+                ["SemesterId"] = course.SemesterId?.ToString() ?? "null",
+                ["SemesterName"] = course.CourseSemester?.Name ?? "Unassigned",
+                ["Department"] = course.Department ?? string.Empty,
+                ["Credits"] = course.Credits
+            };
+
+            return Json(courseData);
+        }
+
+        // PRIVATE HELPER METHODS
+
+        [HttpGet]
+        private async Task PopulateDropdowns()
+        {
+            ViewBag.Departments = await _context.Departments
+                .Where(d => d.IsActive)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
+                .ToListAsync();
+
+            ViewBag.Semesters = await _context.Semesters
+                .Where(s => s.IsActive)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+        }
+
+        [HttpGet]
+        private async Task PopulatePrerequisites(Course course)
+        {
+            // Get all active courses except the current one (if it exists)
+            var allCourses = await _context.Courses
+                .Where(c => c.IsActive && c.Id != course.Id)
+                .OrderBy(c => c.CourseCode)
+                .ToListAsync();
+
+            course.AvailablePrerequisites = allCourses;
+
+            // If we have selected prerequisites, get their codes for display
+            if (course.SelectedPrerequisiteIds != null && course.SelectedPrerequisiteIds.Any())
+            {
+                var prerequisiteCourses = await _context.Courses
+                    .Where(c => course.SelectedPrerequisiteIds.Contains(c.Id))
+                    .Select(c => c.CourseCode)
+                    .ToListAsync();
+
+                course.PrerequisiteCodes = string.Join(", ", prerequisiteCourses);
+            }
+        }
+
+        [HttpGet]
+        private async Task LoadAvailablePrerequisites(Course course)
+        {
+            var allCourses = await _context.Courses
+                .Where(c => c.IsActive && c.Id != course.Id)
+                .OrderBy(c => c.CourseCode)
+                .ToListAsync();
+
+            ViewBag.AvailableCourses = allCourses;
+        }
+
+        private async Task UpdateCoursePrerequisites(Course existingCourse, List<int> selectedPrerequisiteIds)
+        {
+            // Clear existing prerequisites
+            var existingPrerequisites = await _context.CoursePrerequisites
+                .Where(cp => cp.CourseId == existingCourse.Id)
+                .ToListAsync();
+
+            _context.CoursePrerequisites.RemoveRange(existingPrerequisites);
+            await _context.SaveChangesAsync();
+
+            // Add new prerequisites
+            if (selectedPrerequisiteIds != null && selectedPrerequisiteIds.Any())
+            {
+                foreach (var prerequisiteId in selectedPrerequisiteIds)
+                {
+                    // Prevent self-referencing
+                    if (prerequisiteId != existingCourse.Id)
+                    {
+                        var prerequisite = new CoursePrerequisite
+                        {
+                            CourseId = existingCourse.Id,
+                            PrerequisiteCourseId = prerequisiteId,
+                            IsRequired = true
+                        };
+                        _context.CoursePrerequisites.Add(prerequisite);
+                    }
+                }
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        private bool CourseExists(int id)
+        {
+            return _context.Courses.Any(e => e.Id == id);
+        }
+
+        // Helper method to check for unique constraint violations
+        private bool IsUniqueConstraintViolation(DbUpdateException ex)
+        {
+            return ex.InnerException is SqlException sqlException &&
+                   (sqlException.Number == 2601 || sqlException.Number == 2627);
+        }
+
+        // Helper method to delete course using raw SQL
+        [HttpPost]
+        private async Task DeleteCourseWithRawSql(int courseId)
+        {
+            var sql = @"
+        BEGIN TRANSACTION;
+        TRY
+            -- Delete from CoursePrerequisites where this course is the prerequisite
+            DELETE FROM CoursePrerequisites WHERE PrerequisiteCourseId = @courseId;
+            
+            -- Delete prerequisites for this course
+            DELETE FROM CoursePrerequisites WHERE CourseId = @courseId;
+            
+            -- Delete course enrollments
+            DELETE FROM CourseEnrollments WHERE CourseId = @courseId;
+            
+            -- Finally delete the course
+            DELETE FROM Courses WHERE Id = @courseId;
+            
+            COMMIT TRANSACTION;
+        CATCH
+            ROLLBACK TRANSACTION;
+            THROW;
+        END CATCH";
+
+            await _context.Database.ExecuteSqlRawAsync(sql, new SqlParameter("@courseId", courseId));
+        }
+
+        // Helper method to delete all courses using raw SQL
+        [HttpPost]
+        private async Task DeleteAllCoursesWithRawSql()
+        {
+            var sql = @"
+        BEGIN TRANSACTION;
+        TRY
+            -- Delete all course prerequisites
+            DELETE FROM CoursePrerequisites;
+            
+            -- Delete all course enrollments
+            DELETE FROM CourseEnrollments;
+            
+            -- Delete all courses
+            DELETE FROM Courses;
+            
+            COMMIT TRANSACTION;
+        CATCH
+            ROLLBACK TRANSACTION;
+            THROW;
+        END CATCH";
+
+            await _context.Database.ExecuteSqlRawAsync(sql);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateDefaultSemester()
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            try
+            {
+                // Check if any semester exists
+                var anySemester = await _context.Semesters.AnyAsync();
+
+                if (!anySemester)
+                {
+                    var defaultSemester = new Semester
+                    {
+                        Name = "Default Semester",
+                        SemesterType = "Fall",
+                        AcademicYear = DateTime.Now.Year,
+                        StartDate = DateTime.Now,
+                        EndDate = DateTime.Now.AddMonths(4),
+                        RegistrationStartDate = DateTime.Now.AddDays(-7),
+                        RegistrationEndDate = DateTime.Now.AddDays(30),
+                        IsActive = true,
+                        IsCurrent = true,
+                        IsRegistrationOpen = true
+                    };
+
+                    _context.Semesters.Add(defaultSemester);
+                    await _context.SaveChangesAsync();
+
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Created default semester",
+                        semester = new { defaultSemester.Id, defaultSemester.Name }
+                    });
+                }
+                else
+                {
+                    var existingSemester = await _context.Semesters.FirstAsync();
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Semester already exists",
+                        semester = new { existingSemester.Id, existingSemester.Name }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult Debug()
+        {
+            var actions = new List<string>();
+
+            // List all public methods that might be causing conflicts
+            var methods = typeof(CoursesController).GetMethods()
+                .Where(m => m.IsPublic && !m.IsSpecialName)
+                .Select(m => m.Name)
+                .Distinct()
+                .ToList();
+
+            return Json(new
+            {
+                PublicMethods = methods,
+                Message = "Check for duplicate method names above"
+            });
+        }
+
+        [HttpGet("DebugRoutes")]
+        public IActionResult DebugRoutes()
+        {
+            var routes = new
+            {
+                Delete_GET = Url.Action("Delete", new { id = 1 }),
+                DeleteConfirmed_POST = Url.Action("DeleteConfirmed", new { id = 1 }),
+                Current_URL = $"{Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}"
+            };
+
+            return Json(routes);
+        }
+    }
 }

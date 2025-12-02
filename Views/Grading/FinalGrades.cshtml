@@ -1,0 +1,152 @@
+﻿@model StudentManagementSystem.Controllers.FinalGradesViewModel
+@{
+    ViewData["Title"] = "Final Grades";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4">Final Grades</h1>
+            <partial name="_AlertMessages" />
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>@Model.Course?.CourseCode - @Model.Course?.CourseName</h5>
+                    <p class="mb-0 text-muted">Semester: @Model.Semester?.Name</p>
+                </div>
+                <div class="card-body">
+                    <!-- Summary Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h6>Average Grade</h6>
+                                    <h3>@Model.Summary.AverageGrade.ToString("F1")%</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h6>Pass Rate</h6>
+                                    <h3>@Model.Summary.PassRate.ToString("F1")%</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h6>Highest Grade</h6>
+                                    <h3>@Model.Summary.HighestGrade.ToString("F1")%</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h6>Lowest Grade</h6>
+                                    <h3>@Model.Summary.LowestGrade.ToString("F1")%</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grade Distribution -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6>Grade Distribution</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col">
+                                            <span class="badge bg-success p-2">A: @Model.Summary.ACount</span>
+                                        </div>
+                                        <div class="col">
+                                            <span class="badge bg-info p-2">B: @Model.Summary.BCount</span>
+                                        </div>
+                                        <div class="col">
+                                            <span class="badge bg-primary p-2">C: @Model.Summary.CCount</span>
+                                        </div>
+                                        <div class="col">
+                                            <span class="badge bg-warning p-2">D: @Model.Summary.DCount</span>
+                                        </div>
+                                        <div class="col">
+                                            <span class="badge bg-danger p-2">F: @Model.Summary.FCount</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Final Grades Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Student Name</th>
+                                    <th>Final Percentage</th>
+                                    <th>Grade Letter</th>
+                                    <th>Grade Points</th>
+                                    <th>Status</th>
+                                    <th>Total Marks</th>
+                                    <th>Calculation Date</th>
+                                </tr>
+                            </thead>
+                            <!-- In your table body -->
+                            <tbody>
+                                @foreach (var finalGrade in Model.FinalGrades)
+                                {
+                                    <tr>
+                                        <td>@finalGrade.Student?.StudentId</td>
+                                        <td>@finalGrade.Student?.Name</td>
+                                        <td>
+                                            <span class="badge @(finalGrade.FinalPercentage >= 60 ? "bg-success" : "bg-danger")">
+                                                @finalGrade.FinalPercentage.ToString("F1")%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>@finalGrade.FinalGradeLetter</strong>
+                                        </td>
+                                        <td>@(finalGrade.FinalGradePoints?.ToString("F2") ?? "0.00")</td>
+                                        <td>
+                                            <span class="badge @(finalGrade.GradeStatus == GradeStatus.Completed ? "bg-success" : "bg-warning")">
+                                                @finalGrade.GradeStatus
+                                            </span>
+                                        </td>
+                                        <td>@finalGrade.TotalMarksObtained.ToString("F1") / @finalGrade.TotalMaximumMarks.ToString("F1")</td>
+                                        <td>@finalGrade.CalculationDate.ToString("MMM dd, yyyy")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="@Url.Action("EnterGrades", new { courseId = Model.Course?.Id, semesterId = Model.Semester?.Id })"
+                           class="btn btn-primary">Enter More Grades</a>
+                        <a href="@Url.Action("Dashboard")" class="btn btn-secondary">Back to Dashboard</a>
+                        <button class="btn btn-success" onclick="exportGrades()">
+                            <i class="fas fa-download"></i> Export to Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function exportGrades() {
+            window.location.href = '@Url.Action("ExportGrades", new { courseId = Model.Course?.Id, semesterId = Model.Semester?.Id })';
+        }
+    </script>
+}

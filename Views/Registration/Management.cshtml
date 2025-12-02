@@ -1,0 +1,569 @@
+﻿@model StudentManagementSystem.ViewModels.RegistrationManagementViewModel
+@{
+    ViewData["Title"] = "Registration Management";
+    Layout = "_Layout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-6">
+        <i class="fas fa-tasks me-2"></i>Registration Management
+    </h1>
+    <div class="d-flex gap-2">
+        <!-- Export Dropdown -->
+        <div class="dropdown">
+            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-download me-2"></i>Export
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <a class="dropdown-item" href="@Url.Action("ExportRegistrations", new { semesterId = Model.SelectedSemester?.Id, format = "excel", filter = Model.CurrentFilter })">
+                        <i class="fas fa-file-excel me-2"></i>Export to Excel
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="@Url.Action("ExportRegistrations", new { semesterId = Model.SelectedSemester?.Id, format = "csv", filter = Model.CurrentFilter })">
+                        <i class="fas fa-file-csv me-2"></i>Export to CSV
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="@Url.Action("ExportRegistrations", new { semesterId = Model.SelectedSemester?.Id, format = "pdf", filter = Model.CurrentFilter })">
+                        <i class="fas fa-file-pdf me-2"></i>Export to PDF
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Import Button -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="fas fa-upload me-2"></i>Import
+        </button>
+
+        <!-- Download Template -->
+        <a href="@Url.Action("DownloadImportTemplate", new { type = "registrations" })" class="btn btn-outline-primary">
+            <i class="fas fa-file-download me-2"></i>Template
+        </a>
+
+        <!-- Analytics Link -->
+        <a href="@Url.Action("Analytics")" class="btn btn-info">
+            <i class="fas fa-chart-bar me-2"></i>Analytics
+        </a>
+    </div>
+</div>
+
+<!-- Filters and Controls -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Semester</label>
+                <select class="form-select" onchange="window.location.href = '@Url.Action("Management")?semesterId=' + this.value + '&filter=@Model.CurrentFilter&sortBy=@Model.CurrentSort&sortOrder=@Model.CurrentSortOrder'">
+                    @foreach (var semester in Model.Semesters)
+                    {
+                        <option value="@semester.Id" selected="@(semester.Id == Model.SelectedSemester?.Id)">@semester.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status Filter</label>
+                <select class="form-select" onchange="window.location.href = '@Url.Action("Management", new { semesterId = Model.SelectedSemester?.Id, sortBy = Model.CurrentSort, sortOrder = Model.CurrentSortOrder })&filter=' + this.value">
+                    <option value="all" selected="@(Model.CurrentFilter == "all")">All Statuses</option>
+                    <option value="pending" selected="@(Model.CurrentFilter == "pending")">Pending</option>
+                    <option value="approved" selected="@(Model.CurrentFilter == "approved")">Approved</option>
+                    <option value="rejected" selected="@(Model.CurrentFilter == "rejected")">Rejected</option>
+                    <option value="waitlisted" selected="@(Model.CurrentFilter == "waitlisted")">Waitlisted</option>
+                    <option value="dropped" selected="@(Model.CurrentFilter == "dropped")">Dropped</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sort By</label>
+                <select class="form-select" onchange="updateSort(this.value, '@Model.CurrentSortOrder')">
+                    <option value="date" selected="@(Model.CurrentSort == "date")">Registration Date</option>
+                    <option value="student" selected="@(Model.CurrentSort == "student")">Student Name</option>
+                    <option value="course" selected="@(Model.CurrentSort == "course")">Course Code</option>
+                    <option value="status" selected="@(Model.CurrentSort == "status")">Status</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sort Order</label>
+                <select class="form-select" onchange="updateSort('@Model.CurrentSort', this.value)">
+                    <option value="desc" selected="@(Model.CurrentSortOrder == "desc")">Descending</option>
+                    <option value="asc" selected="@(Model.CurrentSortOrder == "asc")">Ascending</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-white bg-primary">
+            <div class="card-body text-center">
+                <h4 class="card-title">@Model.TotalCount</h4>
+                <p class="card-text">Total</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-white bg-warning">
+            <div class="card-body text-center">
+                <h4 class="card-title">@Model.PendingCount</h4>
+                <p class="card-text">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <h4 class="card-title">@Model.ApprovedCount</h4>
+                <p class="card-text">Approved</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-white bg-danger">
+            <div class="card-body text-center">
+                <h4 class="card-title">@(Model.TotalCount - Model.PendingCount - Model.ApprovedCount)</h4>
+                <p class="card-text">Other</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center">
+                <h4 class="card-title">@(Model.TotalCount > 0 ? ((Model.ApprovedCount * 100) / Model.TotalCount).ToString("F1") : "0")%</h4>
+                <p class="card-text">Approval Rate</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions -->
+<div class="card mb-4" id="bulkActions" style="display: none;">
+    <div class="card-header bg-light">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-cogs me-2"></i>Bulk Actions
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <button type="button" class="btn btn-success w-100" onclick="bulkApprove()">
+                    <i class="fas fa-check me-2"></i>Approve Selected
+                </button>
+            </div>
+            <div class="col-md-4">
+                <button type="button" class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#bulkRejectModal">
+                    <i class="fas fa-times me-2"></i>Reject Selected
+                </button>
+            </div>
+            <div class="col-md-4">
+                <button type="button" class="btn btn-danger w-100" onclick="clearSelection()">
+                    <i class="fas fa-times me-2"></i>Clear Selection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registrations Table -->
+<div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-table me-2"></i>Course Registrations
+            <span class="badge bg-primary ms-2" id="selectedCount">0 selected</span>
+        </h5>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="selectAll">
+            <label class="form-check-label" for="selectAll">Select All</label>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Model.Registrations.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 40px;">#</th>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>Semester</th>
+                            <th>Registration Date</th>
+                            <th>Status</th>
+                            <th>Type</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var registration in Model.Registrations)
+                        {
+                            <tr data-registration-id="@registration.Id">
+                                <td>
+                                    <input type="checkbox" class="registration-checkbox" value="@registration.Id">
+                                </td>
+                                <td>
+                                    <strong>@registration.Student?.Name</strong>
+                                    <br>
+                                    <small class="text-muted">@registration.Student?.StudentId</small>
+                                </td>
+                                <td>
+                                    <strong>@registration.Course?.CourseCode</strong>
+                                    <br>
+                                    <small class="text-muted">@registration.Course?.CourseName</small>
+                                </td>
+                                <td>@registration.Semester?.Name</td>
+                                <td>@registration.RegistrationDate.ToString("MMM dd, yyyy HH:mm")</td>
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(registration.Status)">
+                                        @registration.Status
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">@registration.RegistrationType</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        @if (registration.Status == RegistrationStatus.Pending)
+                                        {
+                                            <form asp-action="ApproveRegistration" method="post" class="d-inline">
+                                                <input type="hidden" name="registrationId" value="@registration.Id" />
+                                                <input type="hidden" name="semesterId" value="@Model.SelectedSemester?.Id" />
+                                                <button type="submit" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <button type="button" class="btn btn-warning btn-sm"
+                                                    data-bs-toggle="modal" data-bs-target="#rejectModal"
+                                                    data-registration-id="@registration.Id"
+                                                    data-student-name="@registration.Student?.Name"
+                                                    data-course-name="@registration.Course?.CourseCode">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                        }
+                                        else if (registration.Status == RegistrationStatus.Approved)
+                                        {
+                                            <span class="text-success">
+                                                <i class="fas fa-check-circle"></i> Approved
+                                                @if (registration.ApprovalDate.HasValue)
+                                                {
+                                                    <br>
+                                                    <small>on @registration.ApprovalDate.Value.ToString("MMM dd")</small>
+                                                }
+                                            </span>
+                                        }
+                                        <button type="button" class="btn btn-info btn-sm"
+                                                data-bs-toggle="modal" data-bs-target="#detailsModal"
+                                                data-registration-id="@registration.Id">
+                                            <i class="fas fa-info"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <nav aria-label="Registration pagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1">Previous</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+        else
+        {
+            <div class="text-center py-4">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No registrations found</h5>
+                <p class="text-muted">There are no course registrations for the selected semester and filters.</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+                    <i class="fas fa-upload me-2"></i>Import Registrations
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Registrations</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="ImportRegistrations" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="semesterId" value="@Model.SelectedSemester?.Id" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="importFile" class="form-label">Select File</label>
+                        <input type="file" class="form-control" name="file" accept=".xlsx,.xls,.csv" required>
+                        <div class="form-text">Supported formats: Excel (.xlsx, .xls) or CSV (.csv)</div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="overwriteExisting" value="true">
+                        <label class="form-check-label">Overwrite existing registrations</label>
+                    </div>
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Import Guidelines</h6>
+                        <ul class="mb-0 small">
+                            <li>Download the template file for the correct format</li>
+                            <li>Ensure Student IDs and Course Codes exist in the system</li>
+                            <li>Maximum file size: 10MB</li>
+                            <li>Expected columns: StudentID, CourseCode, Semester, RegistrationType, Remarks</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="@Url.Action("DownloadImportTemplate", new { type = "registrations" })" class="btn btn-outline-primary me-auto">
+                        <i class="fas fa-download me-2"></i>Download Template
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Reject Modal -->
+<div class="modal fade" id="bulkRejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Reject Registrations</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="bulkRejectForm" asp-action="BulkReject" method="post">
+                <input type="hidden" name="semesterId" value="@Model.SelectedSemester?.Id" />
+                <input type="hidden" name="registrationIds" id="bulkRejectIds" />
+                <div class="modal-body">
+                    <p>Reject <strong id="bulkRejectCount">0</strong> selected registrations?</p>
+                    <div class="form-group">
+                        <label for="bulkRejectReason">Reason for rejection:</label>
+                        <textarea class="form-control" name="reason" rows="3" required
+                                  placeholder="Please provide a reason for rejecting these registrations..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Reject Selected</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Individual Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Registration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="RejectRegistration" method="post">
+                <input type="hidden" name="registrationId" id="rejectRegistrationId" />
+                <input type="hidden" name="semesterId" value="@Model.SelectedSemester?.Id" />
+                <div class="modal-body">
+                    <p>Reject registration for <strong id="rejectStudentName"></strong> - <strong id="rejectCourseName"></strong>?</p>
+                    <div class="form-group">
+                        <label for="rejectReason">Reason for rejection:</label>
+                        <textarea class="form-control" name="reason" rows="3" required
+                                  placeholder="Please provide a reason for rejecting this registration..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Reject Registration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registration Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+                <!-- Details will be loaded via AJAX -->
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Loading details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let selectedRegistrations = new Set();
+
+        // Select All functionality
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.registration-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+                updateSelection(checkbox);
+            });
+            updateBulkActions();
+        });
+
+        // Individual checkbox selection
+        document.querySelectorAll('.registration-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateSelection(this);
+                updateBulkActions();
+            });
+        });
+
+        function updateSelection(checkbox) {
+            const registrationId = checkbox.value;
+            if (checkbox.checked) {
+                selectedRegistrations.add(registrationId);
+            } else {
+                selectedRegistrations.delete(registrationId);
+                document.getElementById('selectAll').checked = false;
+            }
+        }
+
+        function updateBulkActions() {
+            const selectedCount = selectedRegistrations.size;
+            document.getElementById('selectedCount').textContent = `${selectedCount} selected`;
+
+            if (selectedCount > 0) {
+                document.getElementById('bulkActions').style.display = 'block';
+                document.getElementById('bulkRejectCount').textContent = selectedCount;
+            } else {
+                document.getElementById('bulkActions').style.display = 'none';
+            }
+        }
+
+        function clearSelection() {
+            selectedRegistrations.clear();
+            document.querySelectorAll('.registration-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            updateBulkActions();
+        }
+
+        function bulkApprove() {
+            if (selectedRegistrations.size === 0) return;
+
+            if (confirm(`Approve ${selectedRegistrations.size} selected registrations?`)) {
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = '@Url.Action("BulkApprove")';
+
+                const semesterIdInput = document.createElement('input');
+                semesterIdInput.type = 'hidden';
+                semesterIdInput.name = 'semesterId';
+                semesterIdInput.value = '@Model.SelectedSemester?.Id';
+                form.appendChild(semesterIdInput);
+
+                selectedRegistrations.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'registrationIds';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function updateSort(sortBy, sortOrder) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('sortBy', sortBy);
+            url.searchParams.set('sortOrder', sortOrder);
+            window.location.href = url.toString();
+        }
+
+        // Details modal
+        const detailsModal = document.getElementById('detailsModal');
+        detailsModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const registrationId = button.getAttribute('data-registration-id');
+
+            // Load details via AJAX
+            fetch(`@Url.Action("GetRegistrationDetails")/${registrationId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    document.getElementById('detailsContent').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error loading details:', error);
+                    document.getElementById('detailsContent').innerHTML =
+                        '<div class="alert alert-danger">Error loading registration details. Please try again.</div>';
+                });
+        });
+
+        // Bulk reject modal setup
+        const bulkRejectModal = document.getElementById('bulkRejectModal');
+        bulkRejectModal.addEventListener('show.bs.modal', function() {
+            document.getElementById('bulkRejectIds').value = Array.from(selectedRegistrations).join(',');
+        });
+
+        // Individual reject modal setup
+        const rejectModal = document.getElementById('rejectModal');
+        rejectModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const registrationId = button.getAttribute('data-registration-id');
+            const studentName = button.getAttribute('data-student-name');
+            const courseName = button.getAttribute('data-course-name');
+
+            document.getElementById('rejectRegistrationId').value = registrationId;
+            document.getElementById('rejectStudentName').textContent = studentName;
+            document.getElementById('rejectCourseName').textContent = courseName;
+        });
+
+        // Auto-dismiss alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    </script>
+}
+
+@functions {
+    private string GetStatusBadgeClass(RegistrationStatus status)
+    {
+        return status switch
+        {
+            RegistrationStatus.Approved => "bg-success",
+            RegistrationStatus.Pending => "bg-warning",
+            RegistrationStatus.Rejected => "bg-danger",
+            RegistrationStatus.Waitlisted => "bg-info",
+            RegistrationStatus.Dropped => "bg-secondary",
+            RegistrationStatus.Completed => "bg-primary",
+            _ => "bg-secondary"
+        };
+    }
+}

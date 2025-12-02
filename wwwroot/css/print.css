@@ -1,0 +1,32 @@
+﻿@media print {
+    .btn, .alert, .navbar, .sidebar, .breadcrumb {
+        display: none !important;
+    }
+
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+
+    .badge {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        background-color: white !important;
+    }
+
+    .table-dark {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+    }
+
+    body {
+        font-size: 12pt;
+        background: white !important;
+    }
+
+    .container-fluid {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+}

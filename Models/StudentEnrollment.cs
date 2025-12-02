@@ -20,8 +20,8 @@ namespace StudentManagementSystem.Models
         [Display(Name = "Enrollment Date")]
         public DateTime EnrollmentDate { get; set; } = DateTime.Now;
 
-        [Display(Name = "Active")]
-        public bool IsActive { get; set; } = true;
+        //[Display(Name = "Active")]
+        //public bool IsActive { get; set; } = true;
 
         // Grade-related properties
         [Display(Name = "Grade Points")]

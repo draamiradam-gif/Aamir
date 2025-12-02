@@ -1,0 +1,536 @@
+﻿@model CreateAdminViewModel
+@{
+    ViewData["Title"] = "Create Admin";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-user-plus me-2"></i>Create New Admin</h1>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-modern">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>Admin Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="Create">
+                        @Html.AntiForgeryToken()
+
+                        <!-- Template Selection -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label asp-for="TemplateId" class="form-label fw-bold"></label>
+                                    <select asp-for="TemplateId" asp-items="Model.TemplateList" class="form-control">
+                                        <option value="">-- Select Template (Optional) --</option>
+                                    </select>
+                                    <small class="text-muted">Select a template to pre-fill permissions</small>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- After the template dropdown -->
+                        <div class="mt-3">
+                            <div class="alert alert-warning">
+                                <h6>Template Debug Info:</h6>
+                                <p>Model.AvailableTemplates count: @Model.AvailableTemplates.Count</p>
+                                <p>TemplateList count: @Model.TemplateList.Count()</p>
+                                @if (Model.AvailableTemplates.Any())
+                                {
+                                    <ul>
+                                        @foreach (var template in Model.AvailableTemplates.Take(3))
+                                        {
+                                            <li>@template.TemplateName (ID: @template.Id) - Permissions: @template.DefaultPermissions.Count</li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <p class="text-danger">No templates loaded!</p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="FullName" class="form-label fw-bold"></label>
+                                    <input asp-for="FullName" class="form-control" placeholder="Enter full name" />
+                                    <span asp-validation-for="FullName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Email" class="form-label fw-bold"></label>
+                                    <input asp-for="Email" type="email" class="form-control" placeholder="Enter email address" />
+                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Password" class="form-label fw-bold"></label>
+                                    <div class="input-group">
+                                        <input asp-for="Password" type="password" class="form-control"
+                                               placeholder="Enter password" id="passwordField" />
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                onclick="togglePassword('passwordField')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <span asp-validation-for="Password" class="text-danger"></span>
+                                    <div class="password-strength mt-1">
+                                        <small class="text-muted">Password must be at least 6 characters with uppercase, lowercase, and number</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="ConfirmPassword" class="form-label fw-bold"></label>
+                                    <div class="input-group">
+                                        <input asp-for="ConfirmPassword" type="password" class="form-control"
+                                               placeholder="Confirm password" id="confirmPasswordField" />
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                onclick="togglePassword('confirmPasswordField')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Type and Scope -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label asp-for="AdminType" class="form-label fw-bold"></label>
+                                    <select asp-for="AdminType" asp-items="Model.AdminTypeList" class="form-control">
+                                        <option value="">-- Select Admin Type --</option>
+                                    </select>
+                                    <span asp-validation-for="AdminType" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-3">
+                                            <label asp-for="UniversityScope" class="form-label fw-bold"></label>
+                                            <select asp-for="UniversityScope" asp-items="Model.UniversityList" class="form-control">
+                                                <option value="">-- Select University (Optional) --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-3">
+                                            <label asp-for="FacultyScope" class="form-label fw-bold"></label>
+                                            <select asp-for="FacultyScope" asp-items="Model.CollegeList" class="form-control">
+                                                <option value="">-- Select Faculty (Optional) --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-3">
+                                            <label asp-for="DepartmentScope" class="form-label fw-bold"></label>
+                                            <select asp-for="DepartmentScope" asp-items="Model.DepartmentList" class="form-control">
+                                                <option value="">-- Select Department (Optional) --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Permissions Section -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Permissions</label>
+                                    <div class="alert alert-info mb-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Select the permissions this admin should have. Use templates for common role configurations.
+                                    </div>
+
+                                    <!-- Permission Controls -->
+                                    <div class="permission-controls mb-3">
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllPermissions()">
+                                                <i class="fas fa-check-square me-1"></i>Select All
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllPermissions()">
+                                                <i class="fas fa-times-circle me-1"></i>Deselect All
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-info" onclick="selectByCategory('UserManagement')">
+                                                <i class="fas fa-users me-1"></i>All User Management
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="selectByCategory('Student')">
+                                                <i class="fas fa-user-graduate me-1"></i>All Student Management
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="selectByCategory('Course')">
+                                                <i class="fas fa-book me-1"></i>All Course Management
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="selectByCategory('Grade')">
+                                                <i class="fas fa-chart-bar me-1"></i>All Grade Management
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectByCategory('Finance')">
+                                                <i class="fas fa-money-bill me-1"></i>All Finance Management
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectByCategory('University')">
+                                                <i class="fas fa-university me-1"></i>All University Management
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-info" onclick="selectByCategory('College')">
+                                                <i class="fas fa-building me-1"></i>All College Management
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="selectByCategory('Department')">
+                                                <i class="fas fa-sitemap me-1"></i>All Department Management
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="selectByCategory('System')">
+                                                <i class="fas fa-cog me-1"></i>All System Administration
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="selectByCategory('Admin')">
+                                                <i class="fas fa-user-shield me-1"></i>All Admin Management
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectByCategory('Application')">
+                                                <i class="fas fa-file-alt me-1"></i>All Application Management
+                                            </button>
+                                        </div>
+                                        <div class="mt-2">
+                                            <span class="badge bg-info" id="selectedCount">0 permissions selected</span>
+                                            <span class="badge bg-secondary ms-2" id="totalCount">@Model.AllPermissions.Count total</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Permission Groups -->
+                                    <div class="permissions-container border rounded p-3"
+                                         style="max-height: 500px; overflow-y: auto; background: rgba(var(--bs-primary-rgb), 0.03);">
+
+                                        @{
+                                            var permissionGroups = PermissionHelper.GetGroupedPermissions(Model.SelectedPermissions);
+                                        }
+
+                                        @foreach (var group in permissionGroups)
+                                        {
+                                            <div class="permission-group mb-4">
+                                                <div class="group-header bg-light p-2 rounded mb-2 d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0 fw-bold text-primary">
+                                                        <i class="fas fa-folder me-2"></i>@group.DisplayName
+                                                        <small class="text-muted">(@group.Permissions.Count permissions)</small>
+                                                    </h6>
+                                                    <div>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllInCategory('@group.GroupName')">
+                                                            <i class="fas fa-check-square me-1"></i>Select All
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllInCategory('@group.GroupName')">
+                                                            <i class="fas fa-times-circle me-1"></i>Deselect All
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary ms-1"
+                                                                onclick="toggleGroup('@group.GroupName')">
+                                                            <i class="fas fa-chevron-down"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div class="group-content" id="group-@group.GroupName">
+                                                    <div class="row">
+                                                        @foreach (var permission in group.Permissions)
+                                                        {
+                                                            <div class="col-md-6 col-lg-4 mb-2">
+                                                                <div class="permission-item card border-0 shadow-sm">
+                                                                    <div class="card-body p-2">
+                                                                        <div class="form-check">
+                                                                            <input class="form-check-input permission-checkbox"
+                                                                                   type="checkbox"
+                                                                                   name="SelectedPermissions"
+                                                                                   value="@permission.Permission"
+                                                                                   id="perm_@permission.Permission"
+                                                                                   @(permission.IsSelected ? "checked" : "")>
+                                                                            <label class="form-check-label w-100" for="perm_@permission.Permission">
+                                                                                <div class="d-flex justify-content-between align-items-start">
+                                                                                    <div>
+                                                                                        <div class="fw-medium text-dark">@permission.DisplayName</div>
+                                                                                        <div class="small text-muted">@permission.Description</div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span class="badge
+                                                                                                            @(permission.DisplayName.Contains("View") ? "bg-info" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Create") ? "bg-success" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Edit") ? "bg-warning" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Delete") ? "bg-danger" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Manage") ? "bg-primary" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Approve") ? "bg-success" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Reject") ? "bg-danger" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Export") ? "bg-info" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Import") ? "bg-warning" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Backup") ? "bg-dark" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Restore") ? "bg-dark" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Logs") ? "bg-secondary" :
+                                                                                                                                                                                                    permission.DisplayName.Contains("Settings") ? "bg-dark" : "bg-secondary")">
+                                                                                    @permission.DisplayName.Split(' ').Last()
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Create Admin Account
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-2"></i>Reset Form
+                            </button>
+                        </div>
+                    </form>
+                    <!-- After the form, add this debug info -->
+                    <div class="mt-4">
+                        <div class="alert alert-info">
+                            <h6>Debug Info:</h6>
+                            <p>Templates in Model: @Model.AvailableTemplates.Count</p>
+                            <p>SelectList Items: @Model.TemplateList.Count()</p>
+                            @foreach (var item in Model.TemplateList)
+                            {
+                                <span class="badge bg-secondary me-1">@item.Text (@item.Value)</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .permission-item:hover {
+            background-color: rgba(var(--bs-primary-rgb), 0.05);
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+        }
+
+        .permission-item .form-check-input:checked {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+
+        .group-content {
+            transition: max-height 0.3s ease;
+        }
+
+        .group-header {
+            cursor: pointer;
+        }
+
+        .permission-controls {
+            background: rgba(var(--bs-info-rgb), 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(var(--bs-info-rgb), 0.2);
+        }
+
+        .permissions-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .permissions-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .permissions-container::-webkit-scrollbar-thumb {
+            background: var(--bs-primary);
+            border-radius: 4px;
+        }
+
+            .permissions-container::-webkit-scrollbar-thumb:hover {
+                background: var(--bs-primary-dark);
+            }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            updateSelectedCount();
+
+            // Update count when permissions change
+            $('.permission-checkbox').change(function() {
+                updateSelectedCount();
+            });
+
+            // Template selection handler
+            $('#TemplateId').change(function() {
+                var templateId = $(this).val();
+                if (templateId) {
+                    // Load template permissions via AJAX
+                    loadTemplatePermissions(templateId);
+                } else {
+                    // Clear all selections if no template selected
+                    $('.permission-checkbox').prop('checked', false);
+                    updateSelectedCount();
+                }
+            });
+
+            // Password strength indicator
+            $('#passwordField').on('input', function() {
+                updatePasswordStrength($(this).val());
+            });
+
+            // Initially expand all groups
+            $('.group-content').show();
+        });
+
+        function togglePassword(fieldId) {
+            var field = document.getElementById(fieldId);
+            var icon = field.parentElement.querySelector('i');
+            if (field.type === "password") {
+                field.type = "text";
+                icon.className = "fas fa-eye-slash";
+            } else {
+                field.type = "password";
+                icon.className = "fas fa-eye";
+            }
+        }
+
+        function updatePasswordStrength(password) {
+            var strength = 0;
+            var hints = [];
+
+            if (password.length >= 8) strength++;
+            else hints.push("At least 8 characters");
+
+            if (/[A-Z]/.test(password)) strength++;
+            else hints.push("One uppercase letter");
+
+            if (/[a-z]/.test(password)) strength++;
+            else hints.push("One lowercase letter");
+
+            if (/[0-9]/.test(password)) strength++;
+            else hints.push("One number");
+
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            else hints.push("One special character");
+
+            var strengthBar = $('.password-strength');
+            var colors = ['bg-danger', 'bg-warning', 'bg-info', 'bg-primary', 'bg-success'];
+
+            // Update strength indicator
+            strengthBar.html(`
+                <div class="progress mb-1" style="height: 5px;">
+                    <div class="progress-bar ${colors[strength-1] || 'bg-danger'}"
+                         style="width: ${(strength/5)*100}%"></div>
+                </div>
+                <small class="${strength >= 4 ? 'text-success' : 'text-warning'}">
+                    ${strength >= 4 ? 'Strong password' : 'Password should include: ' + hints.join(', ')}
+                </small>
+            `);
+        }
+
+        function selectAllPermissions() {
+            $('.permission-checkbox').prop('checked', true);
+            updateSelectedCount();
+        }
+
+        function deselectAllPermissions() {
+            $('.permission-checkbox').prop('checked', false);
+            updateSelectedCount();
+        }
+
+        function selectByCategory(category) {
+            $(`.permission-checkbox[value*="${category}"]`).prop('checked', true);
+            updateSelectedCount();
+        }
+
+        function selectAllInCategory(categoryName) {
+            $(`#group-${categoryName} .permission-checkbox`).prop('checked', true);
+            updateSelectedCount();
+        }
+
+        function deselectAllInCategory(categoryName) {
+            $(`#group-${categoryName} .permission-checkbox`).prop('checked', false);
+            updateSelectedCount();
+        }
+
+        function toggleGroup(groupName) {
+            var groupContent = $('#group-' + groupName);
+            var button = groupContent.closest('.permission-group').find('.group-header button i');
+
+            if (groupContent.is(':visible')) {
+                groupContent.slideUp();
+                button.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            } else {
+                groupContent.slideDown();
+                button.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            }
+        }
+
+        function updateSelectedCount() {
+            var selected = $('.permission-checkbox:checked').length;
+            var total = $('.permission-checkbox').length;
+            $('#selectedCount').text(selected + ' permissions selected');
+            $('#totalCount').text(total + ' total');
+        }
+
+        function loadTemplatePermissions(templateId) {
+            $.ajax({
+                url: '@Url.Action("GetTemplatePermissions", "AdminManagement")',
+                type: 'GET',
+                data: { templateId: templateId },
+                success: function(response) {
+                    if (response.success && response.permissions) {
+                        // Clear all selections first
+                        $('.permission-checkbox').prop('checked', false);
+
+                        // Select permissions from template
+                        response.permissions.forEach(function(permission) {
+                            $(`#perm_${permission}`).prop('checked', true);
+                        });
+
+                        updateSelectedCount();
+                        showToast('Template permissions loaded successfully', 'success');
+                    }
+                },
+                error: function() {
+                    showToast('Error loading template permissions', 'error');
+                }
+            });
+        }
+
+        function showToast(message, type) {
+            // Simple toast notification
+            var toast = $(`
+                <div class="toast toast-${type} position-fixed top-0 end-0 m-3" style="z-index: 1060">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                        ${message}
+                    </div>
+                </div>
+            `);
+
+            $('body').append(toast);
+            setTimeout(function() {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+}

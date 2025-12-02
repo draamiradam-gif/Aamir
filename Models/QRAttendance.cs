@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace StudentManagementSystem.Models
 {
-    public class QRAttendance
+    public class QRAttendance : BaseEntity
     {
-        public int Id { get; set; }
+        //public int Id { get; set; }
 
         [Required]
         public int QRCodeSessionId { get; set; }

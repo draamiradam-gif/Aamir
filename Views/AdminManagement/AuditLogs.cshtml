@@ -1,0 +1,128 @@
+﻿@model List<AuditLogViewModel>
+@{
+    ViewData["Title"] = "Audit Logs";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-clipboard-list me-2"></i>Audit Logs</h1>
+        <div>
+            <a href="@Url.Action("ExportAuditLogs")" class="btn btn-outline-info me-2">
+                <i class="fas fa-download me-2"></i>Export Logs
+            </a>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Admins
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-modern">
+                <div class="card-header bg-dark text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Admin Activity Log</h5>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-filter me-1"></i>
+                            <span id="totalLogs">@Model.Count</span> logs
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th width="150">Timestamp</th>
+                                    <th>Admin</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                    <th>Performed By</th>
+                                    <th width="100">Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var log in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <small class="text-muted">@log.Timestamp.ToString("MMM dd")</small>
+                                                <div class="small">@log.Timestamp.ToString("HH:mm")</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-medium">@log.AdminEmail</div>
+                                                <small class="text-muted">@log.AdminType</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge
+                                                            @(log.Action == "Created" ? "bg-success" :
+                                                                                                            log.Action == "Modified" ? "bg-warning" :
+                                                                                                            log.Action == "Deleted" ? "bg-danger" : "bg-info")">
+                                            @log.Action
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div>@log.Details</div>
+                                        @if (!string.IsNullOrEmpty(log.NewValue))
+                                                {
+                                                    <small class="text-muted">New: @log.NewValue</small>
+                                                }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@log.PerformedBy</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge
+                                                    @(log.AdminType.ToString().Contains("Super") ? "bg-danger" :
+                                                                                                    log.AdminType.ToString().Contains("University") ? "bg-primary" :
+                                                                                                    log.AdminType.ToString().Contains("Faculty") ? "bg-info" :
+                                                                                                    log.AdminType.ToString().Contains("Department") ? "bg-success" :
+                                                                                                    log.AdminType.ToString().Contains("Finance") ? "bg-warning" : "bg-secondary")">
+                                            @log.AdminType
+                                        </span>
+                                    </td>
+                                </tr>
+                                                                }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                            <h5 class="text-muted">No audit logs found</h5>
+                                            <p class="text-muted">Activity will appear here once admins are created or modified</p>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Showing latest 100 activities
+                        </small>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function refreshLogs() {
+            location.reload();
+        }
+
+        // Auto-refresh every 30 seconds if desired
+        // setInterval(refreshLogs, 30000);
+    </script>
+}

@@ -1,0 +1,104 @@
+﻿@{
+    ViewData["Title"] = "Admin System Access";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card card-modern">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3><i class="fas fa-user-shield me-2"></i>Admin System Access</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Quick SuperAdmin Access -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-crown fa-3x text-warning mb-3"></i>
+                                    <h5>SuperAdmin Access</h5>
+                                    <p class="text-muted">Full system control with all permissions</p>
+                                    <form method="post" action="@Url.Action("CreateSuperAdmin", "Emergency")">
+                                        <button type="submit" class="btn btn-warning btn-lg w-100">
+                                            <i class="fas fa-bolt me-2"></i>Become SuperAdmin
+                                        </button>
+                                    </form>
+                                    <small class="text-muted mt-2 d-block">
+                                        Creates SuperAdmin account with full privileges
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Application -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-alt fa-3x text-info mb-3"></i>
+                                    <h5>Apply for Admin</h5>
+                                    <p class="text-muted">Request admin privileges for specific roles</p>
+                                    <a href="@Url.Action("Apply", "AdminManagement")" class="btn btn-info btn-lg w-100">
+                                        <i class="fas fa-edit me-2"></i>Apply Now
+                                    </a>
+                                    <small class="text-muted mt-2 d-block">
+                                        Submit application for admin access review
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Existing Admins Login -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5>Already an Admin?</h5>
+                                    <p class="text-muted">Login with your existing admin account</p>
+                                    <div class="d-flex justify-content-center gap-3">
+                                        <a href="@Url.Action("PortalAccess", "Home")" class="btn btn-outline-primary">
+                                            <i class="fas fa-sign-in-alt me-2"></i>Portal Login
+                                        </a>
+                                        <a href="/Identity/Account/Login" class="btn btn-outline-success">
+                                            <i class="fas fa-user me-2"></i>Standard Login
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Test Credentials -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-center mb-3">
+                                        <i class="fas fa-key me-2"></i>Test Credentials
+                                    </h6>
+                                    <div class="row text-center">
+                                        <div class="col-md-4">
+                                            <strong>SuperAdmin</strong><br>
+                                            <small>superadmin@localhost</small><br>
+                                            <small>SuperAdmin123!</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>University Admin</strong><br>
+                                            <small>admin@localhost</small><br>
+                                            <small>Admin123!</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Faculty Admin</strong><br>
+                                            <small>faculty@localhost</small><br>
+                                            <small>Faculty123!</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

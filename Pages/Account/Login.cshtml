@@ -1,0 +1,99 @@
+﻿@page
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+
+@{
+    ViewData["Title"] = "Admin Login";
+    Layout = "_Layout";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-lg">
+                <div class="card-header bg-warning text-dark text-center py-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-users-cog me-2"></i>Admin Portal Login
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 80px; height: 80px;">
+                            <i class="fas fa-shield-alt fa-2x text-warning"></i>
+                        </div>
+                        <p class="text-muted">Enter your admin credentials</p>
+                    </div>
+
+                    <form method="post" action="/Identity/Account/Login">
+                        <input type="hidden" name="ReturnUrl" value="/AdminManagement" />
+
+                        @if (!string.IsNullOrEmpty(ViewData["ErrorMessage"] as string))
+                        {
+                            <div class="alert alert-danger">
+                                @ViewData["ErrorMessage"]
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label for="Input_Email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="Input_Email" name="Input.Email"
+                                   placeholder="superadmin@localhost" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Input_Password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="Input_Password" name="Input.Password"
+                                   placeholder="SuperAdmin123!" required />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="Input_RememberMe" name="Input.RememberMe" />
+                            <label class="form-check-label" for="Input_RememberMe">Remember me</label>
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login to Admin Portal
+                            </button>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="@Url.Action("PortalAccess", "Home")" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Portal
+                            </a>
+                        </div>
+                    </form>
+
+                    <!-- Quick Test Credentials -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="text-center mb-3">Test Admin Credentials</h6>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <button onclick="fillCredentials('superadmin@localhost', 'SuperAdmin123!')"
+                                        class="btn btn-outline-danger btn-sm w-100">
+                                    <i class="fas fa-crown me-1"></i>Super Admin
+                                </button>
+                            </div>
+                            <div class="col-12">
+                                <button onclick="fillCredentials('admin@localhost', 'Admin123!')"
+                                        class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="fas fa-user-shield me-1"></i>Regular Admin
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function fillCredentials(email, password) {
+            document.getElementById('Input_Email').value = email;
+            document.getElementById('Input_Password').value = password;
+        }
+    </script>
+}

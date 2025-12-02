@@ -40,8 +40,8 @@ namespace StudentManagementSystem.Models
         [Range(1800, 2100)]
         public int? EstablishmentYear { get; set; }
 
-        [Display(Name = "Active")]
-        public bool IsActive { get; set; } = true;
+        //[Display(Name = "Active")]
+       // public bool IsActive { get; set; } = true;
 
         [Display(Name = "Allow Multiple Colleges")]
         public bool AllowMultipleColleges { get; set; } = true;

@@ -1,0 +1,300 @@
+﻿@model StudentManagementSystem.Models.Student
+@{
+    ViewData["Title"] = "My Schedule";
+    Layout = "_StudentLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-6">
+        <i class="fas fa-calendar me-2"></i>My Schedule
+    </h1>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary active" id="weeklyView">
+            <i class="fas fa-calendar-week me-2"></i>Weekly View
+        </button>
+        <button type="button" class="btn btn-outline-primary" id="listView">
+            <i class="fas fa-list me-2"></i>List View
+        </button>
+    </div>
+</div>
+
+<!-- Weekly Schedule View -->
+<div id="weeklySchedule" class="schedule-view">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-calendar-alt me-2"></i>Weekly Schedule - @DateTime.Now.ToString("MMMM yyyy")
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 12%" class="text-center">Time</th>
+                            <th style="width: 17.6%" class="text-center">Monday</th>
+                            <th style="width: 17.6%" class="text-center">Tuesday</th>
+                            <th style="width: 17.6%" class="text-center">Wednesday</th>
+                            <th style="width: 17.6%" class="text-center">Thursday</th>
+                            <th style="width: 17.6%" class="text-center">Friday</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int hour = 8; hour <= 18; hour++)
+                        {
+                            <tr>
+                                <td class="text-center bg-light">
+                                    <small>
+                                        @(hour <= 12 ? hour : hour - 12)@(hour < 12 ? "AM" : "PM")
+                                    </small>
+                                </td>
+                                @foreach (string day in new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" })
+                                {
+                                    <td style="height: 60px; vertical-align: top;">
+                                        @{
+                                            var dayClasses = ViewBag.WeeklySchedule as List<dynamic> ?? new List<dynamic>();
+                                            var classesThisSlot = new List<dynamic>();
+
+                                            // Manual filtering instead of LINQ with dynamic
+                                            foreach (var classItem in dayClasses)
+                                            {
+                                                if (classItem.Day?.ToString() == day &&
+                                                (int)classItem.StartHour <= hour &&
+                                                (int)classItem.EndHour > hour)
+                                                {
+                                                    classesThisSlot.Add(classItem);
+                                                }
+                                            }
+                                        }
+                                        @foreach (var classItem in classesThisSlot)
+                                        {
+                                            <div class="class-slot bg-primary text-white p-1 rounded small mb-1">
+                                                <strong>@classItem.CourseCode</strong><br>
+                                                <small>@classItem.Room</small><br>
+                                                <small>@classItem.Instructor?.ToString()?.Split(' ').Last()</small>
+                                            </div>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- List View -->
+<div id="listSchedule" class="schedule-view" style="display: none;">
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list me-2"></i>Course Schedule - List View
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (ViewBag.CurrentSchedule != null)
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Course</th>
+                                <th>Course Name</th>
+                                <th>Schedule</th>
+                                <th>Room</th>
+                                <th>Instructor</th>
+                                <th>Credits</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var course in (List<dynamic>)ViewBag.CurrentSchedule)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@course.CourseCode</strong>
+                                    </td>
+                                    <td>@course.CourseName</td>
+                                    <td>
+                                        @course.Days<br>
+                                        <small class="text-muted">@course.StartTime - @course.EndTime</small>
+                                    </td>
+                                    <td>@course.Room</td>
+                                    <td>@course.Instructor</td>
+                                    <td>@course.Credits</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No schedule available</h5>
+                    <p class="text-muted">Your course schedule will appear here once you register for classes.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Summary -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h6 class="card-title mb-0">Schedule Summary</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Courses:</span>
+                    <strong>@(ViewBag.CurrentSchedule?.Count ?? 0)</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Credits:</span>
+                    <strong>@(GetTotalCredits(ViewBag.CurrentSchedule as List<dynamic>))</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Class Days:</span>
+                    <strong>@GetClassDays(ViewBag.WeeklySchedule as List<dynamic>)</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Daily Average:</span>
+                    <strong>@GetDailyAverage(ViewBag.WeeklySchedule as List<dynamic>) hours</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h6 class="card-title mb-0">Important Dates</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                                <strong>Add/Drop Deadline</strong>
+                            </div>
+                            <span class="badge bg-danger">@DateTime.Now.AddDays(7).ToString("MMM dd")</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-moon text-info me-2"></i>
+                                <strong>Midterm Exams</strong>
+                            </div>
+                            <span class="badge bg-info">@DateTime.Now.AddDays(21).ToString("MMM dd")</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-flag text-success me-2"></i>
+                                <strong>Final Exams</strong>
+                            </div>
+                            <span class="badge bg-success">@DateTime.Now.AddDays(56).ToString("MMM dd")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .class-slot {
+            font-size: 0.7rem;
+            line-height: 1.2;
+        }
+
+        .schedule-view table td {
+            border: 1px solid #dee2e6;
+        }
+
+        .table th {
+            border-bottom: 2px solid #dee2e6;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Toggle between weekly and list view
+        document.getElementById('weeklyView').addEventListener('click', function() {
+            document.getElementById('weeklySchedule').style.display = 'block';
+            document.getElementById('listSchedule').style.display = 'none';
+            this.classList.add('active');
+            document.getElementById('listView').classList.remove('active');
+        });
+
+        document.getElementById('listView').addEventListener('click', function() {
+            document.getElementById('weeklySchedule').style.display = 'none';
+            document.getElementById('listSchedule').style.display = 'block';
+            this.classList.add('active');
+            document.getElementById('weeklyView').classList.remove('active');
+        });
+    </script>
+}
+
+@functions {
+    private string GetClassDays(List<dynamic>? weeklySchedule)
+    {
+        if (weeklySchedule == null || !weeklySchedule.Any())
+            return "None";
+
+        var days = new List<string>();
+        foreach (var item in weeklySchedule)
+        {
+            var day = item.Day?.ToString();
+            if (!string.IsNullOrEmpty(day) && !days.Contains(day))
+                days.Add(day);
+        }
+        return string.Join(", ", days.OrderBy(d => d));
+    }
+
+    private string GetDailyAverage(List<dynamic>? weeklySchedule)
+    {
+        if (weeklySchedule == null || !weeklySchedule.Any())
+            return "0";
+
+        var dayHours = new Dictionary<string, double>();
+        foreach (var item in weeklySchedule)
+        {
+            var day = item.Day?.ToString();
+            if (!string.IsNullOrEmpty(day))
+            {
+                var startHour = (int)item.StartHour;
+                var endHour = (int)item.EndHour;
+                var duration = endHour - startHour;
+
+                if (dayHours.ContainsKey(day))
+                    dayHours[day] += duration;
+                else
+                    dayHours[day] = duration;
+            }
+        }
+
+        return dayHours.Values.Any() ? dayHours.Values.Average().ToString("F1") : "0";
+    }
+
+    private int GetTotalCredits(List<dynamic>? currentSchedule)
+    {
+        if (currentSchedule == null || !currentSchedule.Any())
+            return 0;
+
+        int totalCredits = 0;
+        foreach (var course in currentSchedule)
+        {
+            totalCredits += (int)course.Credits;
+        }
+        return totalCredits;
+    }
+}

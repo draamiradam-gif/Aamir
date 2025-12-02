@@ -1,5 +1,8 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,209 +10,428 @@
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-
-    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- jQuery Validation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <!-- DataTables JS -->
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <!-- Custom Styles -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
     <style>
-        :root {
-            --primary-color: #1a365d;
-            --secondary-color: #2d3748;
-            --accent-color: #3182ce;
-            --light-bg: #f7fafc;
+        /* Improved dropdown spacing */
+        .navbar-nav .dropdown-menu {
+            max-height: 70vh;
+            overflow-y: auto;
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8f9fa;
+        .dropdown-submenu {
+            position: relative;
         }
 
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.5rem;
-        }
-
-        .sidebar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            min-height: calc(100vh - 76px);
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        }
-
-            .sidebar .nav-link {
-                color: #e2e8f0;
-                padding: 0.75rem 1rem;
-                margin: 0.2rem 0;
-                border-radius: 0.375rem;
-                transition: all 0.3s ease;
+            .dropdown-submenu .dropdown-menu {
+                top: 0;
+                left: 100%;
+                margin-top: -0.5rem;
             }
 
-                .sidebar .nav-link:hover {
-                    background-color: rgba(255,255,255,0.1);
-                    color: #fff;
-                    transform: translateX(5px);
-                }
-
-                .sidebar .nav-link.active {
-                    background-color: var(--accent-color);
-                    color: white;
-                }
-
-        .main-content {
-            background-color: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .page-header {
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .card-university {
-            border: none;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-            .card-university:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-            }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-color) 0%, #2c5aa0 100%);
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 500;
-        }
-
-        .table th {
-            background-color: var(--light-bg);
-            font-weight: 600;
-            color: var(--secondary-color);
-            border-bottom: 2px solid #e2e8f0;
+        /* Quick access badges */
+        .quick-access-badge {
+            font-size: 0.6rem;
+            padding: 0.1rem 0.3rem;
+            margin-left: 0.5rem;
         }
     </style>
 
-    @RenderSection("Styles", required: false)
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <!-- Header -->
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-            <div class="container-fluid">
-                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-university me-3 fs-2"></i>
-                    <div>
-                        <div class="fw-bold fs-4">Academic Management</div>
-                        <div class="small opacity-75">Student Management System</div>
+    <nav class="navbar navbar-main navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <!-- Brand Logo -->
+            <a class="navbar-brand text-white d-flex align-items-center" asp-controller="Home" asp-action="PortalAccess">
+                <i class="fas fa-university me-3 fs-2"></i>
+                <div>
+                    <div class="fw-bold fs-4">AcademicPro</div>
+                    <div class="small opacity-75">Management System</div>
+                </div>
+            </a>
+
+            <!-- Mobile Menu Button -->
+            <button class="navbar-toggler mobile-menu-btn d-md-none" type="button" onclick="toggleMobileSidebar()">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navigation for Admin Users -->
+            @{
+                // Get user info at the top level
+                var isSignedIn = false;
+                var user = default(IdentityUser);
+                var userRoles = new List<string>();
+                var isAdmin = false;
+
+                if (SignInManager.IsSignedIn(User))
+                {
+                    isSignedIn = true;
+                    user = await UserManager.GetUserAsync(User);
+                    if (user != null)
+                    {
+                        userRoles = (await UserManager.GetRolesAsync(user)).ToList();
+                        isAdmin = userRoles.Contains("Admin") || userRoles.Contains("SuperAdmin") ||
+                        userRoles.Contains("UniversityAdmin") || userRoles.Contains("FacultyAdmin") ||
+                        userRoles.Contains("DepartmentAdmin") || userRoles.Contains("FinanceAdmin") ||
+                        userRoles.Contains("StudentAdmin");
+                    }
+                }
+            }
+
+            @if (isSignedIn && isAdmin)
+            {
+                <div class="navbar-nav mx-auto">
+                    <!-- Admin Portal Dropdown -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-success" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-shield me-1"></i>Admin Portal
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Index", "AdminManagement")">
+                                    <i class="fas fa-tachometer-alt me-2 text-success"></i>Admin Dashboard
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Dashboard", "AdminManagement")">
+                                    <i class="fas fa-chart-bar me-2"></i>Analytics
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Permissions", "Admin")">
+                                    <i class="fas fa-key me-2"></i>Permissions
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Roles", "Admin")">
+                                    <i class="fas fa-user-tag me-2"></i>Roles
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Users", "Admin")">
+                                    <i class="fas fa-users me-2"></i>Users
+                                </a>
+                            </li>
+                            @if (userRoles.Contains("SuperAdmin"))
+                            {
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("Applications", "AdminManagement")">
+                                        <i class="fas fa-clipboard-list me-2"></i>Applications
+                                        <span class="badge bg-danger quick-access-badge">New</span>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
                     </div>
-                </a>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+                    <!-- Institutional Dropdown -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-building me-1"></i>Institutional
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Index", "University")">
+                                    <i class="fas fa-university me-2"></i>Universities
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Index", "Colleges")">
+                                    <i class="fas fa-school me-2"></i>Colleges
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Index", "Departments")">
+                                    <i class="fas fa-sitemap me-2"></i>Departments
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Index", "Branches")">
+                                    <i class="fas fa-code-branch me-2"></i>Branches
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Hierarchy", "Home")">
+                                    <i class="fas fa-sitemap me-2"></i>Hierarchy View
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
 
-                <div class="collapse navbar-collapse" id="navbarMain">
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index">
-                                <i class="fas fa-home me-1"></i> Dashboard
-                            </a>
+                    <!-- Academic Dropdown -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-graduation-cap me-1"></i>Academic
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Index", "Students")">
+                                    <i class="fas fa-users me-2"></i>Students
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Index", "Courses")">
+                                    <i class="fas fa-book me-2"></i>Courses
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Index", "Semesters")">
+                                    <i class="fas fa-calendar-alt me-2"></i>Semesters
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Index", "Enrollment")">
+                                    <i class="fas fa-clipboard-list me-2"></i>Enrollment
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Dashboard", "Grading")">
+                                    <i class="fas fa-chart-bar me-2"></i>Grading
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- System Dropdown -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog me-1"></i>System
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Settings", "System")">
+                                    <i class="fas fa-sliders-h me-2"></i>Settings
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Logs", "Admin")">
+                                    <i class="fas fa-history me-2"></i>Logs
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Analytics", "Admin")">
+                                    <i class="fas fa-chart-line me-2"></i>Analytics
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Backup", "Admin")">
+                                    <i class="fas fa-database me-2"></i>Backup
+                                </a>
+                            </li>
+                            @if (userRoles.Contains("SuperAdmin"))
+                            {
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("SystemSettings", "Admin")">
+                                        <i class="fas fa-tools me-2"></i>System Settings
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+
+            <!-- User Status & Actions -->
+            <div class="navbar-nav ms-auto">
+                @if (isSignedIn)
+                {
+                    if (user != null)
+                    {
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle
+                                                @(isAdmin ? "text-success" :
+                                                                         userRoles.Contains("Faculty") ? "text-info" :
+                                                                         userRoles.Contains("Student") ? "text-warning" : "text-primary")"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="@(isAdmin ? "fas fa-user-shield" :
+                                                                     userRoles.Contains("Faculty") ? "fas fa-chalkboard-teacher" :
+                                                                     userRoles.Contains("Student") ? "fas fa-user-graduate" : "fas fa-user") me-2"></i>
+                        @User.Identity?.Name
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <!-- Profile Section -->
+                        <li>
+                            <div class="dropdown-header">
+                                <i class="@(isAdmin ? "fas fa-user-shield" :
+                                                                                     userRoles.Contains("Faculty") ? "fas fa-chalkboard-teacher" :
+                                                                                     userRoles.Contains("Student") ? "fas fa-user-graduate" : "fas fa-user") me-1"></i>
+                                @User.Identity?.Name
+                            </div>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Hierarchy">
-                                <i class="fas fa-sitemap me-2"></i>Academic Hierarchy
+                        <li><hr class="dropdown-divider m-0"></li>
+
+                        @if (isAdmin)
+                                {
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("Dashboard", "Admin")">
+                                            <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                                        </a>
+                                    </li>
+                                }
+                                else if (userRoles.Contains("Student"))
+                                {
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("StudentDashboard", "Home")">
+                                            <i class="fas fa-tachometer-alt me-2"></i>Student Dashboard
+                                        </a>
+                                    </li>
+                                }
+                                else if (userRoles.Contains("Faculty"))
+                                {
+                                    <li>
+                                        <a class="dropdown-item" href="@Url.Action("Index", "Courses")">
+                                            <i class="fas fa-book me-2"></i>My Courses
+                                        </a>
+                                    </li>
+                                }
+
+                                <li><hr class="dropdown-divider m-0"></li>
+
+                                <!-- Logout -->
+                                <li>
+                                    <form asp-controller="Logout" asp-action="Index" method="post" class="dropdown-item-form">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-link text-danger p-0 w-100 text-start">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="nav-item">
+                            <button class="btn btn-outline-secondary theme-toggle" id="themeToggle">
+                                <i class="fas fa-moon" id="themeIcon"></i>
+                            </button>
+                        </div>
+                    }
+                }
+                else if (!string.IsNullOrEmpty(Context.Session.GetString("CurrentStudentId")))
+                {
+                    var studentName = Context.Session.GetString("StudentName");
+                    var currentStudentId = Context.Session.GetString("CurrentStudentId");
+
+                    if (!string.IsNullOrEmpty(studentName))
+                    {
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-warning" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-graduate me-2"></i>
+                                @studentName
                             </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Dashboard" asp-action="Index">
-                                <i class="fas fa-chart-bar me-1"></i> Analytics
-                            </a>
-                        </li>
-                        <partial name="_LoginPartial" />
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("StudentDashboard", "Home")">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Student Dashboard
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-action="StudentLogout" asp-controller="Home" method="post" class="dropdown-item-form">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-link text-danger p-0 w-100 text-start">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="nav-item">
+                        <a class="nav-link" href="@Url.Action("PortalAccess", "Home")">
+                            <i class="fas fa-user me-2"></i>Portal Access
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <!-- Theme Selector -->
+            <div class="navbar-nav">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-palette me-2"></i>Themes
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item theme-quick-select" data-theme="dark" href="#">Dark</a></li>
+                        <li><a class="dropdown-item theme-quick-select" data-theme="light" href="#">Light</a></li>
+                        <li><a class="dropdown-item theme-quick-select" data-theme="blue" href="#">Ocean</a></li>
+                        <li><a class="dropdown-item theme-quick-select" data-theme="green" href="#">Forest</a></li>
+                        <li><a class="dropdown-item theme-quick-select" data-theme="purple" href="#">Royal</a></li>
                     </ul>
                 </div>
             </div>
-        </nav>
-    </header>
+        </div>
+    </nav>
 
-    <!-- Main Content -->
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-2 col-md-3 d-none d-md-block sidebar p-0">
-                <nav class="nav flex-column p-3">
-                    <div class="text-white fw-bold small text-uppercase mb-2 mt-2 opacity-75">Academic Structure</div>
-                    <a class="nav-link" asp-controller="University" asp-action="Index">
-                        <i class="fas fa-building me-2"></i>Universities
-                    </a>
-                    <a class="nav-link" asp-controller="Colleges" asp-action="Index">
-                        <i class="fas fa-school me-2"></i>Colleges
-                    </a>
-                    <a class="nav-link" asp-controller="Departments" asp-action="Index">
-                        <i class="fas fa-department me-2"></i>Departments
-                    </a>
-                    <a class="nav-link" asp-controller="Branches" asp-action="Index">
-                        <i class="fas fa-code-branch me-2"></i>Branches
-                    </a>
-                    <a class="nav-link" asp-controller="Semesters" asp-action="Index">
-                        <i class="fas fa-calendar-alt me-2"></i>Semesters
-                    </a>
+    <!-- Main Layout Container -->
+    <div class="layout-container">
+        <!-- Sidebar -->
+        <div class="sidebar-container d-none d-md-block" id="desktopSidebar">
+            <partial name="_MainNavigation" />
+        </div>
 
-                    <div class="text-white fw-bold small text-uppercase mb-2 mt-4 opacity-75">Student Management</div>
-                    <a class="nav-link" asp-controller="Students" asp-action="Index">
-                        <i class="fas fa-user-graduate me-2"></i>Students
-                    </a>
-                    <a class="nav-link" asp-controller="Courses" asp-action="Index">
-                        <i class="fas fa-book me-2"></i>Courses
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Manage", "Grades")">
-                        <i class="fas fa-graduation-cap"></i> Grade Management
-                    </a>
-                    <a class="nav-link" asp-controller="QRCode" asp-action="Index">
-                        <i class="fas fa-qrcode me-2"></i>QR Attendance
-                    </a>
-                </nav>
-            </div>
+        <!-- Mobile Sidebar Backdrop -->
+        <div class="sidebar-backdrop d-md-none" id="sidebarBackdrop" style="display: none;"></div>
 
-            <!-- Content Area -->
-            <div class="col-lg-10 col-md-9 ms-sm-auto px-4 py-4">
+        <!-- Mobile Sidebar -->
+        <div class="sidebar-container d-md-none" id="mobileSidebar">
+            <partial name="_MainNavigation" />
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content-container">
+            <div class="content-area">
                 <!-- Alert Messages -->
-                @if (TempData["SuccessMessage"] != null)
-                {
-                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
-                        <i class="fas fa-check-circle me-2 fs-5"></i>
-                        <div class="flex-grow-1">
-                            <strong>Success!</strong> @TempData["SuccessMessage"]
+                <div class="container-fluid p-0">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-2 fs-5"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Success!</strong> @TempData["SuccessMessage"]
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
-                @if (TempData["ErrorMessage"] != null)
-                {
-                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
-                        <i class="fas fa-exclamation-circle me-2 fs-5"></i>
-                        <div class="flex-grow-1">
-                            <strong>Error!</strong> @TempData["ErrorMessage"]
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle me-2 fs-5"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Error!</strong> @TempData["ErrorMessage"]
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
+                    }
+                </div>
 
                 <!-- Page Content -->
-                <div class="main-content p-4">
+                <div class="page-content">
                     @RenderBody()
                 </div>
             </div>
@@ -217,42 +439,116 @@
     </div>
 
     <!-- Footer -->
-    <footer class="bg-dark text-light py-4 mt-5">
+    <footer class="bg-dark text-white py-4 mt-auto">
         <div class="container-fluid">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h6 class="mb-2"><i class="fas fa-university me-2"></i>Academic Management System</h6>
-                    <p class="mb-0 text-light opacity-75 small">Comprehensive platform for managing universities, colleges, and student data</p>
+                    <h6 class="mb-2">
+                        <i class="fas fa-university me-2"></i>AcademicPro Management System
+                    </h6>
+                    <p class="mb-0 opacity-75 small">
+                        Comprehensive platform for modern academic institution management
+                    </p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <p class="mb-0 text-light opacity-75 small">&copy; 2024 Academic Management System</p>
+                    <p class="mb-0 opacity-75 small">
+                        &copy; 2024 AcademicPro System v2.0
+                    </p>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- JavaScript - ALL SCRIPTS IN ONE PLACE, NO DUPLICATES -->
-    <!-- jQuery FIRST -->
-    <!-- In _Layout.cshtml - Replace the entire scripts section at the bottom -->
-    <!-- JavaScript - ALL SCRIPTS IN ONE PLACE -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <!-- jQuery Validation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
-
-    <!-- Bootstrap -->
+    <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- DataTables -->
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-
-    <!-- Custom Scripts -->
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    <!-- ONLY ONE RenderSectionAsync CALL -->
-    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        // Mobile sidebar functionality
+        function toggleMobileSidebar() {
+            const mobileSidebar = document.getElementById('mobileSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
 
+            mobileSidebar.classList.toggle('mobile-open');
+            backdrop.style.display = mobileSidebar.classList.contains('mobile-open') ? 'block' : 'none';
+        }
+
+        // Close mobile sidebar when clicking backdrop
+        document.getElementById('sidebarBackdrop').addEventListener('click', function() {
+            toggleMobileSidebar();
+        });
+
+        // Quick theme selection
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.theme-quick-select').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const theme = this.dataset.theme;
+                    if (typeof ThemeManager !== 'undefined') {
+                        ThemeManager.setTheme(theme);
+                    }
+                });
+            });
+
+            // Initialize theme manager if it exists
+            if (typeof ThemeManager !== 'undefined') {
+                ThemeManager.init();
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                const mobileSidebar = document.getElementById('mobileSidebar');
+                const backdrop = document.getElementById('sidebarBackdrop');
+                mobileSidebar.classList.remove('mobile-open');
+                backdrop.style.display = 'none';
+            }
+        });
+
+        // DataTables initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if any table needs DataTables
+            const tables = document.querySelectorAll('table.dataTable');
+            tables.forEach(table => {
+                if ($.fn.DataTable) {
+                    $(table).DataTable({
+                        pageLength: 25,
+                        responsive: true,
+                        language: {
+                            search: "_INPUT_",
+                            searchPlaceholder: "Search..."
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Safe theme toggle with null checks
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (themeToggle && themeIcon) {
+                themeToggle.addEventListener('click', function() {
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+
+                    // Update icon
+                    themeIcon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+                });
+
+                // Load saved theme
+                const savedTheme = localStorage.getItem('theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                themeIcon.className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
