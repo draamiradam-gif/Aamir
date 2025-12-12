@@ -50,6 +50,11 @@ namespace StudentManagementSystem.Models
         [Range(1, 1000)]
         [Display(Name = "Max Students")]
         public int MaxStudents { get; set; } = 1000;
+        //public int MaxStudents { get; set; } = 1000;
+        //public int MaxStudents { get; set; } = 0; // Default value
+        [NotMapped]
+        public bool HasCustomMaxStudents => MaxStudents != 1000;
+
 
         [Display(Name = "Min GPA")]
         [Column(TypeName = "decimal(4,2)")]
@@ -77,11 +82,13 @@ namespace StudentManagementSystem.Models
         //[Display(Name = "Current Enrollment")]
         //public int CurrentEnrollment => CourseEnrollments?.Count(e => e.IsActive && e.GradeStatus == GradeStatus.InProgress) ?? 0;
 
-        [NotMapped]
-        [Display(Name = "Current Enrollment")]
-        public int CurrentEnrollment => CourseEnrollments?.Count(e =>
-            e.IsActive && e.EnrollmentStatus == EnrollmentStatus.Active) ?? 0;
+        //[NotMapped]
+        //[Display(Name = "Current Enrollment")]
+        //public int CurrentEnrollment => CourseEnrollments?.Count(e =>
+        //    e.IsActive && e.EnrollmentStatus == EnrollmentStatus.Active) ?? 0;
 
+        [Display(Name = "Current Enrollment")]
+        public int CurrentEnrollment { get; set; }
         public int? DepartmentId { get; set; }
         
 
@@ -182,6 +189,7 @@ namespace StudentManagementSystem.Models
         public bool IsMandatory { get; set; } = true;
 
 
+
     }
 
     public class ImportOptions
@@ -195,3 +203,58 @@ namespace StudentManagementSystem.Models
     
 
 }
+/*
+ 6. Alternative approach: Use extension method
+If you need HasValue functionality in multiple places, create an extension method:
+
+csharp
+public static class CourseExtensions
+{
+    public static bool HasCustomMaxStudents(this Course course)
+    {
+        return course.MaxStudents != 1000;
+    }
+    
+    public static bool HasCustomMinGPA(this Course course)
+    {
+        return course.MinGPA.HasValue;
+    }
+    
+    public static bool HasCustomMinPassedHours(this Course course)
+    {
+        return course.MinPassedHours.HasValue;
+    }
+}
+
+// Usage:
+if (course.HasCustomMaxStudents())
+{
+    // Do something
+}
+7. Fix the other compilation errors:
+For the other errors in your codebase:
+
+csharp
+// Error: Cannot implicitly convert type 'int?' to 'int'
+// In EnrollmentService.cs line 656:
+var maxStudents = course.MaxStudents; // This is int
+// No conversion needed since it's not nullable anymore
+
+// Error: Cannot implicitly convert type 'decimal?' to 'decimal'
+// In EnrollmentService.cs line 712:
+var minGPA = course.MinGPA ?? 0; // Use null-coalescing operator
+
+// Error: Argument 1: cannot convert from 'double?' to 'decimal'
+// In SemestersController.cs:
+// Change double? to decimal?
+var value = (decimal?)someNullableDoubleValue; // Explicit cast
+// OR
+var value = (decimal)(someNullableDoubleValue ?? 0); // With default
+
+// Error: No overload for method 'ToString' takes 1 arguments
+// In Views/Semesters/Details.cshtml:
+// Change from: @someValue.ToString("F2")
+// To: @someValue?.ToString("F2") or @someValue.ToString()
+// OR if it's nullable decimal:
+@(someNullableDecimal?.ToString("F2") ?? "0.00")
+ */

@@ -99,12 +99,18 @@ namespace StudentManagementSystem.Models
         Pending,
         Approved,
         Rejected,
+        Revoked,
+        Blocked,
         UnderReview
     }
 
     // Main Admin Creation ViewModel
     public class CreateAdminViewModel
     {
+        public string AdminId { get; set; } = string.Empty;
+        public string AdminName { get; set; } = string.Empty;
+
+
         [Required]
         [EmailAddress]
         [Display(Name = "Email Address")]
@@ -164,6 +170,9 @@ namespace StudentManagementSystem.Models
 
         // All available permissions for checkbox list
         public List<PermissionModule> AllPermissions => Enum.GetValues<PermissionModule>().ToList();
+
+        // ADD THIS for Edit view compatibility:
+        public List<PermissionModule> CurrentPermissions { get; set; } = new List<PermissionModule>();
     }
 
     // Admin Application Form ViewModel
@@ -224,13 +233,66 @@ namespace StudentManagementSystem.Models
     }
 
     // Admin Privilege View Model for Display
+    //public class AdminPrivilegeViewModel
+    //{
+    //    public string AdminId { get; set; } = string.Empty;
+    //    public string AdminName { get; set; } = string.Empty;
+    //    public string Email { get; set; } = string.Empty;
+    //    public AdminType AdminType { get; set; }
+    //    public string AdminTypeName => AdminType.ToString();
+    //    public List<PermissionModule> Permissions { get; set; } = new List<PermissionModule>();
+    //    public string? UniversityScope { get; set; }
+    //    public string? FacultyScope { get; set; }
+    //    public string? DepartmentScope { get; set; }
+    //    public bool IsActive { get; set; }
+    //    public DateTime CreatedDate { get; set; }
+    //    public string CreatedBy { get; set; } = string.Empty;
+
+
+    //    // Helper properties for UI
+    //    public string PermissionCount => $"{Permissions.Count} permissions";
+    //    public string ScopeInfo
+    //    {
+    //        get
+    //        {
+    //            var scopes = new List<string>();
+    //            if (!string.IsNullOrEmpty(UniversityScope)) scopes.Add($"Univ: {UniversityScope}");
+    //            if (!string.IsNullOrEmpty(FacultyScope)) scopes.Add($"Faculty: {FacultyScope}");
+    //            if (!string.IsNullOrEmpty(DepartmentScope)) scopes.Add($"Dept: {DepartmentScope}");
+    //            return scopes.Any() ? string.Join(" | ", scopes) : "Global Access";
+    //        }
+    //    }
+
+    //    public bool IsFromApplication { get; set; }
+    //    public int? ApplicationId { get; set; }
+
+    //    // Helper properties for UI
+    //    public bool IsNewApproval => IsFromApplication && !IsActive;
+    //    public string StatusBadgeClass
+    //    {
+    //        get
+    //        {
+    //            if (IsFromApplication) return "badge bg-warning";
+    //            return IsActive ? "badge bg-success" : "badge bg-secondary";
+    //        }
+    //    }
+
+    //    public string StatusText
+    //    {
+    //        get
+    //        {
+    //            if (IsFromApplication) return "Awaiting Setup";
+    //            return IsActive ? "Active" : "Inactive";
+    //        }
+    //    }
+    //}
     public class AdminPrivilegeViewModel
     {
+        // Core properties
         public string AdminId { get; set; } = string.Empty;
         public string AdminName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public AdminType AdminType { get; set; }
-        public string AdminTypeName => AdminType.ToString();
         public List<PermissionModule> Permissions { get; set; } = new List<PermissionModule>();
         public string? UniversityScope { get; set; }
         public string? FacultyScope { get; set; }
@@ -238,9 +300,48 @@ namespace StudentManagementSystem.Models
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public string CreatedBy { get; set; } = string.Empty;
+        public bool IsFromApplication { get; set; }
+        public int? ApplicationId { get; set; }
+        public DateTime? LastLoginDate { get; set; }
+        public DateTime? ModifiedDate { get; set; }
+        public string? ModifiedBy { get; set; }
+        public AdminApplication? ApplicationData { get; set; }
+        //public int PermissionCount => Permissions?.Count ?? 0;
 
-        // Helper properties for UI
-        public string PermissionCount => $"{Permissions.Count} permissions";
+
+        // Helper properties
+        public string AdminTypeName => AdminType.ToString();
+
+        public string StatusBadgeClass
+        {
+            get
+            {
+                if (IsFromApplication) return "bg-warning text-dark";
+                return IsActive ? "bg-success" : "bg-secondary";
+            }
+        }
+
+        public string StatusText
+        {
+            get
+            {
+                if (IsFromApplication) return "Awaiting Setup";
+                return IsActive ? "Active" : "Inactive";
+            }
+        }
+
+        public string AdminTypeBadgeClass => AdminType switch
+        {
+            AdminType.SuperAdmin => "bg-danger",
+            AdminType.UniversityAdmin => "bg-primary",
+            AdminType.FacultyAdmin => "bg-info",
+            AdminType.DepartmentAdmin => "bg-success",
+            AdminType.FinanceAdmin => "bg-warning text-dark",
+            AdminType.StudentAdmin => "bg-purple",
+            AdminType.CustomAdmin => "bg-dark",
+            _ => "bg-secondary"
+        };
+
         public string ScopeInfo
         {
             get
@@ -251,6 +352,45 @@ namespace StudentManagementSystem.Models
                 if (!string.IsNullOrEmpty(DepartmentScope)) scopes.Add($"Dept: {DepartmentScope}");
                 return scopes.Any() ? string.Join(" | ", scopes) : "Global Access";
             }
+        }
+
+        public string PermissionSummary
+        {
+            get
+            {
+                if (!Permissions.Any()) return "No permissions";
+
+                var grouped = Permissions
+                    .Select(p => PermissionHelper.GetPermissionCategory(p))
+                    .Distinct()
+                    .ToList();
+
+                return $"{Permissions.Count} permissions ({string.Join(", ", grouped.Take(3))})";
+            }
+        }
+
+        public string TimeAgoCreated => GetTimeAgo(CreatedDate);
+        public string TimeAgoModified => ModifiedDate.HasValue ? GetTimeAgo(ModifiedDate.Value) : "Never";
+        public string TimeAgoLastLogin => LastLoginDate.HasValue ? GetTimeAgo(LastLoginDate.Value) : "Never";
+
+        private string GetTimeAgo(DateTime date)
+        {
+            var timeSpan = DateTime.Now - date;
+
+            if (timeSpan.TotalDays >= 365)
+                return $"{(int)(timeSpan.TotalDays / 365)}y ago";
+            if (timeSpan.TotalDays >= 30)
+                return $"{(int)(timeSpan.TotalDays / 30)}mo ago";
+            if (timeSpan.TotalDays >= 7)
+                return $"{(int)(timeSpan.TotalDays / 7)}w ago";
+            if (timeSpan.TotalDays >= 1)
+                return $"{(int)timeSpan.TotalDays}d ago";
+            if (timeSpan.TotalHours >= 1)
+                return $"{(int)timeSpan.TotalHours}h ago";
+            if (timeSpan.TotalMinutes >= 1)
+                return $"{(int)timeSpan.TotalMinutes}m ago";
+
+            return "Just now";
         }
     }
 
@@ -287,21 +427,46 @@ namespace StudentManagementSystem.Models
         public string DaysSinceApplied => $"{(DateTime.Now - AppliedDate).Days} days ago";
     }
 
-    // Edit Admin Privileges ViewModel
-    public class EditAdminPrivilegesViewModel
-    {
-        public string AdminId { get; set; } = string.Empty;
-        public string AdminName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public AdminType AdminType { get; set; }
-        public List<PermissionModule> CurrentPermissions { get; set; } = new List<PermissionModule>();
-        public List<PermissionModule> AllPermissions { get; set; } = new List<PermissionModule>();
+    //// Edit Admin Privileges ViewModel
+    //public class EditAdminPrivilegesViewModel
+    //{
+    //    public string AdminId { get; set; } = string.Empty;
+    //    public string AdminName { get; set; } = string.Empty;
+    //    public string Email { get; set; } = string.Empty;
+    //    public AdminType AdminType { get; set; }
 
-        // Helper for grouped permissions
-        public Dictionary<string, List<PermissionModule>> GroupedPermissions => AllPermissions
-            .GroupBy(p => p.ToString().Split('_')[0])
-            .ToDictionary(g => g.Key, g => g.ToList());
-    }
+    //    // ADD THESE PROPERTIES:
+    //    [Display(Name = "University Scope")]
+    //    public string? UniversityScope { get; set; }
+
+    //    [Display(Name = "Faculty Scope")]
+    //    public string? FacultyScope { get; set; }
+
+    //    [Display(Name = "Department Scope")]
+    //    public string? DepartmentScope { get; set; }
+
+    //    // ADD THESE FOR DROPDOWNS:
+    //    public List<AdminPrivilegeTemplate> AvailableTemplates { get; set; } = new List<AdminPrivilegeTemplate>();
+    //    public List<University> Universities { get; set; } = new List<University>();
+    //    public List<College> Colleges { get; set; } = new List<College>();
+    //    public List<Department> Departments { get; set; } = new List<Department>();
+
+    //    // ADD THESE FOR UI SELECT LISTS:
+    //    public SelectList TemplateList => new SelectList(AvailableTemplates, "Id", "TemplateName");
+    //    public SelectList UniversityList => new SelectList(Universities, "Id", "Name", UniversityScope);
+    //    public SelectList CollegeList => new SelectList(Colleges, "Id", "Name", FacultyScope);
+    //    public SelectList DepartmentList => new SelectList(Departments, "Id", "Name", DepartmentScope);
+    //    public SelectList AdminTypeList => new SelectList(Enum.GetValues<AdminType>().Select(at => new { Value = at, Text = at.ToString() }), "Value", "Text");
+
+    //    // Existing properties:
+    //    public List<PermissionModule> CurrentPermissions { get; set; } = new List<PermissionModule>();
+    //    public List<PermissionModule> AllPermissions { get; set; } = new List<PermissionModule>();
+
+    //    // Helper for grouped permissions
+    //    public Dictionary<string, List<PermissionModule>> GroupedPermissions => AllPermissions
+    //        .GroupBy(p => p.ToString().Split('_')[0])
+    //        .ToDictionary(g => g.Key, g => g.ToList());
+    //}
 
     // Admin Dashboard ViewModel
     public class AdminDashboardViewModel

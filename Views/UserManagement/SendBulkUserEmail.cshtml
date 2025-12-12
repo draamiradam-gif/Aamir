@@ -1,0 +1,151 @@
+﻿@model List<Microsoft.AspNetCore.Identity.IdentityUser>
+@{
+    ViewData["Title"] = "Send Bulk Email to Users";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-mail-bulk me-2"></i>@ViewData["Title"]
+            </h1>
+            <p class="text-muted">Send email to multiple users</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Select Users</h5>
+                </div>
+                <div class="card-body">
+                    @if (!Model.Any())
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No users found.
+                        </div>
+                    }
+                    else
+                    {
+                        <form method="post" asp-action="SendBulkUserEmail">
+                            @Html.AntiForgeryToken()
+
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th width="50">
+                                                <input type="checkbox" id="selectAll" class="form-check-input">
+                                            </th>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>Phone</th>
+                                            <th>Email Confirmed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (int i = 0; i < Model.Count; i++)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <input type="hidden" name="selectedUsers[@i]" value="@Model[i].Id" />
+                                                    <input type="checkbox" name="selectedUsers[@i]" value="@Model[i].Id"
+                                                           class="form-check-input user-checkbox" checked>
+                                                </td>
+                                                <td>@Model[i].UserName</td>
+                                                <td>@Model[i].Email</td>
+                                                <td>@(Model[i].PhoneNumber ?? "-")</td>
+                                                <td>
+                                                    @if (Model[i].EmailConfirmed)
+                                                    {
+                                                        <span class="badge bg-success">Confirmed</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning">Not Confirmed</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="row mt-4">
+                                <div class="col-md-12">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-envelope me-2"></i>Email Content
+                                            </h6>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Subject *</label>
+                                                <input type="text" name="subject" class="form-control" required
+                                                       placeholder="Enter email subject" value="Important System Update">
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Message *</label>
+                                                <textarea name="message" class="form-control" rows="10" required
+                                                      placeholder="Enter your message here...">Dear User,
+
+This is an important system update. Please review the information below.
+
+Thank you,
+System Administration</textarea>
+                                            </div>
+
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                <strong>Total Recipients:</strong> <span id="recipientCount">@Model.Count</span> users
+                                                <br />
+                                                <small class="text-muted">Uncheck users you don't want to email.</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Users
+                                </a>
+                                <button type="submit" class="btn btn-primary" onclick="return confirm('Send email to selected users?');">
+                                    <i class="fas fa-paper-plane me-2"></i>Send Bulk Email
+                                </button>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Select All checkbox
+            $('#selectAll').change(function() {
+                $('.user-checkbox').prop('checked', $(this).prop('checked'));
+                updateRecipientCount();
+            });
+
+            // Individual checkbox change
+            $('.user-checkbox').change(function() {
+                updateRecipientCount();
+            });
+
+            function updateRecipientCount() {
+                var count = $('.user-checkbox:checked').length;
+                $('#recipientCount').text(count);
+            }
+
+            // Initial count
+            updateRecipientCount();
+        });
+    </script>
+}

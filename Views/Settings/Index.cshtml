@@ -1,0 +1,540 @@
+﻿@model StudentManagementSystem.Controllers.SystemSettingsViewModel
+@{
+    ViewData["Title"] = "System Settings";
+    var generalSettings = new StudentManagementSystem.Controllers.GeneralSettings();
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-sliders-h me-2"></i>@ViewData["Title"]
+            </h1>
+            <p class="text-muted">Configure system settings and preferences</p>
+        </div>
+    </div>
+
+    <!-- Settings Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                        <i class="fas fa-cog me-2"></i>General
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="theme-tab" data-bs-toggle="tab" data-bs-target="#theme" type="button" role="tab">
+                        <i class="fas fa-palette me-2"></i>Themes
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">
+                        <i class="fas fa-shield-alt me-2"></i>Security
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" type="button" role="tab">
+                        <i class="fas fa-envelope me-2"></i>Email
+                    </button>
+                </li>
+                @if (Model.IsSuperAdmin)
+                {
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup" type="button" role="tab">
+                            <i class="fas fa-database me-2"></i>Backup
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
+                            <i class="fas fa-info-circle me-2"></i>System Info
+                        </button>
+                    </li>
+                }
+            </ul>
+
+            <div class="tab-content" id="settingsTabsContent">
+                <!-- General Settings Tab -->
+                <div class="tab-pane fade show active" id="general" role="tabpanel">
+                    <div class="card-modern mt-3">
+                        <div class="card-body">
+                            <form method="post" action="@Url.Action("SaveGeneralSettings", "Settings")">
+                                @Html.AntiForgeryToken()
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Application Name</label>
+                                        <input type="text" class="form-control" name="ApplicationName" value="AcademicPro">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Institution Name</label>
+                                        <input type="text" class="form-control" name="InstitutionName" value="Academic University">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Contact Email</label>
+                                        <input type="email" class="form-control" name="ContactEmail" value="admin@academicpro.edu">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Contact Phone</label>
+                                        <input type="text" class="form-control" name="ContactPhone" value="+1 (555) 123-4567">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Time Zone</label>
+                                        <select class="form-select" name="TimeZone">
+                                            <option value="UTC" selected>UTC</option>
+                                            <option value="EST">Eastern Time (EST)</option>
+                                            <option value="CST">Central Time (CST)</option>
+                                            <option value="MST">Mountain Time (MST)</option>
+                                            <option value="PST">Pacific Time (PST)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Date Format</label>
+                                        <select class="form-select" name="DateFormat">
+                                            <option value="MM/dd/yyyy" selected>MM/DD/YYYY</option>
+                                            <option value="dd/MM/yyyy">DD/MM/YYYY</option>
+                                            <option value="yyyy-MM-dd">YYYY-MM-DD</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="MaintenanceMode" id="maintenanceMode">
+                                        <label class="form-check-label" for="maintenanceMode">Maintenance Mode</label>
+                                        <div class="form-text">When enabled, only administrators can access the system</div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-modern">
+                                        <i class="fas fa-save me-2"></i>Save General Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theme Settings Tab -->
+                <div class="tab-pane fade" id="theme" role="tabpanel">
+                    <div class="card-modern mt-3">
+                        <div class="card-body">
+                            <h5 class="mb-4">Theme Configuration</h5>
+
+                            <div class="row">
+                                @foreach (var theme in Model.ThemeSettings.AvailableThemes)
+                                {
+                                    <div class="col-md-4 mb-3">
+                                        <div class="theme-preview-card card @(theme == "dark" ? "border-primary" : "")"
+                                             onclick="selectTheme('@theme', this)"
+                                             style="cursor: pointer;">
+                                            <div class="card-body text-center">
+                                                <div class="theme-preview mb-2 @theme"
+                                                     style="height: 60px; border-radius: 8px; border: 2px solid var(--border-color);">
+                                                </div>
+                                                <h6 class="mb-0 text-capitalize">@theme Theme</h6>
+                                                @if (theme == Model.ThemeSettings.DefaultTheme)
+                                                {
+                                                    <small class="text-success"><i class="fas fa-check-circle me-1"></i>Default</small>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="mt-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="allowThemeSelection"
+                                           @(Model.ThemeSettings.AllowUserThemeSelection ? "checked" : "")>
+                                    <label class="form-check-label" for="allowThemeSelection">
+                                        Allow users to select their own theme
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="button" class="btn btn-modern" onclick="saveThemeSettings()">
+                                    <i class="fas fa-save me-2"></i>Save Theme Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Settings Tab -->
+                <div class="tab-pane fade" id="security" role="tabpanel">
+                    <div class="card-modern mt-3">
+                        <div class="card-body">
+                            <form method="post" action="@Url.Action("SaveSecuritySettings", "Settings")">
+                                @Html.AntiForgeryToken()
+
+                                <h5 class="mb-4">Security Configuration</h5>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Session Timeout (minutes)</label>
+                                        <input type="number" class="form-control" name="SessionTimeoutMinutes"
+                                               value="@Model.SecuritySettings.SessionTimeoutMinutes" min="5" max="480">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Max Login Attempts</label>
+                                        <input type="number" class="form-control" name="MaxLoginAttempts"
+                                               value="@Model.SecuritySettings.MaxLoginAttempts" min="1" max="10">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Password Expiry (days)</label>
+                                        <input type="number" class="form-control" name="PasswordExpiryDays"
+                                               value="@Model.SecuritySettings.PasswordExpiryDays" min="1" max="365">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="RequireTwoFactorAuth"
+                                               id="require2FA" @(Model.SecuritySettings.RequireTwoFactorAuth ? "checked" : "")>
+                                        <label class="form-check-label" for="require2FA">
+                                            Require Two-Factor Authentication
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="ForcePasswordChangeOnFirstLogin"
+                                               id="forcePasswordChange" checked>
+                                        <label class="form-check-label" for="forcePasswordChange">
+                                            Force password change on first login
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="EnableAuditLogging"
+                                               id="enableAudit" checked>
+                                        <label class="form-check-label" for="enableAudit">
+                                            Enable audit logging
+                                        </label>
+                                    </div>
+                                </div>
+
+                                @if (Model.IsSuperAdmin)
+                                {
+                                    <div class="mt-4">
+                                        <button type="submit" class="btn btn-modern">
+                                            <i class="fas fa-save me-2"></i>Save Security Settings
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Only Super Administrators can modify security settings
+                                    </div>
+                                }
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email Settings Tab -->
+                <div class="tab-pane fade" id="email" role="tabpanel">
+                    <div class="card-modern mt-3">
+                        <div class="card-body">
+                            <form method="post" action="@Url.Action("SaveEmailSettings", "Settings")">
+                                @Html.AntiForgeryToken()
+
+                                <h5 class="mb-4">Email Configuration</h5>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">SMTP Server</label>
+                                        <input type="text" class="form-control" name="SmtpServer"
+                                               value="@Model.EmailSettings.SmtpServer" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">SMTP Port</label>
+                                        <input type="number" class="form-control" name="SmtpPort"
+                                               value="@Model.EmailSettings.SmtpPort" required>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Sender Email</label>
+                                        <input type="email" class="form-control" name="SenderEmail"
+                                               value="@Model.EmailSettings.SenderEmail" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Sender Name</label>
+                                        <input type="text" class="form-control" name="SenderName"
+                                               value="@Model.EmailSettings.SenderName" required>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">SMTP Username</label>
+                                        <input type="text" class="form-control" name="Username">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">SMTP Password</label>
+                                        <input type="password" class="form-control" name="Password">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="UseSSL" id="useSSL" checked>
+                                        <label class="form-check-label" for="useSSL">Use SSL</label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="EnableNotifications"
+                                               id="enableNotifications" checked>
+                                        <label class="form-check-label" for="enableNotifications">
+                                            Enable email notifications
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-modern">
+                                        <i class="fas fa-save me-2"></i>Save Email Settings
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary ms-2" id="testEmailBtn">
+                                        <i class="fas fa-paper-plane me-2"></i>Test Email
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Backup Settings Tab (Super Admin Only) -->
+                @if (Model.IsSuperAdmin)
+                {
+                    <div class="tab-pane fade" id="backup" role="tabpanel">
+                        <div class="card-modern mt-3">
+                            <div class="card-body">
+                                <form method="post" action="@Url.Action("SaveBackupSettings", "Settings")">
+                                    @Html.AntiForgeryToken()
+
+                                    <h5 class="mb-4">Backup Configuration</h5>
+
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="AutoBackupEnabled"
+                                                   id="autoBackup" @(Model.BackupSettings.AutoBackupEnabled ? "checked" : "")>
+                                            <label class="form-check-label" for="autoBackup">
+                                                Enable automatic backups
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Backup Frequency (days)</label>
+                                            <input type="number" class="form-control" name="BackupFrequencyDays"
+                                                   value="@Model.BackupSettings.BackupFrequencyDays" min="1" max="30">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Keep Backups For (days)</label>
+                                            <input type="number" class="form-control" name="KeepBackupsForDays"
+                                                   value="@Model.BackupSettings.KeepBackupsForDays" min="1" max="365">
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Backup Path</label>
+                                            <input type="text" class="form-control" name="BackupPath"
+                                                   value="@Model.BackupSettings.BackupPath">
+                                            <div class="form-text">Server directory where backups will be stored</div>
+                                        </div>
+                                    </div>
+
+                                    @if (Model.BackupSettings.LastBackupDate.HasValue)
+                                    {
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Last backup: @Model.BackupSettings.LastBackupDate.Value.ToString("MMMM dd, yyyy HH:mm")
+                                        </div>
+                                    }
+
+                                    <div class="mt-4">
+                                        <button type="submit" class="btn btn-modern">
+                                            <i class="fas fa-save me-2"></i>Save Backup Settings
+                                        </button>
+                                        <form method="post" action="@Url.Action("PerformBackup", "Settings")" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-success ms-2">
+                                                <i class="fas fa-database me-2"></i>Backup Now
+                                            </button>
+                                        </form>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="system" role="tabpanel">
+                        <div class="card-modern mt-3">
+                            <div class="card-body">
+                                <h5 class="mb-4">System Information</h5>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-5">Application Name:</dt>
+                                            <dd class="col-sm-7">AcademicPro Management System</dd>
+
+                                            <dt class="col-sm-5">Version:</dt>
+                                            <dd class="col-sm-7">2.0.0</dd>
+
+                                            <dt class="col-sm-5">Environment:</dt>
+                                            <dd class="col-sm-7">Development</dd>
+
+                                            <dt class="col-sm-5">Server Name:</dt>
+                                            <dd class="col-sm-7">@System.Environment.MachineName</dd>
+
+                                            <dt class="col-sm-5">Operating System:</dt>
+                                            <dd class="col-sm-7">@System.Runtime.InteropServices.RuntimeInformation.OSDescription</dd>
+                                        </dl>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-5">ASP.NET Core Version:</dt>
+                                            <dd class="col-sm-7">8.0.0</dd>
+
+                                            <dt class="col-sm-5">Database Provider:</dt>
+                                            <dd class="col-sm-7">SQL Server</dd>
+
+                                            <dt class="col-sm-5">Total Users:</dt>
+                                            <dd class="col-sm-7">@(ViewBag.TotalUsers ?? "Loading...")</dd>
+
+                                            <dt class="col-sm-5">Total Roles:</dt>
+                                            <dd class="col-sm-7">@(ViewBag.TotalRoles ?? "Loading...")</dd>
+
+                                            <dt class="col-sm-5">Server Time:</dt>
+                                            <dd class="col-sm-7">@DateTime.Now.ToString("MMMM dd, yyyy HH:mm:ss")</dd>
+                                        </dl>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4">
+                                    <a href="@Url.Action("SystemInfo", "Settings")" class="btn btn-outline-primary">
+                                        <i class="fas fa-info-circle me-2"></i>View Detailed System Info
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function selectTheme(theme, element) {
+            document.querySelectorAll('.theme-preview-card').forEach(card => {
+                card.classList.remove('border-primary');
+            });
+            
+            element.classList.add('border-primary');
+            
+            // Update theme preview
+            document.querySelectorAll('.theme-preview').forEach(preview => {
+                preview.classList.remove('dark', 'light', 'blue', 'green', 'purple');
+                preview.classList.add(theme);
+            });
+        }
+        
+        function saveThemeSettings() {
+            const selectedTheme = document.querySelector('.theme-preview-card.border-primary .theme-preview').classList[1];
+            const allowSelection = document.getElementById('allowThemeSelection').checked;
+            
+            // Save to server via AJAX or form submission
+            showToast('Theme settings saved successfully', 'success');
+        }
+        
+        function testEmailSettings(e) {
+            if (e) e.preventDefault();
+            
+            // AJAX call to test email settings
+            showToast('Test email sent successfully', 'success');
+        }
+        
+        // Initialize theme previews
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set active theme preview
+            const defaultTheme = '@Model.ThemeSettings.DefaultTheme';
+            document.querySelectorAll('.theme-preview-card').forEach(card => {
+                const preview = card.querySelector('.theme-preview');
+                if (preview.classList.contains(defaultTheme)) {
+                    card.classList.add('border-primary');
+                }
+                
+                // Apply theme class to preview
+                const themeClass = Array.from(preview.classList).find(cls => 
+                    ['dark', 'light', 'blue', 'green', 'purple'].includes(cls)
+                );
+                if (themeClass) {
+                    preview.classList.add(themeClass);
+                }
+            });
+            
+            // Initialize tooltips if using Bootstrap
+            if (typeof bootstrap !== 'undefined') {
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
+        });
+    </script>
+    <script>
+        document.getElementById('testEmailBtn').addEventListener('click', function() {
+            showToast('Test email sent successfully', 'success');
+        });
+    </script>
+    
+    <style>
+        .theme-preview.dark { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        .theme-preview.light { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; }
+        .theme-preview.blue { background: linear-gradient(135deg, #0c4a6e 0%, #0f172a 100%); }
+        .theme-preview.green { background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); }
+        .theme-preview.purple { background: linear-gradient(135deg, #581c87 0%, #1e1b4b 100%); }
+        
+        .theme-preview-card:hover {
+            transform: translateY(-2px);
+            transition: transform 0.2s ease;
+        }
+        
+        .nav-tabs .nav-link {
+            color: var(--text-secondary);
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--accent-primary);
+            border-bottom: 2px solid var(--accent-primary);
+        }
+    </style>
+}

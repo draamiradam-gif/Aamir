@@ -1,13 +1,28 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DocumentFormat.OpenXml.InkML;
+using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using StudentManagementSystem.Data;
 using StudentManagementSystem.Models;
+using StudentManagementSystem.Models.ViewModels;
 using StudentManagementSystem.Services;
+using StudentManagementSystem.ViewModels;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Text;
 using System.Globalization;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using QColors = QuestPDF.Helpers.Colors;
 
 namespace StudentManagementSystem.Controllers
 {
@@ -17,7 +32,6 @@ namespace StudentManagementSystem.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IExportService _exportService;
         private readonly IImportService _importService;
-
 
         public RegistrationController(
             IRegistrationService registrationService,
@@ -31,18 +45,98 @@ namespace StudentManagementSystem.Controllers
             _importService = importService;
         }
 
-        // Student Registration Portal
+        // HELPER METHOD: Get current courses count (FIXED VERSION)
+        private async Task<int> GetCurrentCoursesCount(int studentId)
+        {
+            // Use GradeStatus instead of IsCompleted property
+            return await _context.CourseEnrollments
+                .CountAsync(ce => ce.StudentId == studentId &&
+                                 ce.IsActive &&
+                                 ce.GradeStatus == GradeStatus.InProgress);
+        }
+
+        // Student Portal Entry Point
+        public async Task<IActionResult> StudentPortalEntry()
+        {
+            // Clear any existing student session
+            HttpContext.Session.Remove("CurrentStudentId");
+            HttpContext.Session.Remove("StudentName");
+
+            ViewData["Layout"] = "_Layout"; // Force main layout for entry page
+
+            var demoStudents = await _context.Students.Take(5).ToListAsync();
+            ViewBag.DemoStudents = demoStudents;
+
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> StudentLogin(string studentId, string email)
+        {
+            // Validate student credentials
+            var student = await _context.Students
+                .FirstOrDefaultAsync(s => s.StudentId == studentId &&
+                                         (s.Email == email || s.StudentId == studentId));
+
+            if (student == null)
+            {
+                SetErrorMessage("Invalid student ID or email. Please try again.");
+                return RedirectToAction("StudentPortalEntry");
+            }
+
+            // Set student session
+            HttpContext.Session.SetString("CurrentStudentId", student.Id.ToString());
+            HttpContext.Session.SetString("StudentName", student.Name);
+            HttpContext.Session.SetString("StudentGPA", student.GPA.ToString("F2"));
+
+            SetSuccessMessage($"Welcome back, {student.Name}!");
+            return RedirectToAction("StudentDashboard", new { studentId = student.Id });
+        }
+
+        // Student Dashboard - FIXED
+        public async Task<IActionResult> StudentDashboard(int studentId)
+        {
+            // Fix: Parse string to int for comparison
+            if (!IsStudentUser() || !int.TryParse(CurrentStudentId, out int currentId) || currentId != studentId)
+            {
+                SetErrorMessage("Access denied. Please log in again.");
+                return RedirectToAction("StudentPortalEntry", "Registration");
+            }
+
+            var student = await _context.Students
+                .Include(s => s.CourseEnrollments)
+                .ThenInclude(ce => ce.Course)
+                .Include(s => s.StudentDepartment)
+                .FirstOrDefaultAsync(s => s.Id == studentId);
+
+            if (student == null)
+            {
+                SetErrorMessage("Student not found.");
+                return RedirectToAction("StudentPortalEntry", "Registration");
+            }
+
+            // Set view data for layout
+            ViewBag.StudentName = HttpContext.Session.GetString("StudentName") ?? student.Name;
+            ViewBag.CurrentGPA = student.GPA;
+            ViewBag.PassedHours = student.PassedHours;
+            ViewBag.CurrentCoursesCount = await GetCurrentCoursesCount(studentId);
+
+            return View(student);
+        }
+
+        // Student Registration Portal - FIXED
         public async Task<IActionResult> StudentPortal(int studentId)
         {
-            if (!IsStudentUser() || CurrentStudentId != studentId)
+            if (!IsCurrentStudent(studentId))
             {
-                return RedirectUnauthorized("Student access required.");
+                base.SetErrorMessage("Invalid student access.");
+                return RedirectToAction("StudentPortalEntry");
             }
 
             // Simple student access check
-            if (!IsStudentUser() || CurrentStudentId != studentId)
+            if (!IsCurrentStudent(studentId))
             {
-                SetErrorMessage("Invalid student access.");
+                base.SetErrorMessage("Invalid student access.");
                 return RedirectToAction("StudentPortalEntry");
             }
 
@@ -55,12 +149,11 @@ namespace StudentManagementSystem.Controllers
                 return NotFound();
             }
 
-            // Set view data for student portal layout
-            ViewBag.StudentName = HttpContext.Session.GetString("StudentName");
+            // Set view data for student portal layout - USING HELPER METHOD
+            ViewBag.StudentName = student.Name;
             ViewBag.CurrentGPA = student.GPA;
             ViewBag.PassedHours = student.PassedHours;
-            ViewBag.CurrentCoursesCount = await _context.CourseEnrollments
-                .CountAsync(ce => ce.StudentId == studentId && ce.IsActive && !ce.IsCompleted);
+            ViewBag.CurrentCoursesCount = await GetCurrentCoursesCount(studentId);
 
             var currentSemester = student.StudentSemester ?? await _context.Semesters
                 .FirstOrDefaultAsync(s => s.IsCurrent);
@@ -75,7 +168,7 @@ namespace StudentManagementSystem.Controllers
             var registrations = await _registrationService.GetStudentRegistrations(studentId, currentSemester.Id);
             var eligibleCourses = await _registrationService.GetEligibleCourses(studentId, currentSemester.Id);
 
-            var viewModel = new StudentPortalViewModel
+            var viewModel = new ViewModels.StudentPortalViewModel
             {
                 Student = student,
                 CurrentSemester = currentSemester,
@@ -90,7 +183,7 @@ namespace StudentManagementSystem.Controllers
 
         // Course Registration
         [HttpPost]
-        public async Task<IActionResult> RegisterCourses(RegistrationRequest request)
+        public async Task<IActionResult> RegisterCourses(ViewModels.RegistrationRequest request)
         {
             if (request.CourseIds == null || !request.CourseIds.Any())
             {
@@ -140,286 +233,13 @@ namespace StudentManagementSystem.Controllers
             return RedirectToAction(nameof(StudentPortal), new { studentId });
         }
 
-        // Admin Registration Management
-        //public async Task<IActionResult> Management(int semesterId = 0)
-        //{
-        //    // Simple admin check
-        //    if (!IsAdminUser())
-        //    {
-        //        return RedirectUnauthorized("Admin access required.");
-        //    }
-
-        //    var semesters = await _context.Semesters
-        //        .Where(s => s.IsActive)
-        //        .ToListAsync();
-
-        //    var currentSemester = semesterId == 0
-        //        ? await _context.Semesters.FirstOrDefaultAsync(s => s.IsCurrent)
-        //        : await _context.Semesters.FindAsync(semesterId);
-
-        //    if (currentSemester == null && semesters.Any())
-        //    {
-        //        currentSemester = semesters.First();
-        //    }
-
-        //    var registrations = currentSemester != null
-        //        ? await _context.CourseRegistrations
-        //            .Include(r => r.Student)
-        //            .Include(r => r.Course)
-        //            .Where(r => r.SemesterId == currentSemester.Id)
-        //            .ToListAsync()
-        //        : new List<CourseRegistration>();
-
-        //    var viewModel = new RegistrationManagementViewModel
-        //    {
-        //        Semesters = semesters,
-        //        SelectedSemester = currentSemester,
-        //        Registrations = registrations,
-        //        PendingCount = registrations.Count(r => r.Status == RegistrationStatus.Pending),
-        //        ApprovedCount = registrations.Count(r => r.Status == RegistrationStatus.Approved),
-        //        TotalCount = registrations.Count
-        //    };
-
-        //    return View(viewModel);
-        //}
-
-        // Approve/Reject Registration
-        [HttpPost]
-        public async Task<IActionResult> ApproveRegistration(int registrationId, int semesterId)
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            var result = await _registrationService.ApproveRegistration(registrationId, User.Identity?.Name ?? "Admin");
-
-            if (result)
-            {
-                SetSuccessMessage("Registration approved successfully.");
-            }
-            else
-            {
-                SetErrorMessage("Failed to approve registration.");
-            }
-
-            return RedirectToAction(nameof(Management), new { semesterId });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> RejectRegistration(int registrationId, int semesterId, string reason)
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            var result = await _registrationService.RejectRegistration(registrationId, reason, User.Identity?.Name ?? "Admin");
-
-            if (result)
-            {
-                SetSuccessMessage("Registration rejected successfully.");
-            }
-            else
-            {
-                SetErrorMessage("Failed to reject registration.");
-            }
-
-            return RedirectToAction(nameof(Management), new { semesterId });
-        }
-
-        // Registration Rules Management
-        public async Task<IActionResult> Rules()
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            var rules = await _context.RegistrationRules
-                .Include(r => r.Department)
-                .ToListAsync();
-
-            var departments = await _context.Departments.ToListAsync();
-
-            var viewModel = new RulesManagementViewModel
-            {
-                Rules = rules,
-                Departments = departments
-            };
-
-            return View(viewModel);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> SaveRule(RegistrationRule rule)
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            if (ModelState.IsValid)
-            {
-                if (rule.Id == 0)
-                {
-                    _context.RegistrationRules.Add(rule);
-                }
-                else
-                {
-                    _context.RegistrationRules.Update(rule);
-                }
-
-                await _context.SaveChangesAsync();
-                SetSuccessMessage("Registration rule saved successfully.");
-            }
-            else
-            {
-                SetErrorMessage("Please correct the errors below.");
-            }
-
-            return RedirectToAction(nameof(Rules));
-        }
-
-        // Registration Periods Management
-        public async Task<IActionResult> Periods()
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            var periods = await _context.RegistrationPeriods
-                .Include(p => p.Semester)
-                .ToListAsync();
-
-            var semesters = await _context.Semesters.Where(s => s.IsActive).ToListAsync();
-
-            var viewModel = new PeriodsManagementViewModel
-            {
-                Periods = periods,
-                Semesters = semesters
-            };
-
-            return View(viewModel);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> SavePeriod(RegistrationPeriod period)
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            if (ModelState.IsValid)
-            {
-                if (period.Id == 0)
-                {
-                    _context.RegistrationPeriods.Add(period);
-                }
-                else
-                {
-                    _context.RegistrationPeriods.Update(period);
-                }
-
-                await _context.SaveChangesAsync();
-                SetSuccessMessage("Registration period saved successfully.");
-            }
-            else
-            {
-                SetErrorMessage("Please correct the errors below.");
-            }
-
-            return RedirectToAction(nameof(Periods));
-        }
-
-        // Toggle Rule
-        [HttpPost]
-        public async Task<IActionResult> ToggleRule(int id)
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            var rule = await _context.RegistrationRules.FindAsync(id);
-            if (rule != null)
-            {
-                rule.IsActive = !rule.IsActive;
-                await _context.SaveChangesAsync();
-                SetSuccessMessage($"Rule {(rule.IsActive ? "activated" : "deactivated")} successfully.");
-            }
-            return RedirectToAction(nameof(Rules));
-        }
-
-        // Toggle Period
-        [HttpPost]
-        public async Task<IActionResult> TogglePeriod(int id)
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            var period = await _context.RegistrationPeriods.FindAsync(id);
-            if (period != null)
-            {
-                period.IsActive = !period.IsActive;
-                await _context.SaveChangesAsync();
-                SetSuccessMessage($"Period {(period.IsActive ? "activated" : "deactivated")} successfully.");
-            }
-            return RedirectToAction(nameof(Periods));
-        }
-
-        // Student Dashboard
-        public async Task<IActionResult> StudentDashboard(int studentId)
-        {
-            // Simple student access check
-            if (!IsStudentUser() || CurrentStudentId != studentId)
-            {
-                SetErrorMessage("Access denied. Please log in again.");
-                return RedirectToAction("StudentPortalEntry");
-            }
-
-            var student = await _context.Students
-                .Include(s => s.CourseEnrollments)
-                .ThenInclude(ce => ce.Course)
-                .Include(s => s.StudentDepartment)
-                .FirstOrDefaultAsync(s => s.Id == studentId);
-
-            if (student == null)
-            {
-                SetErrorMessage("Student not found.");
-                return RedirectToAction("StudentPortalEntry");
-            }
-
-            // Set view data for layout
-            ViewBag.StudentName = student.Name;
-            ViewBag.CurrentGPA = student.GPA;
-            ViewBag.PassedHours = student.PassedHours;
-            ViewBag.CurrentCoursesCount = student.CourseEnrollments.Count(ce => ce.IsActive && !ce.IsCompleted);
-
-            return View(student);
-        }
-
-        public IActionResult StudentLogout()
-        {
-            HttpContext.Session.Remove("CurrentStudentId");
-            HttpContext.Session.Remove("StudentName");
-            HttpContext.Session.Remove("StudentGPA");
-
-            SetSuccessMessage("You have been logged out successfully.");
-            return RedirectToAction("Index", "Home");
-        }
-
-        // My Grades
+        // My Grades - FIXED
         public async Task<IActionResult> MyGrades(int studentId, int? semesterId)
         {
             // Simple student access check
-            if (!IsStudentUser() || CurrentStudentId != studentId)
+            if (!IsCurrentStudent(studentId))
             {
-                SetErrorMessage("Invalid student access.");
+                base.SetErrorMessage("Invalid student access.");
                 return RedirectToAction("StudentPortalEntry");
             }
 
@@ -449,12 +269,11 @@ namespace StudentManagementSystem.Controllers
                 semesterGPA = totalCredits > 0 ? totalPoints / totalCredits : 0;
             }
 
-            // Set view data for student portal layout
-            ViewBag.StudentName = HttpContext.Session.GetString("StudentName");
+            // Set view data for student portal layout - USING HELPER METHOD
+            ViewBag.StudentName = student.Name;
             ViewBag.CurrentGPA = student.GPA;
             ViewBag.PassedHours = student.PassedHours;
-            ViewBag.CurrentCoursesCount = await _context.CourseEnrollments
-                .CountAsync(ce => ce.StudentId == studentId && ce.IsActive && !ce.IsCompleted);
+            ViewBag.CurrentCoursesCount = await GetCurrentCoursesCount(studentId);
 
             ViewBag.Student = student;
             ViewBag.Semesters = semesters;
@@ -464,75 +283,212 @@ namespace StudentManagementSystem.Controllers
             return View(grades);
         }
 
-        // My Schedule
+        // My Schedule - FIXED
         public async Task<IActionResult> MySchedule(int studentId)
         {
             // Simple student access check
-            if (!IsStudentUser() || CurrentStudentId != studentId)
+            if (!IsCurrentStudent(studentId))
             {
-                SetErrorMessage("Invalid student access.");
+                base.SetErrorMessage("Invalid student access.");
                 return RedirectToAction("StudentPortalEntry");
             }
 
-            var student = await _context.Students.FindAsync(studentId);
+            var student = await _context.Students
+                .Include(s => s.CourseEnrollments)
+                    .ThenInclude(ce => ce.Course)
+                .Include(s => s.CourseEnrollments)
+                    .ThenInclude(ce => ce.Semester)
+                .FirstOrDefaultAsync(s => s.Id == studentId);
+
             if (student == null) return NotFound();
 
             // Set view data for student portal layout
-            ViewBag.StudentName = HttpContext.Session.GetString("StudentName");
+            ViewBag.StudentName = student.Name;
             ViewBag.CurrentGPA = student.GPA;
             ViewBag.PassedHours = student.PassedHours;
-            ViewBag.CurrentCoursesCount = await _context.CourseEnrollments
-                .CountAsync(ce => ce.StudentId == studentId && ce.IsActive && !ce.IsCompleted);
+            ViewBag.CurrentCoursesCount = await GetCurrentCoursesCount(studentId);
 
-            // Mock schedule data
-            var currentSchedule = new List<dynamic>
-            {
-                new { CourseCode = "MATH101", CourseName = "Calculus I", Days = "MWF", StartTime = "9:00 AM", EndTime = "9:50 AM", Room = "Science Bldg 101", Instructor = "Dr. Smith", Credits = 3 },
-                new { CourseCode = "PHYS201", CourseName = "Physics I", Days = "TTH", StartTime = "10:00 AM", EndTime = "11:15 AM", Room = "Science Bldg 205", Instructor = "Dr. Johnson", Credits = 4 },
-                new { CourseCode = "CS101", CourseName = "Introduction to Programming", Days = "MWF", StartTime = "1:00 PM", EndTime = "1:50 PM", Room = "CS Bldg 101", Instructor = "Dr. Wilson", Credits = 3 },
-                new { CourseCode = "ENG102", CourseName = "Composition II", Days = "TTH", StartTime = "2:00 PM", EndTime = "3:15 PM", Room = "Humanities 302", Instructor = "Dr. Brown", Credits = 3 }
-            };
+            // Get CURRENT semester
+            var currentSemester = await _context.Semesters
+                .FirstOrDefaultAsync(s => s.IsCurrent) ??
+                await _context.Semesters
+                    .OrderByDescending(s => s.StartDate)
+                    .FirstOrDefaultAsync();
 
-            // Mock weekly schedule for calendar view
-            var weeklySchedule = new List<dynamic>
+            if (currentSemester == null)
             {
-                new { Day = "Monday", CourseCode = "MATH101", CourseName = "Calculus I", StartHour = 9, EndHour = 10, Room = "SCI 101", Instructor = "Dr. Smith" },
-                new { Day = "Monday", CourseCode = "CS101", CourseName = "Intro to Programming", StartHour = 13, EndHour = 14, Room = "CS 101", Instructor = "Dr. Wilson" },
-                new { Day = "Tuesday", CourseCode = "PHYS201", CourseName = "Physics I", StartHour = 10, EndHour = 12, Room = "SCI 205", Instructor = "Dr. Johnson" },
-                new { Day = "Tuesday", CourseCode = "ENG102", CourseName = "Composition II", StartHour = 14, EndHour = 16, Room = "HUM 302", Instructor = "Dr. Brown" },
-                new { Day = "Wednesday", CourseCode = "MATH101", CourseName = "Calculus I", StartHour = 9, EndHour = 10, Room = "SCI 101", Instructor = "Dr. Smith" },
-                new { Day = "Wednesday", CourseCode = "CS101", CourseName = "Intro to Programming", StartHour = 13, EndHour = 14, Room = "CS 101", Instructor = "Dr. Wilson" },
-                new { Day = "Thursday", CourseCode = "PHYS201", CourseName = "Physics I", StartHour = 10, EndHour = 12, Room = "SCI 205", Instructor = "Dr. Johnson" },
-                new { Day = "Thursday", CourseCode = "ENG102", CourseName = "Composition II", StartHour = 14, EndHour = 16, Room = "HUM 302", Instructor = "Dr. Brown" },
-                new { Day = "Friday", CourseCode = "MATH101", CourseName = "Calculus I", StartHour = 9, EndHour = 10, Room = "SCI 101", Instructor = "Dr. Smith" }
-            };
+                base.SetErrorMessage("No active semester found.");
+                return View(student);
+            }
+
+            // Get actual course enrollments for current semester
+            var currentEnrollments = await _context.CourseEnrollments
+                .Include(ce => ce.Course)
+                .Include(ce => ce.Semester)
+                .Where(ce => ce.StudentId == studentId &&
+                            ce.SemesterId == currentSemester.Id &&
+                            ce.IsActive &&
+                            ce.GradeStatus == GradeStatus.InProgress)
+                .ToListAsync();
+
+            // Create actual schedule data
+            var currentSchedule = new List<dynamic>();
+            var weeklySchedule = new List<dynamic>();
+
+            foreach (var enrollment in currentEnrollments)
+            {
+                if (enrollment.Course == null) continue;
+
+                // Generate mock schedule data (in real system, this would come from CourseSchedule table)
+                var courseCode = enrollment.Course.CourseCode;
+                var courseName = enrollment.Course.CourseName;
+                var credits = enrollment.Course.Credits;
+
+                // Mock schedule data - in real system, this would come from database
+                var schedule = GenerateMockSchedule(courseCode, courseName, credits);
+
+                currentSchedule.Add(new
+                {
+                    CourseCode = courseCode,
+                    CourseName = courseName,
+                    Days = schedule.Days,
+                    StartTime = schedule.StartTime,
+                    EndTime = schedule.EndTime,
+                    Room = schedule.Room,
+                    Instructor = schedule.Instructor,
+                    Credits = credits
+                });
+
+                // Add to weekly schedule for calendar view
+                AddToWeeklySchedule(weeklySchedule, schedule, courseCode, courseName);
+            }
+
+            // If no enrollments, show empty schedule with helpful message
+            if (!currentEnrollments.Any())
+            {
+                ViewBag.NoCoursesMessage = "You are not enrolled in any courses for the current semester.";
+            }
 
             ViewBag.Student = student;
             ViewBag.CurrentSchedule = currentSchedule;
             ViewBag.WeeklySchedule = weeklySchedule;
+            ViewBag.CurrentSemester = currentSemester.Name;
 
             return View(student);
         }
 
-        // Unofficial Transcript
+        // Helper method to generate mock schedule (replace with real data from CourseSchedule table)
+        private dynamic GenerateMockSchedule(string courseCode, string courseName, int credits)
+        {
+            // This is mock data - in a real system, you would have a CourseSchedule table
+            // with actual day, time, room, and instructor information
+
+            // Simple algorithm to generate consistent mock schedule based on course code
+            var hash = Math.Abs(courseCode.GetHashCode());
+
+            var schedules = new[]
+            {
+        new { Days = "MWF", StartTime = "9:00 AM", EndTime = "9:50 AM", Room = "Science Bldg 101", Instructor = "Dr. Smith" },
+        new { Days = "MWF", StartTime = "10:00 AM", EndTime = "10:50 AM", Room = "Science Bldg 102", Instructor = "Dr. Johnson" },
+        new { Days = "MWF", StartTime = "11:00 AM", EndTime = "11:50 AM", Room = "Science Bldg 103", Instructor = "Dr. Williams" },
+        new { Days = "TTH", StartTime = "9:00 AM", EndTime = "10:15 AM", Room = "Humanities 201", Instructor = "Dr. Brown" },
+        new { Days = "TTH", StartTime = "10:30 AM", EndTime = "11:45 AM", Room = "Humanities 202", Instructor = "Dr. Davis" },
+        new { Days = "TTH", StartTime = "1:00 PM", EndTime = "2:15 PM", Room = "CS Bldg 101", Instructor = "Dr. Wilson" },
+        new { Days = "TTH", StartTime = "2:30 PM", EndTime = "3:45 PM", Room = "CS Bldg 102", Instructor = "Dr. Taylor" }
+    };
+
+            return schedules[hash % schedules.Length];
+        }
+
+        // Helper method to add course to weekly schedule
+        private void AddToWeeklySchedule(List<dynamic> weeklySchedule, dynamic schedule, string courseCode, string courseName)
+        {
+            var days = schedule.Days.ToString();
+
+            foreach (char dayChar in days)
+            {
+                string day = dayChar switch
+                {
+                    'M' => "Monday",
+                    'T' => "Tuesday",
+                    'W' => "Wednesday",
+                    'H' => "Thursday",
+                    'F' => "Friday",
+                    'S' => "Saturday",
+                    'U' => "Sunday",
+                    _ => ""
+                };
+
+                if (!string.IsNullOrEmpty(day))
+                {
+                    // Parse time
+                    var startTime = schedule.StartTime.ToString();
+                    var endTime = schedule.EndTime.ToString();
+
+                    // Convert to 24-hour for easier calculation
+                    int startHour = ParseTimeToHour(startTime);
+                    int endHour = ParseTimeToHour(endTime);
+
+                    weeklySchedule.Add(new
+                    {
+                        Day = day,
+                        CourseCode = courseCode,
+                        CourseName = courseName,
+                        StartHour = startHour,
+                        EndHour = endHour,
+                        Room = schedule.Room.ToString(),
+                        Instructor = schedule.Instructor.ToString()
+                    });
+                }
+            }
+        }
+
+        // Helper method to parse time string to hour
+        private int ParseTimeToHour(string timeString)
+        {
+            try
+            {
+                timeString = timeString.ToUpper().Trim();
+
+                // Remove AM/PM
+                bool isPM = timeString.Contains("PM");
+                timeString = timeString.Replace("AM", "").Replace("PM", "").Trim();
+
+                // Parse hours and minutes
+                var parts = timeString.Split(':');
+                int hours = int.Parse(parts[0].Trim());
+                //int minutes = parts.Length > 1 ? int.Parse(parts[1].Trim()) : 0;
+
+                // Convert to 24-hour format
+                if (isPM && hours < 12) hours += 12;
+                if (!isPM && hours == 12) hours = 0;
+
+                return hours;
+            }
+            catch
+            {
+                return 9; // Default to 9 AM if parsing fails
+            }
+        }
+
+        // Unofficial Transcript - FIXED
         public async Task<IActionResult> Transcript(int studentId)
         {
             // Simple student access check
-            if (!IsStudentUser() || CurrentStudentId != studentId)
+            if (!IsCurrentStudent(studentId))
             {
-                SetErrorMessage("Invalid student access.");
+                base.SetErrorMessage("Invalid student access.");
                 return RedirectToAction("StudentPortalEntry");
             }
 
             var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound();
 
-            // Set view data for student portal layout
-            ViewBag.StudentName = HttpContext.Session.GetString("StudentName");
+            // Set view data for student portal layout - USING HELPER METHOD
+            ViewBag.StudentName = student.Name;
             ViewBag.CurrentGPA = student.GPA;
             ViewBag.PassedHours = student.PassedHours;
-            ViewBag.CurrentCoursesCount = await _context.CourseEnrollments
-                .CountAsync(ce => ce.StudentId == studentId && ce.IsActive && !ce.IsCompleted);
+            ViewBag.CurrentCoursesCount = await GetCurrentCoursesCount(studentId);
 
             var transcriptData = await _context.FinalGrades
                 .Include(fg => fg.Course)
@@ -554,37 +510,24 @@ namespace StudentManagementSystem.Controllers
             return View(student);
         }
 
-        // Helper method for calculating semester GPA
-        public decimal CalculateSemesterGPA(List<StudentManagementSystem.Models.FinalGrade> grades)
-        {
-            var completedGrades = grades.Where(g => g.GradeStatus == GradeStatus.Completed && g.FinalGradePoints.HasValue).ToList();
-            if (!completedGrades.Any()) return 0;
-
-            var totalPoints = completedGrades.Sum(g => (g.Course?.Credits ?? 0) * (g.FinalGradePoints ?? 0m));
-            var totalCredits = completedGrades.Sum(g => g.Course?.Credits ?? 0);
-
-            return totalCredits > 0 ? totalPoints / totalCredits : 0;
-        }
-
-        // Academic Progress
+        // Academic Progress - FIXED
         public async Task<IActionResult> AcademicProgress(int studentId)
         {
             // Simple student access check
-            if (!IsStudentUser() || CurrentStudentId != studentId)
+            if (!IsCurrentStudent(studentId))
             {
-                SetErrorMessage("Invalid student access.");
+                base.SetErrorMessage("Invalid student access.");
                 return RedirectToAction("StudentPortalEntry");
             }
 
             var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound();
 
-            // Set view data for student portal layout
-            ViewBag.StudentName = HttpContext.Session.GetString("StudentName");
+            // Set view data for student portal layout - USING HELPER METHOD
+            ViewBag.StudentName = student.Name;
             ViewBag.CurrentGPA = student.GPA;
             ViewBag.PassedHours = student.PassedHours;
-            ViewBag.CurrentCoursesCount = await _context.CourseEnrollments
-                .CountAsync(ce => ce.StudentId == studentId && ce.IsActive && !ce.IsCompleted);
+            ViewBag.CurrentCoursesCount = await GetCurrentCoursesCount(studentId);
 
             // Mock progress data
             var progressData = new List<dynamic>
@@ -618,25 +561,24 @@ namespace StudentManagementSystem.Controllers
             return View(student);
         }
 
-        // Course Materials
+        // Course Materials - FIXED
         public async Task<IActionResult> CourseMaterials(int studentId)
         {
             // Simple student access check
-            if (!IsStudentUser() || CurrentStudentId != studentId)
+            if (!IsCurrentStudent(studentId))
             {
-                SetErrorMessage("Invalid student access.");
+                base.SetErrorMessage("Invalid student access.");
                 return RedirectToAction("StudentPortalEntry");
             }
 
             var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound();
 
-            // Set view data for student portal layout
-            ViewBag.StudentName = HttpContext.Session.GetString("StudentName");
+            // Set view data for student portal layout - USING HELPER METHOD
+            ViewBag.StudentName = student.Name;
             ViewBag.CurrentGPA = student.GPA;
             ViewBag.PassedHours = student.PassedHours;
-            ViewBag.CurrentCoursesCount = await _context.CourseEnrollments
-                .CountAsync(ce => ce.StudentId == studentId && ce.IsActive && !ce.IsCompleted);
+            ViewBag.CurrentCoursesCount = await GetCurrentCoursesCount(studentId);
 
             // Mock course materials
             var courseMaterials = new List<dynamic>
@@ -666,61 +608,24 @@ namespace StudentManagementSystem.Controllers
             return View(student);
         }
 
-        // Student Portal Entry Point
-        public async Task<IActionResult> StudentPortalEntry()
+        // Student Logout
+        public IActionResult StudentLogout()
         {
-            // Clear any existing student session
             HttpContext.Session.Remove("CurrentStudentId");
             HttpContext.Session.Remove("StudentName");
+            HttpContext.Session.Remove("StudentGPA");
 
-            ViewData["Layout"] = "_Layout"; // Force main layout for entry page
-
-            var demoStudents = await _context.Students.Take(5).ToListAsync();
-            ViewBag.DemoStudents = demoStudents;
-
-            return View();
+            SetSuccessMessage("You have been logged out successfully.");
+            return RedirectToAction("Index", "Home");
         }
 
-        [HttpPost]
-        public async Task<IActionResult> StudentLogin(string studentId, string email)
-        {
-            // Validate student credentials
-            var student = await _context.Students
-                .FirstOrDefaultAsync(s => s.StudentId == studentId &&
-                                         (s.Email == email || s.StudentId == studentId)); // Simple validation
-
-            if (student == null)
-            {
-                SetErrorMessage("Invalid student ID or email. Please try again.");
-                return RedirectToAction("StudentPortalEntry");
-            }
-
-            // Set student session
-            HttpContext.Session.SetString("CurrentStudentId", student.Id.ToString());
-            HttpContext.Session.SetString("StudentName", student.Name);
-            HttpContext.Session.SetString("StudentGPA", student.GPA.ToString("F2"));
-
-            SetSuccessMessage($"Welcome back, {student.Name}!");
-            return RedirectToAction("StudentDashboard", new { studentId = student.Id });
-        }
-
-        public IActionResult Error()
-        {
-            // Make sure you're using the Models namespace
-            var errorViewModel = new ErrorViewModel
-            {
-                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
-            };
-
-            return View(errorViewModel);
-        }
-        /////////////
-        ///
+        // Registration Management
         public async Task<IActionResult> Management(int semesterId = 0, string filter = "all", string sortBy = "date", string sortOrder = "desc")
         {
-            if (!IsAdminUser())
+            if (!base.IsAdminUser())
             {
-                return RedirectUnauthorized("Admin access required.");
+                base.SetErrorMessage("Admin access required.");
+                return RedirectToAction("AccessDenied", "Home");
             }
 
             var semesters = await _context.Semesters.Where(s => s.IsActive).ToListAsync();
@@ -772,7 +677,7 @@ namespace StudentManagementSystem.Controllers
 
             var registrations = await query.ToListAsync();
 
-            var viewModel = new RegistrationManagementViewModel
+            var viewModel = new ViewModels.RegistrationManagementViewModel
             {
                 Semesters = semesters,
                 SelectedSemester = currentSemester,
@@ -788,8 +693,300 @@ namespace StudentManagementSystem.Controllers
             return View(viewModel);
         }
 
+        // Registration Dashboard
+        public async Task<IActionResult> RegistrationDashboard()
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
 
-        // NEW: Export Registrations
+            var currentSemester = await _context.Semesters.FirstOrDefaultAsync(s => s.IsCurrent);
+            var today = DateTime.Now;
+
+            var dashboardData = new
+            {
+                // Statistics
+                TotalRegistrations = await _context.CourseRegistrations.CountAsync(),
+                PendingRegistrations = await _context.CourseRegistrations.CountAsync(r => r.Status == RegistrationStatus.Pending),
+                ApprovedRegistrations = await _context.CourseRegistrations.CountAsync(r => r.Status == RegistrationStatus.Approved),
+
+                // Current semester stats
+                CurrentSemesterRegistrations = currentSemester != null ?
+                    await _context.CourseRegistrations.CountAsync(r => r.SemesterId == currentSemester.Id) : 0,
+
+                // Active periods
+                ActivePeriods = await _context.RegistrationPeriods
+                    .Include(p => p.Semester)
+                    .Where(p => p.IsActive && p.StartDate <= today && p.EndDate >= today)
+                    .ToListAsync(),
+
+                // Upcoming deadlines
+                UpcomingDeadlines = await _context.RegistrationPeriods
+                    .Where(p => p.StartDate > today)
+                    .OrderBy(p => p.StartDate)
+                    .Take(5)
+                    .ToListAsync(),
+
+                // Rule statistics
+                ActiveRules = await _context.RegistrationRules.CountAsync(r => r.IsActive),
+                BlockingRules = await _context.RegistrationRules.CountAsync(r => r.EnforcementLevel == EnforcementLevel.Block),
+
+                // Recent activity
+                RecentRegistrations = await _context.CourseRegistrations
+                    .Include(r => r.Student)
+                    .Include(r => r.Course)
+                    .OrderByDescending(r => r.RegistrationDate)
+                    .Take(10)
+                    .ToListAsync()
+            };
+
+            return View(dashboardData);
+        }
+
+        // Registration Rules Management
+        public async Task<IActionResult> Rules()
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            var rules = await _context.RegistrationRules
+                .Include(r => r.Department)
+                .Include(r => r.Course)
+                .ToListAsync();
+
+            var departments = await _context.Departments.ToListAsync();
+
+            var viewModel = new ViewModels.RulesManagementViewModel
+            {
+                Rules = rules,
+                Departments = departments
+            };
+
+            return View(viewModel);
+        }
+
+        // Save Rule
+        [HttpPost]
+        public async Task<IActionResult> SaveRule(Models.RegistrationRule rule)
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    if (rule.Id == 0)
+                    {
+                        // New rule
+                        rule.CreatedDate = DateTime.Now;
+                        rule.ModifiedDate = DateTime.Now;
+                        _context.RegistrationRules.Add(rule);
+                    }
+                    else
+                    {
+                        // Update existing rule
+                        var existingRule = await _context.RegistrationRules.FindAsync(rule.Id);
+                        if (existingRule != null)
+                        {
+                            // Update properties
+                            existingRule.RuleName = rule.RuleName;
+                            existingRule.Description = rule.Description;
+                            existingRule.RuleType = rule.RuleType;
+                            existingRule.DepartmentId = rule.DepartmentId;
+                            existingRule.MinimumGPA = rule.MinimumGPA;
+                            existingRule.MinimumPassedHours = rule.MinimumPassedHours;
+                            existingRule.MaximumCreditHours = rule.MaximumCreditHours;
+                            existingRule.MinimumCreditHours = rule.MinimumCreditHours;
+                            existingRule.GradeLevel = rule.GradeLevel;
+                            existingRule.EnforcementLevel = rule.EnforcementLevel;
+                            existingRule.IsActive = rule.IsActive;
+                            existingRule.CourseId = rule.CourseId;
+                            existingRule.ModifiedDate = DateTime.Now;
+
+                            _context.RegistrationRules.Update(existingRule);
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    SetSuccessMessage("Registration rule saved successfully.");
+                    return RedirectToAction(nameof(Rules));
+                }
+                catch (Exception ex)
+                {
+                    SetErrorMessage($"Error saving rule: {ex.Message}");
+                    return View("Rules", await GetRulesViewModel());
+                }
+            }
+            else
+            {
+                SetErrorMessage("Please correct the errors below.");
+                return View("Rules", await GetRulesViewModel());
+            }
+        }
+
+        // Registration Periods Management
+        public async Task<IActionResult> Periods()
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            var periods = await _context.RegistrationPeriods
+                .Include(p => p.Semester)
+                .ToListAsync();
+
+            var semesters = await _context.Semesters.Where(s => s.IsActive).ToListAsync();
+
+            var viewModel = new ViewModels.PeriodsManagementViewModel
+            {
+                Periods = periods,
+                Semesters = semesters
+            };
+
+            return View(viewModel);
+        }
+
+        // Save Period
+        [HttpPost]
+        public async Task<IActionResult> SavePeriod(Models.RegistrationPeriod period)
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            if (ModelState.IsValid)
+            {
+                if (period.Id == 0)
+                {
+                    period.CreatedDate = DateTime.Now;
+                    period.ModifiedDate = DateTime.Now;
+                    _context.RegistrationPeriods.Add(period);
+                }
+                else
+                {
+                    var existingPeriod = await _context.RegistrationPeriods.FindAsync(period.Id);
+                    if (existingPeriod != null)
+                    {
+                        existingPeriod.PeriodName = period.PeriodName;
+                        existingPeriod.StartDate = period.StartDate;
+                        existingPeriod.EndDate = period.EndDate;
+                        existingPeriod.SemesterId = period.SemesterId;
+                        existingPeriod.RegistrationType = period.RegistrationType;
+                        existingPeriod.MaxCoursesPerStudent = period.MaxCoursesPerStudent;
+                        existingPeriod.MaxCreditHours = period.MaxCreditHours;
+                        existingPeriod.IsActive = period.IsActive;
+                        existingPeriod.ModifiedDate = DateTime.Now;
+
+                        _context.RegistrationPeriods.Update(existingPeriod);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                SetSuccessMessage("Registration period saved successfully.");
+            }
+            else
+            {
+                SetErrorMessage("Please correct the errors below.");
+            }
+
+            return RedirectToAction(nameof(Periods));
+        }
+
+        // Toggle Rule
+        [HttpPost]
+        public async Task<IActionResult> ToggleRule(int id)
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            var rule = await _context.RegistrationRules.FindAsync(id);
+            if (rule != null)
+            {
+                rule.IsActive = !rule.IsActive;
+                rule.ModifiedDate = DateTime.Now;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, isActive = rule.IsActive });
+            }
+            return Json(new { success = false });
+        }
+
+        // Toggle Period
+        [HttpPost]
+        public async Task<IActionResult> TogglePeriod(int id)
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            var period = await _context.RegistrationPeriods.FindAsync(id);
+            if (period != null)
+            {
+                period.IsActive = !period.IsActive;
+                period.ModifiedDate = DateTime.Now;
+                await _context.SaveChangesAsync();
+                SetSuccessMessage($"Period {(period.IsActive ? "activated" : "deactivated")} successfully.");
+            }
+            return RedirectToAction(nameof(Periods));
+        }
+
+        // Approve/Reject Registration
+        [HttpPost]
+        public async Task<IActionResult> ApproveRegistration(int registrationId, int semesterId)
+        {
+            if (!base.IsAdminUser())
+            {
+                base.SetErrorMessage("Admin access required.");
+                return RedirectToAction("AccessDenied", "Home");
+            }
+
+            var result = await _registrationService.ApproveRegistration(registrationId, User.Identity?.Name ?? "Admin");
+
+            if (result)
+            {
+                base.SetSuccessMessage("Registration approved successfully.");
+            }
+            else
+            {
+                base.SetErrorMessage("Failed to approve registration.");
+            }
+
+            return RedirectToAction(nameof(Management), new { semesterId });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RejectRegistration(int registrationId, int semesterId, string reason)
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            var result = await _registrationService.RejectRegistration(registrationId, reason, User.Identity?.Name ?? "Admin");
+
+            if (result)
+            {
+                SetSuccessMessage("Registration rejected successfully.");
+            }
+            else
+            {
+                SetErrorMessage("Failed to reject registration.");
+            }
+
+            return RedirectToAction(nameof(Management), new { semesterId });
+        }
+
+        // Export Registrations
         public async Task<IActionResult> ExportRegistrations(int semesterId, string format = "excel", string filter = "all")
         {
             if (!IsAdminUser())
@@ -822,26 +1019,92 @@ namespace StudentManagementSystem.Controllers
 
             if (format.ToLower() == "excel")
             {
-                var excelBytes = await _exportService.ExportRegistrationsToExcel(registrations);
-                return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    $"Registrations_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+                // Use EPPlus for Excel export
+                using (var package = new ExcelPackage())
+                {
+                    var worksheet = package.Workbook.Worksheets.Add("Registrations");
+
+                    // Headers
+                    worksheet.Cells[1, 1].Value = "Student ID";
+                    worksheet.Cells[1, 2].Value = "Student Name";
+                    worksheet.Cells[1, 3].Value = "Course Code";
+                    worksheet.Cells[1, 4].Value = "Course Name";
+                    worksheet.Cells[1, 5].Value = "Credits";
+                    worksheet.Cells[1, 6].Value = "Registration Date";
+                    worksheet.Cells[1, 7].Value = "Status";
+                    worksheet.Cells[1, 8].Value = "Type";
+                    worksheet.Cells[1, 9].Value = "Approved By";
+                    worksheet.Cells[1, 10].Value = "Approval Date";
+
+                    // Style headers
+                    using (var range = worksheet.Cells[1, 1, 1, 10])
+                    {
+                        range.Style.Font.Bold = true;
+                        range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
+                    }
+
+                    // Data
+                    int row = 2;
+                    foreach (var registration in registrations)
+                    {
+                        worksheet.Cells[row, 1].Value = registration.Student?.StudentId ?? "";
+                        worksheet.Cells[row, 2].Value = registration.Student?.Name ?? "";
+                        worksheet.Cells[row, 3].Value = registration.Course?.CourseCode ?? "";
+                        worksheet.Cells[row, 4].Value = registration.Course?.CourseName ?? "";
+                        worksheet.Cells[row, 5].Value = registration.Course?.Credits ?? 0;
+                        worksheet.Cells[row, 6].Value = registration.RegistrationDate.ToString("yyyy-MM-dd HH:mm");
+                        worksheet.Cells[row, 7].Value = registration.Status.ToString();
+                        worksheet.Cells[row, 8].Value = registration.RegistrationType.ToString();
+                        worksheet.Cells[row, 9].Value = registration.ApprovedBy ?? "";
+                        worksheet.Cells[row, 10].Value = registration.ApprovalDate?.ToString("yyyy-MM-dd") ?? "";
+                        row++;
+                    }
+
+                    // Auto-fit columns
+                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                    var fileName = $"Registrations_{semester.Name}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                    var bytes = package.GetAsByteArray();
+
+                    return File(bytes,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        fileName);
+                }
             }
             else if (format.ToLower() == "csv")
             {
-                var csvBytes = await _exportService.ExportRegistrationsToCsv(registrations);
-                return File(csvBytes, "text/csv", $"Registrations_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-            }
-            else if (format.ToLower() == "pdf")
-            {
-                var pdfBytes = await _exportService.ExportRegistrationsToPdf(registrations);
-                return File(pdfBytes, "application/pdf", $"Registrations_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+                // CSV Export
+                var csv = new StringBuilder();
+                csv.AppendLine("StudentID,StudentName,CourseCode,CourseName,Credits,RegistrationDate,Status,Type,ApprovedBy,ApprovalDate");
+
+                foreach (var registration in registrations)
+                {
+                    csv.AppendLine(
+                        $"\"{registration.Student?.StudentId ?? ""}\"," +
+                        $"\"{registration.Student?.Name ?? ""}\"," +
+                        $"\"{registration.Course?.CourseCode ?? ""}\"," +
+                        $"\"{registration.Course?.CourseName ?? ""}\"," +
+                        $"{registration.Course?.Credits ?? 0}," +
+                        $"\"{registration.RegistrationDate:yyyy-MM-dd HH:mm}\"," +
+                        $"\"{registration.Status}\"," +
+                        $"\"{registration.RegistrationType}\"," +
+                        $"\"{registration.ApprovedBy ?? ""}\"," +
+                        $"\"{registration.ApprovalDate?.ToString("yyyy-MM-dd") ?? ""}\""
+                    );
+                }
+
+                var fileName = $"Registrations_{semester.Name}_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+
+                return File(bytes, "text/csv", fileName);
             }
 
             SetErrorMessage("Invalid export format.");
             return RedirectToAction(nameof(Management), new { semesterId });
         }
 
-        // NEW: Import Registrations
+        // Import Registrations
         [HttpPost]
         public async Task<IActionResult> ImportRegistrations(IFormFile file, int semesterId, bool overwriteExisting = false)
         {
@@ -856,23 +1119,133 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction(nameof(Management), new { semesterId });
             }
 
+            var result = new ImportResult();
+            var semester = await _context.Semesters.FindAsync(semesterId);
+
+            if (semester == null)
+            {
+                SetErrorMessage("Semester not found.");
+                return RedirectToAction(nameof(Management), new { semesterId });
+            }
+
             try
             {
-                var result = await _importService.ImportRegistrations(file, semesterId, overwriteExisting);
+                using (var stream = new MemoryStream())
+                {
+                    await file.CopyToAsync(stream);
+                    stream.Position = 0;
+
+                    if (Path.GetExtension(file.FileName).ToLower() == ".xlsx" ||
+                        Path.GetExtension(file.FileName).ToLower() == ".xls")
+                    {
+                        using (var package = new ExcelPackage(stream))
+                        {
+                            var worksheet = package.Workbook.Worksheets[0];
+                            var rowCount = worksheet.Dimension?.Rows ?? 0;
+
+                            for (int row = 2; row <= rowCount; row++)
+                            {
+                                try
+                                {
+                                    var studentId = worksheet.Cells[row, 1].Text?.Trim();
+                                    var courseCode = worksheet.Cells[row, 2].Text?.Trim();
+
+                                    if (string.IsNullOrEmpty(studentId) || string.IsNullOrEmpty(courseCode))
+                                    {
+                                        result.Errors.Add($"Row {row}: Missing Student ID or Course Code");
+                                        result.SkippedCount++;
+                                        continue;
+                                    }
+
+                                    // Find student
+                                    var student = await _context.Students
+                                        .FirstOrDefaultAsync(s => s.StudentId == studentId);
+
+                                    if (student == null)
+                                    {
+                                        result.Errors.Add($"Row {row}: Student '{studentId}' not found");
+                                        result.SkippedCount++;
+                                        continue;
+                                    }
+
+                                    // Find course
+                                    var course = await _context.Courses
+                                        .FirstOrDefaultAsync(c => c.CourseCode == courseCode &&
+                                                                  c.SemesterId == semesterId);
+
+                                    if (course == null)
+                                    {
+                                        result.Errors.Add($"Row {row}: Course '{courseCode}' not found for semester {semester.Name}");
+                                        result.SkippedCount++;
+                                        continue;
+                                    }
+
+                                    // Check if registration already exists
+                                    var existingRegistration = await _context.CourseRegistrations
+                                        .FirstOrDefaultAsync(r => r.StudentId == student.Id &&
+                                                                 r.CourseId == course.Id &&
+                                                                 r.SemesterId == semesterId);
+
+                                    if (existingRegistration != null)
+                                    {
+                                        if (overwriteExisting)
+                                        {
+                                            // Update existing
+                                            existingRegistration.RegistrationDate = DateTime.Now;
+                                            existingRegistration.Status = RegistrationStatus.Pending;
+                                            _context.CourseRegistrations.Update(existingRegistration);
+                                        }
+                                        else
+                                        {
+                                            result.Errors.Add($"Row {row}: Registration already exists for {studentId} - {courseCode}");
+                                            result.SkippedCount++;
+                                            continue;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Create new registration
+                                        var registration = new CourseRegistration
+                                        {
+                                            StudentId = student.Id,
+                                            CourseId = course.Id,
+                                            SemesterId = semesterId,
+                                            RegistrationDate = DateTime.Now,
+                                            Status = RegistrationStatus.Pending,
+                                            RegistrationType = RegistrationType.Regular,
+                                            Remarks = "Imported from file"
+                                        };
+
+                                        _context.CourseRegistrations.Add(registration);
+                                    }
+
+                                    result.ImportedCount++;
+                                }
+                                catch (Exception ex)
+                                {
+                                    result.Errors.Add($"Row {row}: Error - {ex.Message}");
+                                    result.SkippedCount++;
+                                }
+                            }
+
+                            await _context.SaveChangesAsync();
+                            result.Success = true;
+                        }
+                    }
+                    else
+                    {
+                        SetErrorMessage("Unsupported file format. Please upload Excel (.xlsx/.xls) files.");
+                        return RedirectToAction(nameof(Management), new { semesterId });
+                    }
+                }
 
                 if (result.Success)
                 {
-                    SetSuccessMessage($"Successfully imported {result.ImportedCount} registrations. {result.SkippedCount} skipped.");
-
-                    if (result.Errors.Any())
-                    {
-                        var errorSummary = string.Join("; ", result.Errors.Take(5));
-                        SetWarningMessage($"Some records had issues: {errorSummary}");
-                    }
+                    SetSuccessMessage($"Successfully imported {result.ImportedCount} registrations. {result.SkippedCount} records skipped.");
                 }
                 else
                 {
-                    SetErrorMessage($"Import failed: {result.ErrorMessage}");
+                    SetErrorMessage($"Import failed. {result.Errors.FirstOrDefault()}");
                 }
             }
             catch (Exception ex)
@@ -883,7 +1256,7 @@ namespace StudentManagementSystem.Controllers
             return RedirectToAction(nameof(Management), new { semesterId });
         }
 
-        // NEW: Download Import Template
+        // Download Import Template
         public async Task<IActionResult> DownloadImportTemplate(string type = "registrations")
         {
             if (!IsAdminUser())
@@ -898,7 +1271,7 @@ namespace StudentManagementSystem.Controllers
             return File(templateBytes, contentType, fileName);
         }
 
-        // NEW: Bulk Operations
+        // Bulk Operations
         [HttpPost]
         public async Task<IActionResult> BulkApprove(int[] registrationIds, int semesterId)
         {
@@ -949,18 +1322,58 @@ namespace StudentManagementSystem.Controllers
             return RedirectToAction(nameof(Management), new { semesterId });
         }
 
-        // NEW: Student Registration History
-        public async Task<IActionResult> StudentHistory(int studentId)
+        // Student History Selection
+        public async Task<IActionResult> StudentHistorySelection()
         {
             if (!IsAdminUser())
             {
                 return RedirectUnauthorized("Admin access required.");
             }
 
+            var students = await _context.Students
+                .Take(20)
+                .Select(s => new
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    StudentId = s.StudentId
+                })
+                .ToListAsync();
+
+            // Convert to List<dynamic> for the view
+            var studentList = new List<dynamic>();
+            foreach (var student in students)
+            {
+                studentList.Add(new
+                {
+                    Id = student.Id,
+                    Name = student.Name,
+                    StudentId = student.StudentId
+                });
+            }
+
+            ViewBag.Students = studentList;
+
+            return View();
+        }
+
+        // Student Registration History
+        public async Task<IActionResult> StudentHistory(int? studentId)
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            if (!studentId.HasValue)
+            {
+                return RedirectToAction("StudentHistorySelection");
+            }
+
             var student = await _context.Students
                 .Include(s => s.CourseEnrollments)
                 .ThenInclude(ce => ce.Course)
-                .FirstOrDefaultAsync(s => s.Id == studentId);
+                .FirstOrDefaultAsync(s => s.Id == studentId.Value);
 
             if (student == null)
             {
@@ -971,11 +1384,11 @@ namespace StudentManagementSystem.Controllers
             var registrationHistory = await _context.CourseRegistrations
                 .Include(r => r.Course)
                 .Include(r => r.Semester)
-                .Where(r => r.StudentId == studentId)
+                .Where(r => r.StudentId == studentId.Value)
                 .OrderByDescending(r => r.Semester != null ? r.Semester.StartDate : DateTime.MinValue)
                 .ToListAsync();
 
-            var viewModel = new StudentRegistrationHistoryViewModel
+            var viewModel = new ViewModels.StudentRegistrationHistoryViewModel
             {
                 Student = student,
                 RegistrationHistory = registrationHistory
@@ -984,56 +1397,44 @@ namespace StudentManagementSystem.Controllers
             return View(viewModel);
         }
 
-        private async Task<Dictionary<string, int>> GetRegistrationsByDepartment(int semesterId)
+        // Analytics
+        public async Task<IActionResult> Analytics()
         {
-            var departmentGroups = await _context.CourseRegistrations
-                .Include(r => r.Course)
-                .Where(r => r.SemesterId == semesterId)
-                .Select(r => new
-                {
-                    Department = r.Course != null ? r.Course.Department : "Unknown"
-                })
-                .GroupBy(x => string.IsNullOrEmpty(x.Department) ? "Unknown" : x.Department)
-                .Select(g => new { Department = g.Key, Count = g.Count() })
-                .ToListAsync();
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
 
-            return departmentGroups.ToDictionary(x => x.Department, x => x.Count);
+            var analytics = await GenerateRegistrationAnalytics();
+            return View(analytics);
         }
 
-        private async Task<Dictionary<string, int>> GetTopCourses(int semesterId)
+        // Reports
+        public async Task<IActionResult> Reports(int semesterId = 0)
         {
-            var courseGroups = await _context.CourseRegistrations
-                .Include(r => r.Course)
-                .Where(r => r.SemesterId == semesterId)
-                .Select(r => new
-                {
-                    CourseCode = r.Course != null ? r.Course.CourseCode : "Unknown"
-                })
-                .GroupBy(x => string.IsNullOrEmpty(x.CourseCode) ? "Unknown" : x.CourseCode)
-                .Select(g => new { Course = g.Key, Count = g.Count() })
-                .OrderByDescending(x => x.Count)
-                .Take(10)
-                .ToListAsync();
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
 
-            return courseGroups.ToDictionary(x => x.Course, x => x.Count);
+            var semesters = await _context.Semesters.Where(s => s.IsActive).ToListAsync();
+            var currentSemester = semesterId == 0
+                ? await _context.Semesters.FirstOrDefaultAsync(s => s.IsCurrent)
+                : await _context.Semesters.FindAsync(semesterId);
+
+            var reportData = await GenerateComprehensiveReport(currentSemester?.Id ?? 0);
+
+            var viewModel = new ViewModels.RegistrationReportViewModel
+            {
+                Semesters = semesters,
+                SelectedSemester = currentSemester,
+                ReportData = reportData
+            };
+
+            return View(viewModel);
         }
 
-        // ... other helper methods for analytics ...
-
-        // NEW: Enhanced View Models
-        public class RegistrationReportViewModel
-        {
-            public List<Semester> Semesters { get; set; } = new List<Semester>();
-            public Semester? SelectedSemester { get; set; }
-            public RegistrationReportData ReportData { get; set; } = new RegistrationReportData();
-        }
-
-        public class StudentRegistrationHistoryViewModel
-        {
-            public Student Student { get; set; } = new Student();
-            public List<CourseRegistration> RegistrationHistory { get; set; } = new List<CourseRegistration>();
-        }
-
+        // Get Registration Details
         public async Task<IActionResult> GetRegistrationDetails(int id)
         {
             var registration = await _context.CourseRegistrations
@@ -1050,44 +1451,7 @@ namespace StudentManagementSystem.Controllers
             return PartialView("_RegistrationDetails", registration);
         }
 
-        // NEW: Analytics Page
-        public async Task<IActionResult> Analytics()
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            var analytics = await GenerateRegistrationAnalytics();
-            return View(analytics);
-        }
-
-        // NEW: Reports Page
-        public async Task<IActionResult> Reports(int semesterId = 0)
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectUnauthorized("Admin access required.");
-            }
-
-            var semesters = await _context.Semesters.Where(s => s.IsActive).ToListAsync();
-            var currentSemester = semesterId == 0
-                ? await _context.Semesters.FirstOrDefaultAsync(s => s.IsCurrent)
-                : await _context.Semesters.FindAsync(semesterId);
-
-            var reportData = await GenerateComprehensiveReport(currentSemester?.Id ?? 0);
-
-            var viewModel = new RegistrationReportViewModel
-            {
-                Semesters = semesters,
-                SelectedSemester = currentSemester,
-                ReportData = reportData
-            };
-
-            return View(viewModel);
-        }
-
-        // Helper method for analytics
+        // Helper Methods
         private async Task<RegistrationAnalytics> GenerateRegistrationAnalytics()
         {
             var currentSemester = await _context.Semesters.FirstOrDefaultAsync(s => s.IsCurrent);
@@ -1141,7 +1505,7 @@ namespace StudentManagementSystem.Controllers
                 .ToListAsync();
 
             reportData.AverageCoursesPerStudent = studentCourseCounts.Any() ?
-                (decimal)studentCourseCounts.Average() : 0; // Fixed double to decimal conversion
+                (decimal)studentCourseCounts.Average() : 0;
 
             // Status distribution
             var statusGroups = await _context.CourseRegistrations
@@ -1154,6 +1518,628 @@ namespace StudentManagementSystem.Controllers
 
             return reportData;
         }
+
+        private async Task<Dictionary<string, int>> GetRegistrationsByDepartment(int semesterId)
+        {
+            var departmentGroups = await _context.CourseRegistrations
+                .Include(r => r.Course)
+                .Where(r => r.SemesterId == semesterId)
+                .Select(r => new
+                {
+                    Department = r.Course != null ? r.Course.Department : "Unknown"
+                })
+                .GroupBy(x => string.IsNullOrEmpty(x.Department) ? "Unknown" : x.Department)
+                .Select(g => new { Department = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            return departmentGroups.ToDictionary(x => x.Department, x => x.Count);
+        }
+
+        private async Task<Dictionary<string, int>> GetTopCourses(int semesterId)
+        {
+            var courseGroups = await _context.CourseRegistrations
+                .Include(r => r.Course)
+                .Where(r => r.SemesterId == semesterId)
+                .Select(r => new
+                {
+                    CourseCode = r.Course != null ? r.Course.CourseCode : "Unknown"
+                })
+                .GroupBy(x => string.IsNullOrEmpty(x.CourseCode) ? "Unknown" : x.CourseCode)
+                .Select(g => new { Course = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .Take(10)
+                .ToListAsync();
+
+            return courseGroups.ToDictionary(x => x.Course, x => x.Count);
+        }
+
+        // Import Rules from Courses
+        [HttpPost]
+        public async Task<IActionResult> ImportRulesFromCourses(bool importGPA, bool importPrerequisites,
+            bool importPassedHours, bool importCreditLimits, bool autoActivate = true)
+        {
+            if (!IsAdminUser())
+            {
+                return Json(new { success = false, message = "Admin access required." });
+            }
+
+            try
+            {
+                var courses = await _context.Courses
+                    .Include(c => c.Prerequisites)
+                    .ThenInclude(p => p.PrerequisiteCourse)
+                    .Where(c => c.IsActive)
+                    .ToListAsync();
+
+                int importedCount = 0;
+                var existingRules = await _context.RegistrationRules
+                    .Where(r => r.CourseId.HasValue)
+                    .ToListAsync();
+
+                foreach (var course in courses)
+                {
+                    // Check if any criteria match
+                    bool hasCriteria = (importGPA && course.MinGPA.HasValue) ||
+                                      (importPrerequisites && course.Prerequisites.Any()) ||
+                                      (importPassedHours && course.MinPassedHours.HasValue) ||
+                                      (importCreditLimits && course.MaxStudents > 0 && course.MaxStudents < 1000);
+
+                    if (!hasCriteria) continue;
+
+                    // Check if rule already exists
+                    var existingRule = existingRules.FirstOrDefault(r => r.CourseId == course.Id);
+
+                    if (existingRule != null)
+                    {
+                        // Update existing rule
+                        existingRule.ModifiedDate = DateTime.Now;
+                        existingRule.IsActive = autoActivate;
+
+                        if (importGPA) existingRule.MinimumGPA = course.MinGPA;
+                        if (importPassedHours) existingRule.MinimumPassedHours = course.MinPassedHours;
+
+                        // Build prerequisite description
+                        if (importPrerequisites && course.Prerequisites.Any())
+                        {
+                            var prereqs = course.Prerequisites
+                                .Select(p => p.PrerequisiteCourse?.CourseCode)
+                                .Where(c => !string.IsNullOrEmpty(c))
+                                .ToList();
+
+                            if (prereqs.Any())
+                            {
+                                existingRule.Description = $"Prerequisites: {string.Join(", ", prereqs)}";
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Create new rule
+                        var rule = new RegistrationRule
+                        {
+                            RuleName = $"{course.CourseCode} - {course.CourseName}",
+                            Description = "Auto-generated from course requirements",
+                            RuleType = RuleType.Prerequisite,
+                            EnforcementLevel = EnforcementLevel.Block,
+                            IsActive = autoActivate,
+                            CourseId = course.Id,
+                            CreatedDate = DateTime.Now,
+                            ModifiedDate = DateTime.Now
+                        };
+
+                        if (importGPA && course.MinGPA.HasValue)
+                            rule.MinimumGPA = course.MinGPA.Value;
+
+                        if (importPassedHours && course.MinPassedHours.HasValue)
+                            rule.MinimumPassedHours = course.MinPassedHours.Value;
+
+                        // Build prerequisite description
+                        if (importPrerequisites && course.Prerequisites.Any())
+                        {
+                            var prereqs = course.Prerequisites
+                                .Select(p => p.PrerequisiteCourse?.CourseCode)
+                                .Where(c => !string.IsNullOrEmpty(c))
+                                .ToList();
+
+                            if (prereqs.Any())
+                            {
+                                rule.Description = $"Prerequisites: {string.Join(", ", prereqs)}";
+                            }
+                        }
+
+                        _context.RegistrationRules.Add(rule);
+                        importedCount++;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    importedCount,
+                    message = $"Imported {importedCount} rules successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"Error importing rules: {ex.Message}"
+                });
+            }
+        }
+
+        // Bulk Actions for Rules
+        [HttpPost]
+        public async Task<IActionResult> BulkActivateRules()
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            await _context.RegistrationRules.ForEachAsync(r => {
+                r.IsActive = true;
+                r.ModifiedDate = DateTime.Now;
+            });
+            await _context.SaveChangesAsync();
+
+            SetSuccessMessage("All rules activated successfully.");
+            return RedirectToAction(nameof(Rules));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BulkDeactivateRules()
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            await _context.RegistrationRules.ForEachAsync(r => {
+                r.IsActive = false;
+                r.ModifiedDate = DateTime.Now;
+            });
+            await _context.SaveChangesAsync();
+
+            SetSuccessMessage("All rules deactivated successfully.");
+            return RedirectToAction(nameof(Rules));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteRule(int id)
+        {
+            if (!IsAdminUser())
+            {
+                return Json(new { success = false, message = "Admin access required." });
+            }
+
+            var rule = await _context.RegistrationRules.FindAsync(id);
+            if (rule != null)
+            {
+                _context.RegistrationRules.Remove(rule);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "Rule deleted successfully." });
+            }
+
+            return Json(new { success = false, message = "Rule not found." });
+        }
+
+        // Duplicate Rule
+        [HttpPost]
+        public async Task<IActionResult> DuplicateRule(int id)
+        {
+            if (!IsAdminUser())
+            {
+                return Json(new { success = false, message = "Admin access required." });
+            }
+
+            var originalRule = await _context.RegistrationRules.FindAsync(id);
+            if (originalRule == null)
+            {
+                return Json(new { success = false, message = "Rule not found." });
+            }
+
+            var newRule = new RegistrationRule
+            {
+                RuleName = $"{originalRule.RuleName} (Copy)",
+                Description = originalRule.Description,
+                RuleType = originalRule.RuleType,
+                DepartmentId = originalRule.DepartmentId,
+                MinimumGPA = originalRule.MinimumGPA,
+                MinimumPassedHours = originalRule.MinimumPassedHours,
+                MaximumCreditHours = originalRule.MaximumCreditHours,
+                MinimumCreditHours = originalRule.MinimumCreditHours,
+                GradeLevel = originalRule.GradeLevel,
+                EnforcementLevel = originalRule.EnforcementLevel,
+                IsActive = false,
+                CourseId = originalRule.CourseId,
+                CreatedDate = DateTime.Now,
+                ModifiedDate = DateTime.Now
+            };
+
+            _context.RegistrationRules.Add(newRule);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        // Validate All Rules
+        [HttpPost]
+        public async Task<IActionResult> ValidateAllRules()
+        {
+            if (!IsAdminUser())
+            {
+                return Json(new { success = false, message = "Admin access required." });
+            }
+
+            var rules = await _context.RegistrationRules.ToListAsync();
+            var errors = new List<string>();
+
+            foreach (var rule in rules)
+            {
+                // Validate each rule
+                if (string.IsNullOrEmpty(rule.RuleName))
+                    errors.Add($"Rule ID {rule.Id}: Missing rule name");
+
+                if (rule.MinimumGPA.HasValue && (rule.MinimumGPA < 0 || rule.MinimumGPA > 4.0m))
+                    errors.Add($"Rule '{rule.RuleName}': Invalid GPA value {rule.MinimumGPA}");
+
+                if (rule.MaximumCreditHours.HasValue && rule.MinimumCreditHours.HasValue &&
+                    rule.MaximumCreditHours < rule.MinimumCreditHours)
+                    errors.Add($"Rule '{rule.RuleName}': Minimum credits ({rule.MinimumCreditHours}) exceeds maximum ({rule.MaximumCreditHours})");
+            }
+
+            return Json(new
+            {
+                valid = errors.Count == 0,
+                errors = errors
+            });
+        }
+
+        // Toggle All Rules
+        [HttpPost]
+        public async Task<IActionResult> ToggleAllRules()
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            var rules = await _context.RegistrationRules.ToListAsync();
+            var anyActive = rules.Any(r => r.IsActive);
+
+            foreach (var rule in rules)
+            {
+                rule.IsActive = !anyActive;
+                rule.ModifiedDate = DateTime.Now;
+            }
+
+            await _context.SaveChangesAsync();
+
+            SetSuccessMessage($"All rules {(anyActive ? "deactivated" : "activated")} successfully.");
+            return RedirectToAction(nameof(Rules));
+        }
+
+        // Export Rules
+        public async Task<IActionResult> ExportRules(string format = "excel")
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            var rules = await _context.RegistrationRules
+                .Include(r => r.Department)
+                .Include(r => r.Course)
+                .ToListAsync();
+
+            if (format.ToLower() == "excel")
+            {
+                using (var package = new ExcelPackage())
+                {
+                    var worksheet = package.Workbook.Worksheets.Add("Rules");
+
+                    // Headers
+                    worksheet.Cells[1, 1].Value = "Rule Name";
+                    worksheet.Cells[1, 2].Value = "Description";
+                    worksheet.Cells[1, 3].Value = "Type";
+                    worksheet.Cells[1, 4].Value = "Department";
+                    worksheet.Cells[1, 5].Value = "Min GPA";
+                    worksheet.Cells[1, 6].Value = "Min Hours";
+                    worksheet.Cells[1, 7].Value = "Min Credits";
+                    worksheet.Cells[1, 8].Value = "Max Credits";
+                    worksheet.Cells[1, 9].Value = "Enforcement";
+                    worksheet.Cells[1, 10].Value = "Status";
+
+                    // Style headers
+                    using (var range = worksheet.Cells[1, 1, 1, 10])
+                    {
+                        range.Style.Font.Bold = true;
+                        range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
+                    }
+
+                    // Data
+                    int row = 2;
+                    foreach (var rule in rules)
+                    {
+                        worksheet.Cells[row, 1].Value = rule.RuleName;
+                        worksheet.Cells[row, 2].Value = rule.Description ?? "";
+                        worksheet.Cells[row, 3].Value = rule.RuleType.ToString();
+                        worksheet.Cells[row, 4].Value = rule.Department?.Name ?? "";
+                        worksheet.Cells[row, 5].Value = rule.MinimumGPA?.ToString("F2") ?? "";
+                        worksheet.Cells[row, 6].Value = rule.MinimumPassedHours?.ToString() ?? "";
+                        worksheet.Cells[row, 7].Value = rule.MinimumCreditHours?.ToString() ?? "";
+                        worksheet.Cells[row, 8].Value = rule.MaximumCreditHours?.ToString() ?? "";
+                        worksheet.Cells[row, 9].Value = rule.EnforcementLevel.ToString();
+                        worksheet.Cells[row, 10].Value = rule.IsActive ? "Active" : "Inactive";
+                        row++;
+                    }
+
+                    // Auto-fit columns
+                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                    var fileName = $"RegistrationRules_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                    var bytes = package.GetAsByteArray();
+
+                    return File(bytes,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        fileName);
+                }
+            }
+
+            SetErrorMessage("Invalid export format.");
+            return RedirectToAction(nameof(Rules));
+        }
+
+        // Get Rule for Edit
+        [HttpGet]
+        public async Task<IActionResult> GetRuleForEdit(int id)
+        {
+            if (!IsAdminUser())
+            {
+                return Unauthorized();
+            }
+
+            var rule = await _context.RegistrationRules
+                .Include(r => r.Department)
+                .Include(r => r.Course)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (rule == null)
+            {
+                return NotFound();
+            }
+
+            return Json(new
+            {
+                id = rule.Id,
+                ruleName = rule.RuleName,
+                description = rule.Description,
+                ruleType = rule.RuleType,
+                departmentId = rule.DepartmentId,
+                minimumGPA = rule.MinimumGPA,
+                minimumPassedHours = rule.MinimumPassedHours,
+                maximumCreditHours = rule.MaximumCreditHours,
+                minimumCreditHours = rule.MinimumCreditHours,
+                gradeLevel = rule.GradeLevel,
+                enforcementLevel = rule.EnforcementLevel,
+                isActive = rule.IsActive,
+                courseId = rule.CourseId
+            });
+        }
+
+        // Get Course Rules Preview
+        [HttpGet]
+        public async Task<IActionResult> GetCourseRulesPreview(bool importGPA, bool importPrerequisites, bool importPassedHours, bool importCreditLimits)
+        {
+            if (!IsAdminUser())
+            {
+                return Unauthorized();
+            }
+
+            var allCourses = await _context.Courses
+                .Include(c => c.Prerequisites)
+                .ThenInclude(p => p.PrerequisiteCourse)
+                .ToListAsync();
+
+            var filteredCourses = allCourses.AsEnumerable();
+
+            if (importGPA)
+                filteredCourses = filteredCourses.Where(c => c.MinGPA.HasValue);
+
+            if (importPassedHours)
+                filteredCourses = filteredCourses.Where(c => c.MinPassedHours.HasValue);
+
+            if (importPrerequisites)
+                filteredCourses = filteredCourses.Where(c => c.Prerequisites.Any());
+
+            if (importCreditLimits)
+                filteredCourses = filteredCourses.Where(c => c.MaxStudents != 1000);
+
+            var preview = filteredCourses.Select(course => new
+            {
+                courseCode = course.CourseCode,
+                ruleDescription = GetCourseRuleDescription(course, importGPA, importPrerequisites, importPassedHours, importCreditLimits)
+            }).ToList();
+
+            return Json(preview);
+        }
+
+        private string GetCourseRuleDescription(Course course, bool importGPA, bool importPrerequisites, bool importPassedHours, bool importCreditLimits)
+        {
+            var requirements = new List<string>();
+
+            if (importGPA && course.MinGPA.HasValue)
+                requirements.Add($"GPA ≥ {course.MinGPA.Value:F2}");
+
+            if (importPassedHours && course.MinPassedHours.HasValue)
+                requirements.Add($"Passed Hours ≥ {course.MinPassedHours.Value}");
+
+            if (importPrerequisites && course.Prerequisites.Any())
+            {
+                var prereqs = course.Prerequisites.Select(p => p.PrerequisiteCourse?.CourseCode).Where(c => !string.IsNullOrEmpty(c));
+                if (prereqs.Any())
+                    requirements.Add($"Prerequisites: {string.Join(", ", prereqs)}");
+            }
+
+            if (importCreditLimits && course.MaxStudents != 1000)
+                requirements.Add($"Max Students: {course.MaxStudents}");
+
+            return string.Join("; ", requirements);
+        }
+
+        // Get Registration Stats
+        [HttpGet]
+        public async Task<IActionResult> GetRegistrationStats()
+        {
+            if (!IsAdminUser())
+            {
+                return Json(new { });
+            }
+
+            var currentSemester = await _context.Semesters.FirstOrDefaultAsync(s => s.IsCurrent);
+
+            var stats = new
+            {
+                total = await _context.CourseRegistrations.CountAsync(),
+                pending = await _context.CourseRegistrations
+                    .CountAsync(r => r.Status == RegistrationStatus.Pending),
+                approved = await _context.CourseRegistrations
+                    .CountAsync(r => r.Status == RegistrationStatus.Approved),
+                currentSemester = currentSemester != null ?
+                    await _context.CourseRegistrations
+                        .CountAsync(r => r.SemesterId == currentSemester.Id) : 0
+            };
+
+            return Json(stats);
+        }
+
+        // Export Analytics
+        public async Task<IActionResult> ExportAnalytics(string format = "excel")
+        {
+            if (!IsAdminUser())
+            {
+                return RedirectUnauthorized("Admin access required.");
+            }
+
+            var analytics = await GenerateRegistrationAnalytics();
+
+            if (format.ToLower() == "excel")
+            {
+                using (var package = new ExcelPackage())
+                {
+                    var worksheet = package.Workbook.Worksheets.Add("Analytics");
+
+                    // Headers
+                    worksheet.Cells[1, 1].Value = "Registration Analytics";
+                    worksheet.Cells[1, 1].Style.Font.Bold = true;
+                    worksheet.Cells[1, 1].Style.Font.Size = 14;
+
+                    // Data
+                    worksheet.Cells[3, 1].Value = "Total Registrations";
+                    worksheet.Cells[3, 2].Value = analytics.TotalRegistrations;
+
+                    worksheet.Cells[4, 1].Value = "Successful Registrations";
+                    worksheet.Cells[4, 2].Value = analytics.SuccessfulRegistrations;
+
+                    worksheet.Cells[5, 1].Value = "Failed Registrations";
+                    worksheet.Cells[5, 2].Value = analytics.FailedRegistrations;
+
+                    worksheet.Cells[6, 1].Value = "Success Rate";
+                    worksheet.Cells[6, 2].Value = $"{analytics.SuccessRate:F1}%";
+
+                    worksheet.Cells[8, 1].Value = "Generated Date";
+                    worksheet.Cells[8, 2].Value = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+
+                    // Auto-fit columns
+                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                    var fileName = $"RegistrationAnalytics_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                    var bytes = package.GetAsByteArray();
+
+                    return File(bytes,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        fileName);
+                }
+            }
+
+            SetErrorMessage("Invalid export format.");
+            return RedirectToAction(nameof(Analytics));
+        }
+
+        // Helper method for Rules view model
+        private async Task<RulesManagementViewModel> GetRulesViewModel()
+        {
+            var rules = await _context.RegistrationRules
+                .Include(r => r.Department)
+                .Include(r => r.Course)
+                .ToListAsync();
+
+            var departments = await _context.Departments.ToListAsync();
+
+            return new RulesManagementViewModel
+            {
+                Rules = rules,
+                Departments = departments
+            };
+        }
+
+        // Helper properties
+        private new  bool IsStudentUser()
+        {
+            return HttpContext.Session.GetString("CurrentStudentId") != null;
+        }
+
+        private new  bool IsAdminUser()
+        {
+            return User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+        }
+
+        private new  string? CurrentStudentId => HttpContext.Session.GetString("CurrentStudentId");
+
+        private new  IActionResult RedirectUnauthorized(string message)
+        {
+            SetErrorMessage(message);
+            return RedirectToAction("Index", "Home");
+        }
+
+        private new void SetSuccessMessage(string message)
+        {
+            TempData["SuccessMessage"] = message;
+        }
+
+        private new void SetErrorMessage(string message)
+        {
+            TempData["ErrorMessage"] = message;
+        }
+
+        private new void SetWarningMessage(string message)
+        {
+            TempData["WarningMessage"] = message;
+        }
+
+        // Error view
+        public IActionResult Error()
+        {
+            var errorViewModel = new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            };
+
+            return View(errorViewModel);
+        }
+
+        private bool IsCurrentStudent(int studentId)
+        {
+            if (!IsStudentUser() || string.IsNullOrEmpty(CurrentStudentId))
+                return false;
+
+            return int.TryParse(CurrentStudentId, out int currentId) && currentId == studentId;
+        }
+
     }
-    
 }

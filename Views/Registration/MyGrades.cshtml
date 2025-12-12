@@ -8,20 +8,29 @@
     <h1 class="display-6">
         <i class="fas fa-chart-bar me-2"></i>My Grades
     </h1>
+    <!-- Fix the dropdown in MyGrades.cshtml -->
     <div class="dropdown">
         <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
             <i class="fas fa-filter me-2"></i>Filter by Semester
         </button>
         <ul class="dropdown-menu">
-            <li><a class="dropdown-item" asp-action="MyGrades" asp-route-studentId="@ViewContext.RouteData.Values["studentId"]">All Semesters</a></li>
-            @foreach (var semester in ViewBag.Semesters)
+            <li>
+                <a class="dropdown-item" asp-action="MyGrades" asp-route-studentId="@ViewContext.RouteData.Values["studentId"]">
+                    All Semesters
+                </a>
+            </li>
+            @if (ViewBag.Semesters != null)
             {
-                <li>
-                    <a class="dropdown-item" asp-action="MyGrades" asp-route-studentId="@ViewContext.RouteData.Values["studentId"]"
-                       asp-route-semesterId="@semester.Id">
-                        @semester.Name
-                    </a>
-                </li>
+                @foreach (var semester in (List<Semester>)ViewBag.Semesters)
+                {
+                    <li>
+                        <a class="dropdown-item" asp-action="MyGrades"
+                           asp-route-studentId="@ViewContext.RouteData.Values["studentId"]"
+                           asp-route-semesterId="@semester.Id">
+                            @semester.Name
+                        </a>
+                    </li>
+                }
             }
         </ul>
     </div>

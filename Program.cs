@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using OfficeOpenXml;
 using QuestPDF.Infrastructure;
+using StudentManagementSystem.Controllers;
 using StudentManagementSystem.Data;
 using StudentManagementSystem.Hubs;
 using StudentManagementSystem.Models;
@@ -57,7 +59,31 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IGradingService, GradingService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IExportService, ExportService>();
+builder.Services.AddScoped<IImportService, ImportService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
+
+// Remove duplicate IStudentService registration
+// builder.Services.AddScoped<IStudentService, StudentService>();
+
+// Email configuration
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+
+// Remove unconditional EmailService registration
+// builder.Services.AddTransient<IEmailService, EmailService>();
+
+// Conditional Email Service registration
+if (builder.Environment.IsDevelopment())
+{
+    // Use MockEmailService in development (logs to file instead of sending real emails)
+    builder.Services.AddTransient<IEmailService, MockEmailService>();
+}
+else
+{
+    // Use real EmailService in production
+    builder.Services.AddTransient<IEmailService, EmailService>();
+}
 
 builder.Services.AddMemoryCache();
 builder.Services.AddLogging();
@@ -66,7 +92,7 @@ builder.Services.AddSignalR();
 // Set QuestPDF license
 QuestPDF.Settings.License = LicenseType.Community;
 
-// ✅ FIXED: Authorization Policies - SIMPLIFIED
+// Authorization Policies
 builder.Services.AddAuthorization(options =>
 {
     // Simple role-based policies
@@ -121,7 +147,6 @@ app.UseAuthorization();
 app.UseSession();
 
 // Database seeding
-// Combine both seeding operations into one scope
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -254,14 +279,105 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "❌ Database initialization failed");
     }
 }
-// Route Configuration
+
+// ======= MIGRATION CHECK SECTION (ADDED) ======= 
+//using (var scope = app.Services.CreateScope())
+//{
+//    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+//    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+//    try
+//    {
+//        logger.LogInformation("🔍 Checking migration status...");
+
+//        // Check for pending migrations
+//        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+
+//        if (pendingMigrations.Any())
+//        {
+//            logger.LogWarning($"⚠️ FOUND {pendingMigrations.Count()} PENDING MIGRATIONS:");
+//            foreach (var migration in pendingMigrations)
+//            {
+//                logger.LogWarning($"  ⚠️ {migration}");
+//            }
+//            logger.LogInformation("To apply migrations, run: dotnet ef database update");
+//        }
+//        else
+//        {
+//            logger.LogInformation("✅ CONFIRMED: NO PENDING MIGRATIONS");
+//        }
+
+//        // Show applied migrations
+//        var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+//        logger.LogInformation($"📊 Total applied migrations: {appliedMigrations.Count()}");
+
+//        if (appliedMigrations.Any())
+//        {
+//            logger.LogInformation("📋 Applied migrations list:");
+//            foreach (var migration in appliedMigrations)
+//            {
+//                logger.LogInformation($"  📌 {migration}");
+//            }
+//        }
+//        else
+//        {
+//            logger.LogWarning("⚠️ NO MIGRATIONS HAVE BEEN APPLIED YET");
+//        }
+
+//        logger.LogInformation("🔍 Migration check completed");
+//    }
+//    catch (Exception ex)
+//    {
+//        logger.LogError(ex, "❌ Error checking migrations");
+//    }
+//}
+
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    try
+    {
+        logger.LogInformation("🔧 Checking for unapplied migrations...");
+
+        // Get all migration files from assembly
+        var migrationFiles = context.Database.GetMigrations();
+        var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+
+        var pending = migrationFiles.Except(appliedMigrations).ToList();
+
+        if (pending.Any())
+        {
+            logger.LogWarning($"🔧 Found {pending.Count()} unapplied migration(s):");
+            foreach (var migration in pending)
+            {
+                logger.LogWarning($"  🔧 {migration}");
+            }
+
+            logger.LogInformation("Applying migrations...");
+            await context.Database.MigrateAsync();
+            logger.LogInformation("✅ Migrations applied successfully");
+        }
+        else
+        {
+            logger.LogInformation("✅ All migrations are already applied");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "❌ Error applying migrations");
+    }
+}
+// ======= END OF MIGRATION CHECK SECTION =======
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=PortalAccess}/{id?}");
 
 app.MapRazorPages();
 
-// In Program.cs, add before app.Run():
+// Force logout endpoint
 app.MapGet("/force-logout", () =>
 {
     return Results.Redirect("/logout/force-logout");

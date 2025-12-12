@@ -21,43 +21,41 @@ namespace StudentManagementSystem.Controllers
         private readonly ILogger<HomeController> _logger = logger;
         private readonly UserManager<IdentityUser> _userManager = userManager;
         private readonly SignInManager<IdentityUser> _signInManager = signInManager;
-        //private List<IdentityRole>? allRoles;
 
-        //public async Task<IActionResult> Index()
-        //{
-        //    // FIXED: Proper null checking
-        //    if ((User.Identity?.IsAuthenticated == false) && string.IsNullOrEmpty(HttpContext.Session.GetString("CurrentStudentId")))
-        //    {
-        //        return RedirectToAction("PortalAccess");
-        //    }
-
-        //    var studentId = HttpContext.Session.GetString("CurrentStudentId");
-        //    if (!string.IsNullOrEmpty(studentId))
-        //    {
-        //        return RedirectToAction("StudentDashboard", new { studentId = studentId });
-        //    }
-
-        //    await SetGlobalStatsAsync();
-        //    return View();
-        //}
         public async Task<IActionResult> Index()
         {
-            var users = _userManager.Users.ToList();
-            var userRoles = new Dictionary<string, List<string>>();
-
-            foreach (var user in users)
+            // Check if user is authenticated
+            if (User.Identity?.IsAuthenticated == false && string.IsNullOrEmpty(HttpContext.Session.GetString("CurrentStudentId")))
             {
-                var roles = await _userManager.GetRolesAsync(user);
-                userRoles[user.Id] = roles.ToList();
+                return RedirectToAction("PortalAccess");
             }
 
-            ViewBag.UserRoles = userRoles;
-            return View(users);
+            // If student is logged in, redirect to student dashboard
+            var studentId = HttpContext.Session.GetString("CurrentStudentId");
+            if (!string.IsNullOrEmpty(studentId) && int.TryParse(studentId, out int studentIdInt))
+            {
+                return RedirectToAction("StudentDashboard", "Registration", new { studentId = studentIdInt });
+            }
+
+            // If admin is logged in, redirect to admin dashboard
+            if (User.Identity?.IsAuthenticated == true && IsAdminUser())
+            {
+                return RedirectToAction("Index", "AdminManagement");
+            }
+
+            await SetGlobalStatsAsync();
+            return View();
         }
 
         [HttpGet]
         public IActionResult Create()
         {
+            if (!IsAdminUser())
+            {
+                SetErrorMessage("Access denied. Admin privileges required.");
+                return RedirectToAction("Index");
+            }
+
             var roles = new List<IdentityRole>();
             return View();
         }
@@ -65,6 +63,12 @@ namespace StudentManagementSystem.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(CreateUserViewModel model)
         {
+            if (!IsAdminUser())
+            {
+                SetErrorMessage("Access denied. Admin privileges required.");
+                return RedirectToAction("Index");
+            }
+
             if (ModelState.IsValid)
             {
                 var user = new IdentityUser
@@ -84,7 +88,7 @@ namespace StudentManagementSystem.Controllers
                         await _userManager.AddToRolesAsync(user, model.SelectedRoles);
                     }
 
-                    TempData["SuccessMessage"] = "User created successfully";
+                    SetSuccessMessage("User created successfully");
                     return RedirectToAction("Index");
                 }
 
@@ -94,7 +98,7 @@ namespace StudentManagementSystem.Controllers
                 }
             }
 
-            var roles = new List<IdentityRole>(); 
+            var roles = new List<IdentityRole>();
             return View(model);
         }
 
@@ -104,25 +108,27 @@ namespace StudentManagementSystem.Controllers
             if (roleManager == null)
                 return new List<IdentityRole>();
 
-            // If Roles is IQueryable and supports async, use ToListAsync
-            // return await roleManager.Roles.ToListAsync();
-
-            // Otherwise, use Task.Run
             return await Task.Run(() => roleManager.Roles.ToList());
         }
 
         [HttpGet]
-        public async Task<IActionResult> Edit(string id, List<IdentityRole>? allRoles)
+        public async Task<IActionResult> Edit(string id)
         {
+            if (!IsAdminUser())
+            {
+                SetErrorMessage("Access denied. Admin privileges required.");
+                return RedirectToAction("Index");
+            }
+
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
-                TempData["ErrorMessage"] = "User not found";
+                SetErrorMessage("User not found");
                 return RedirectToAction("Index");
             }
 
             var userRoles = await _userManager.GetRolesAsync(user);
-            var roles = new List<IdentityRole>();
+            var allRoles = await GetAllRolesAsync();
 
             var model = new EditUserViewModel
             {
@@ -139,12 +145,18 @@ namespace StudentManagementSystem.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(EditUserViewModel model)
         {
+            if (!IsAdminUser())
+            {
+                SetErrorMessage("Access denied. Admin privileges required.");
+                return RedirectToAction("Index");
+            }
+
             if (ModelState.IsValid)
             {
                 var user = await _userManager.FindByIdAsync(model.Id);
                 if (user == null)
                 {
-                    TempData["ErrorMessage"] = "User not found";
+                    SetErrorMessage("User not found");
                     return RedirectToAction("Index");
                 }
 
@@ -164,7 +176,7 @@ namespace StudentManagementSystem.Controllers
                         await _userManager.AddToRolesAsync(user, model.SelectedRoles);
                     }
 
-                    TempData["SuccessMessage"] = "User updated successfully";
+                    SetSuccessMessage("User updated successfully");
                     return RedirectToAction("Index");
                 }
 
@@ -174,9 +186,9 @@ namespace StudentManagementSystem.Controllers
                 }
             }
 
-            var roles = new List<IdentityRole>();
             return View(model);
         }
+
         public async Task<IActionResult> PortalAccess()
         {
             // If already logged in, redirect to appropriate page
@@ -228,6 +240,9 @@ namespace StudentManagementSystem.Controllers
         private bool IsAdminUser()
         {
             return User.IsInRole("Admin") || User.IsInRole("SuperAdmin") ||
+                   User.IsInRole("UniversityAdmin") || User.IsInRole("FacultyAdmin") ||
+                   User.IsInRole("DepartmentAdmin") || User.IsInRole("FinanceAdmin") ||
+                   User.IsInRole("StudentAdmin") ||
                    HttpContext.Session.GetString("UserType") == "Admin";
         }
 
@@ -391,7 +406,7 @@ namespace StudentManagementSystem.Controllers
             // Sign out from Identity
             await _signInManager.SignOutAsync();
 
-            TempData["SuccessMessage"] = "Successfully logged out";
+            SetSuccessMessage("Successfully logged out");
             return RedirectToAction("PortalAccess");
         }
 
@@ -410,38 +425,40 @@ namespace StudentManagementSystem.Controllers
                 HttpContext.Session.SetString("UserType", "Student");
 
                 SetSuccessMessage("Student login successful");
-                return RedirectToAction("StudentDashboard", new { studentId });
+                return RedirectToAction("StudentPortal", "Registration", new { studentId });
             }
 
             SetErrorMessage("Invalid student ID or password");
             return View();
         }
 
-        public async Task<IActionResult> StudentDashboard(string studentId)
-        {
-            if (string.IsNullOrEmpty(studentId) || HttpContext.Session.GetString("CurrentStudentId") != studentId)
-            {
-                return RedirectToAction("StudentPortalEntry");
-            }
+        // REMOVE this duplicate StudentDashboard action - it's in RegistrationController
+        // public async Task<IActionResult> StudentDashboard(string studentId)
+        // {
+        //     if (string.IsNullOrEmpty(studentId) || HttpContext.Session.GetString("CurrentStudentId") != studentId)
+        //     {
+        //         return RedirectToAction("StudentPortalEntry");
+        //     }
+        //
+        //     ViewData["CurrentStudentId"] = studentId;
+        //     ViewData["UserType"] = "Student";
+        //     await SetGlobalStatsAsync();
+        //     return View();
+        // }
 
-            ViewData["CurrentStudentId"] = studentId;
-            ViewData["UserType"] = "Student";
-            await SetGlobalStatsAsync();
-            return View();
-        }
-
-        public async Task<IActionResult> StudentPortal(string studentId)
-        {
-            if (string.IsNullOrEmpty(studentId) || HttpContext.Session.GetString("CurrentStudentId") != studentId)
-            {
-                return RedirectToAction("StudentPortalEntry");
-            }
-
-            ViewData["CurrentStudentId"] = studentId;
-            ViewData["UserType"] = "Student";
-            await SetGlobalStatsAsync();
-            return View();
-        }
+        // REMOVE this duplicate StudentPortal action - it's in RegistrationController
+        // public async Task<IActionResult> StudentPortal(string studentId)
+        // {
+        //     if (string.IsNullOrEmpty(studentId) || HttpContext.Session.GetString("CurrentStudentId") != studentId)
+        //     {
+        //         return RedirectToAction("StudentPortalEntry");
+        //     }
+        //
+        //     ViewData["CurrentStudentId"] = studentId;
+        //     ViewData["UserType"] = "Student";
+        //     await SetGlobalStatsAsync();
+        //     return View();
+        // }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -458,7 +475,7 @@ namespace StudentManagementSystem.Controllers
             // Sign out from Identity (if applicable)
             _signInManager.SignOutAsync().Wait();
 
-            TempData["SuccessMessage"] = "Successfully logged out";
+            SetSuccessMessage("Successfully logged out");
             return RedirectToAction("PortalAccess");
         }
 
@@ -470,7 +487,7 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction("Index");
             }
             await SetGlobalStatsAsync();
-            return View();
+            return RedirectToAction("Management", "Registration");
         }
 
         public async Task<IActionResult> Rules()
@@ -481,7 +498,7 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction("Index");
             }
             await SetGlobalStatsAsync();
-            return View();
+            return RedirectToAction("Rules", "Registration");
         }
 
         public async Task<IActionResult> Periods()
@@ -492,7 +509,7 @@ namespace StudentManagementSystem.Controllers
                 return RedirectToAction("Index");
             }
             await SetGlobalStatsAsync();
-            return View();
+            return RedirectToAction("Periods", "Registration");
         }
 
         private bool IsValidAdmin(string username, string password)
@@ -648,15 +665,15 @@ namespace StudentManagementSystem.Controllers
         public IActionResult ListRoutes()
         {
             var routes = new List<string>
-    {
-        "/",
-        "/Home/PortalAccess",
-        "/Home/AdminLogin",
-        "/Home/StudentPortalEntry",
-        "/test",
-        "/health",
-        "/debug/db"
-    };
+                {
+                    "/",
+                    "/Home/PortalAccess",
+                    "/Home/AdminLogin",
+                    "/Home/StudentPortalEntry",
+                    "/test",
+                    "/health",
+                    "/debug/db"
+                };
 
             var html = "<h1>Available Routes</h1><ul>";
             foreach (var route in routes)
@@ -667,5 +684,18 @@ namespace StudentManagementSystem.Controllers
 
             return Content(html, "text/html");
         }
+
+        // REMOVE - Already exists above
+        // public IActionResult StudentDashboard()
+        // {
+        //     // Redirect to Registration controller if student is logged in
+        //     var studentId = HttpContext.Session.GetString("CurrentStudentId");
+        //     if (!string.IsNullOrEmpty(studentId))
+        //     {
+        //         return RedirectToAction("StudentDashboard", "Registration", new { studentId });
+        //     }
+        //
+        //     return View(); // Show the redirect page
+        // }
     }
 }

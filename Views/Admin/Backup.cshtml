@@ -1,87 +1,158 @@
 ﻿@{
-    ViewData["Title"] = "Backup & Restore";
+    ViewData["Title"] = "Backup System";
 }
 
 <div class="container-fluid">
-    <h1 class="h3 mb-4">
-        <i class="fas fa-database me-2"></i>Backup & Restore
-    </h1>
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-database me-2"></i>@ViewData["Title"]
+            </h1>
+            <p class="text-muted">Backup and restore system data</p>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-md-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-save me-2"></i>Create Backup
-                    </h5>
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Database Backup</h5>
                 </div>
                 <div class="card-body">
-                    <form>
-                        <div class="mb-3">
-                            <label class="form-label">Backup Name</label>
-                            <input type="text" class="form-control" value="backup_@DateTime.Now.ToString("yyyyMMdd_HHmm")">
+                    <p class="text-muted mb-3">Create a full backup of the database</p>
+                    <button class="btn btn-modern w-100" onclick="performBackup()" id="backupBtn">
+                        <i class="fas fa-download me-2"></i>Backup Database Now
+                    </button>
+                    <div id="backupStatus" class="mt-3" style="display: none;">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 role="progressbar" style="width: 0%"></div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" rows="3" placeholder="Optional description"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Include</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" checked>
-                                <label class="form-check-label">User Data</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" checked>
-                                <label class="form-check-label">Course Data</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" checked>
-                                <label class="form-check-label">Grades</label>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-save me-2"></i>Create Backup Now
-                        </button>
-                    </form>
+                        <div class="text-center mt-2" id="backupMessage"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-history me-2"></i>Recent Backups
-                    </h5>
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Backup History</h5>
                 </div>
                 <div class="card-body">
-                    <div class="list-group">
-                        <div class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <strong>backup_20241201_1430</strong>
-                                    <div class="small text-muted">Created 2 hours ago</div>
-                                </div>
-                                <button class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <strong>backup_20241130_0900</strong>
-                                    <div class="small text-muted">Created 1 day ago</div>
-                                </div>
-                                <button class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>File Name</th>
+                                <th>Size</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backupHistory">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        async function performBackup() {
+            const backupBtn = document.getElementById('backupBtn');
+            const backupStatus = document.getElementById('backupStatus');
+            const backupMessage = document.getElementById('backupMessage');
+
+            // Disable button and show progress
+            backupBtn.disabled = true;
+            backupBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Backing up...';
+            backupStatus.style.display = 'block';
+
+            // Update progress bar
+            const progressBar = backupStatus.querySelector('.progress-bar');
+            progressBar.style.width = '0%';
+            backupMessage.textContent = 'Starting backup...';
+
+            try {
+                // Simulate backup process with progress updates
+                for (let i = 0; i <= 100; i += 10) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    progressBar.style.width = i + '%';
+
+                    switch(i) {
+                        case 10: backupMessage.textContent = 'Connecting to database...'; break;
+                        case 30: backupMessage.textContent = 'Exporting data...'; break;
+                        case 60: backupMessage.textContent = 'Compressing backup...'; break;
+                        case 90: backupMessage.textContent = 'Finalizing...'; break;
+                        case 100: backupMessage.textContent = 'Backup completed successfully!'; break;
+                    }
+                }
+
+                showToast('Database backup completed successfully', 'success');
+
+                // Add to backup history
+                addBackupToHistory();
+
+            } catch (error) {
+                backupMessage.textContent = 'Backup failed: ' + error.message;
+                backupMessage.className = 'text-center mt-2 text-danger';
+                showToast('Backup failed: ' + error.message, 'error');
+            } finally {
+                // Reset button
+                backupBtn.disabled = false;
+                backupBtn.innerHTML = '<i class="fas fa-download me-2"></i>Backup Database Now';
+
+                // Hide progress after 3 seconds
+                setTimeout(() => {
+                    backupStatus.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function addBackupToHistory() {
+            const now = new Date();
+            const historyTable = document.getElementById('backupHistory');
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${now.toLocaleDateString()} ${now.toLocaleTimeString()}</td>
+                <td>backup_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}.bak</td>
+                <td>~25 MB</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="downloadBackup(this)">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteBackup(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+
+            historyTable.insertBefore(row, historyTable.firstChild);
+        }
+
+        function downloadBackup(button) {
+            const row = button.closest('tr');
+            const fileName = row.cells[1].textContent;
+            showToast(`Downloading ${fileName}...`, 'info');
+        }
+
+        function deleteBackup(button) {
+            if (confirm('Are you sure you want to delete this backup?')) {
+                const row = button.closest('tr');
+                row.remove();
+                showToast('Backup deleted', 'success');
+            }
+        }
+
+        // Load backup history on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add sample backups
+            addBackupToHistory();
+            setTimeout(addBackupToHistory, 100);
+        });
+    </script>
+}

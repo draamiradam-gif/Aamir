@@ -51,6 +51,9 @@ namespace StudentManagementSystem.Data
         public DbSet<AdminApplication> AdminApplications { get; set; }
         public DbSet<AdminPrivilege> AdminPrivileges { get; set; }
         public DbSet<AdminPrivilegeTemplate> AdminPrivilegeTemplates { get; set; }
+        public DbSet<CourseMaterial> CourseMaterials { get; set; }
+        public DbSet<BlockedUser> BlockedUsers { get; set; }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -306,28 +309,39 @@ namespace StudentManagementSystem.Data
                 entity.Property(gs => gs.IsActive).HasDefaultValue(true);
             });
 
-            // Configure QRCodeSession
             builder.Entity<QRCodeSession>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
                 entity.HasOne(e => e.Course)
                       .WithMany()
                       .HasForeignKey(e => e.CourseId)
-                      .OnDelete(DeleteBehavior.Restrict); // Changed from NoAction to Restrict
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // ✅ FIXED: Proper relationship with Attendances
+                entity.HasMany(e => e.Attendances)
+                      .WithOne(e => e.QRCodeSession)
+                      .HasForeignKey(e => e.QRCodeSessionId)
+                      .OnDelete(DeleteBehavior.Cascade);                
             });
 
-            // Configure QRAttendance
+            // QRAttendance configuration
             builder.Entity<QRAttendance>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
                 entity.HasOne(e => e.QRCodeSession)
                       .WithMany(e => e.Attendances)
                       .HasForeignKey(e => e.QRCodeSessionId)
-                      .OnDelete(DeleteBehavior.Restrict); // This can stay as Restrict
+                      .OnDelete(DeleteBehavior.Cascade);
+
                 entity.HasOne(e => e.Student)
                       .WithMany()
                       .HasForeignKey(e => e.StudentId)
-                      .OnDelete(DeleteBehavior.Restrict); // Changed from NoAction to Restrict
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(e => e.ScannedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
             });
 
             // Grading System Configuration - FIXED Restrict PATHS
@@ -424,6 +438,8 @@ namespace StudentManagementSystem.Data
 
             builder.Entity<RegistrationPeriod>(entity =>
             {
+                entity.HasKey(rp => rp.Id);
+                entity.Property(rp => rp.PeriodName).IsRequired().HasMaxLength(100);
                 entity.HasIndex(rp => new { rp.SemesterId, rp.RegistrationType }).IsUnique();
 
                 entity.HasOne(rp => rp.Semester)
@@ -434,7 +450,9 @@ namespace StudentManagementSystem.Data
 
             builder.Entity<RegistrationRule>(entity =>
             {
-                entity.HasIndex(rr => rr.RuleName).IsUnique();
+                entity.HasKey(rr => rr.Id);
+                entity.Property(rr => rr.RuleName).IsRequired().HasMaxLength(100);
+                entity.Property(rr => rr.Description).HasMaxLength(500);
 
                 entity.Property(rr => rr.MinimumGPA).HasColumnType("decimal(4,2)");
 
@@ -442,6 +460,11 @@ namespace StudentManagementSystem.Data
                       .WithMany()
                       .HasForeignKey(rr => rr.DepartmentId)
                       .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(rr => rr.Course)
+                    .WithMany()
+                    .HasForeignKey(rr => rr.CourseId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             builder.Entity<Permission>(entity =>
@@ -525,7 +548,7 @@ namespace StudentManagementSystem.Data
         
 
         // Configure relationships
-        builder.Entity<AdminApplication>()
+            builder.Entity<AdminApplication>()
                 .HasOne(a => a.University)
                 .WithMany()
                 .HasForeignKey(a => a.UniversityId)
@@ -561,8 +584,27 @@ namespace StudentManagementSystem.Data
                 .HasForeignKey(p => p.DepartmentScope)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // ✅ REMOVED ALL HasData() SEEDING FROM HERE
-            // Seed data is now in Program.cs
+
+            builder.Entity<CourseMaterial>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(1000);
+                entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.FileName).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.OriginalFileName).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.FilePath).IsRequired().HasMaxLength(1000);
+                entity.Property(e => e.UploadedBy).HasMaxLength(100);
+                entity.Property(e => e.AccessLevel).HasMaxLength(100);
+
+                // Relationships
+                entity.HasOne(e => e.Course)
+                    .WithMany()
+                    .HasForeignKey(e => e.CourseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+
         }
     }
 }

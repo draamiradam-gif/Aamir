@@ -35,11 +35,11 @@ namespace StudentManagementSystem.Services
             return session;
         }
 
-        public async Task<QRAttendance> ScanQRCodeAsync(string token, int studentId, string? deviceInfo = null, string? ipAddress = null)
+        public async Task<QRAttendance> ScanQRCodeAsync(string token, string studentIdString, string? deviceInfo = null, string? ipAddress = null)
         {
             Console.WriteLine($"=== SCAN DEBUG - USING VALIDATE APPROACH ===");
             Console.WriteLine($"Input Token: '{token}'");
-            Console.WriteLine($"StudentId: {studentId}");
+            Console.WriteLine($"StudentId (string): '{studentIdString}'");
 
             // ✅ USE THE SAME APPROACH AS VALIDATESESSIONASYNC
             var session = await _context.QRCodeSessions
@@ -60,12 +60,12 @@ namespace StudentManagementSystem.Services
                 throw new Exception($"No session found with token: {token}");
             }
 
-            // ✅ FIX: Renamed variable to avoid conflict
-            var sessionExpiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
-            Console.WriteLine($"Calculated ExpiresAt: {sessionExpiresAt}");
-            Console.WriteLine($"Is Expired: {sessionExpiresAt < DateTime.Now}");
+            // ✅ FIX: Use ExpiresAt property
+            Console.WriteLine($"Session ExpiresAt: {session.ExpiresAt}");
+            Console.WriteLine($"Current time: {DateTime.Now}");
+            Console.WriteLine($"Is Expired: {session.ExpiresAt < DateTime.Now}");
 
-            if (sessionExpiresAt < DateTime.Now)
+            if (session.ExpiresAt < DateTime.Now)
             {
                 session.IsActive = false;
                 await _context.SaveChangesAsync();
@@ -73,8 +73,7 @@ namespace StudentManagementSystem.Services
                 throw new Exception("QR session has expired");
             }
 
-            // ✅ Check if student exists
-            var studentIdString = studentId.ToString();
+            // ✅ Check if student exists by StudentId (STRING)
             var student = await _context.Students
                 .FirstOrDefaultAsync(s => s.StudentId == studentIdString);
 
@@ -84,12 +83,12 @@ namespace StudentManagementSystem.Services
 
             if (student == null)
             {
-                throw new Exception($"Student with ID {studentId} not found");
+                throw new Exception($"Student with ID '{studentIdString}' not found");
             }
 
             // Check existing scans
             var existingScan = await _context.QRAttendances
-                .FirstOrDefaultAsync(a => a.QRCodeSessionId == session.Id && a.StudentId == studentId);
+                .FirstOrDefaultAsync(a => a.QRCodeSessionId == session.Id && a.StudentId == student.Id);
 
             if (existingScan != null && !session.AllowMultipleScans)
             {
@@ -100,7 +99,7 @@ namespace StudentManagementSystem.Services
             var attendance = new QRAttendance
             {
                 QRCodeSessionId = session.Id,
-                StudentId = studentId,
+                StudentId = student.Id, // Use student.Id (int), not student.StudentId (string)
                 DeviceInfo = deviceInfo,
                 IPAddress = ipAddress,
                 ScannedAt = DateTime.Now
@@ -113,37 +112,45 @@ namespace StudentManagementSystem.Services
             return attendance;
         }
 
-
-        //public async Task<QRAttendance> ScanQRCodeAsync(string token, int studentId, string? deviceInfo = null, string? ipAddress = null)
-        //{
-        //    // Use same approach as ValidateSession
-        //    var session = await _context.QRCodeSessions
-        //        .FirstOrDefaultAsync(s => s.Token == token && s.IsActive);
-
-        //    if (session == null) throw new Exception("Invalid session");
-
-        //    // Create attendance directly
-        //    var attendance = new QRAttendance
-        //    {
-        //        QRCodeSessionId = session.Id,
-        //        StudentId = studentId,
-        //        ScannedAt = DateTime.Now
-        //    };
-
-        //    _context.QRAttendances.Add(attendance);
-        //    await _context.SaveChangesAsync();
-        //    return attendance;
-        //}
-
         public async Task<List<QRCodeSession>> GetActiveSessionsAsync()
         {
-            var now = DateTime.Now;
-            return await _context.QRCodeSessions
-                .Include(s => s.Course)
-                .Include(s => s.Attendances)
-                .Where(s => s.IsActive && s.CreatedAt.AddMinutes(s.DurationMinutes) > now)
-                .OrderByDescending(s => s.CreatedAt)
-                .ToListAsync();
+            try
+            {
+                var now = DateTime.UtcNow;
+
+                // Use the ExpiresAt property that's now in the database
+                return await _context.QRCodeSessions
+                    .Include(s => s.Course)
+                    .Include(s => s.Attendances)
+                    .Where(s => s.IsActive && s.ExpiresAt > now)
+                    .OrderByDescending(s => s.CreatedAt)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting active QR sessions");
+
+                // Fallback: client-side evaluation
+                try
+                {
+                    var allSessions = await _context.QRCodeSessions
+                        .Include(s => s.Course)
+                        .Include(s => s.Attendances)
+                        .Where(s => s.IsActive)
+                        .ToListAsync();
+
+                    var now = DateTime.UtcNow;
+                    return allSessions
+                        .Where(s => s.CreatedAt.AddMinutes(s.DurationMinutes) > now)
+                        .OrderByDescending(s => s.CreatedAt)
+                        .ToList();
+                }
+                catch (Exception fallbackEx)
+                {
+                    _logger?.LogError(fallbackEx, "Fallback also failed");
+                    return new List<QRCodeSession>();
+                }
+            }
         }
 
         public async Task<QRCodeSession?> GetSessionByIdAsync(int id)
@@ -155,17 +162,6 @@ namespace StudentManagementSystem.Services
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
 
-        //public async Task<QRCodeSession?> GetSessionByTokenAsync(string token)
-        //{
-        //    // ✅ USE RAW SQL FOR CONSISTENCY
-        //    return await _context.QRCodeSessions
-        //        .FromSqlRaw("SELECT * FROM QRCodeSessions WHERE Token = {0}", token)
-        //        .Include(s => s.Course)
-        //        .Include(s => s.Attendances)
-        //        .FirstOrDefaultAsync();
-        //}
-
-        // In QRCodeService.cs - should be identical logic
         public async Task<bool> ValidateSessionAsync(string token)
         {
             var session = await _context.QRCodeSessions
@@ -173,8 +169,7 @@ namespace StudentManagementSystem.Services
 
             if (session == null) return false;
 
-            var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
-            return expiresAt > DateTime.Now;
+            return session.ExpiresAt > DateTime.Now;
         }
 
         public async Task<QRCodeSession?> GetSessionByTokenAsync(string token)
@@ -185,9 +180,7 @@ namespace StudentManagementSystem.Services
 
             if (session == null) return null;
 
-            // Calculate expiration instead of using ExpiresAt property
-            var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
-            return expiresAt > currentTime ? session : null;
+            return session.ExpiresAt > currentTime ? session : null;
         }
 
         public async Task<List<QRAttendance>> GetSessionAttendancesAsync(int sessionId)
@@ -198,9 +191,6 @@ namespace StudentManagementSystem.Services
                 .OrderByDescending(a => a.ScannedAt)
                 .ToListAsync();
         }
-
-        // ========== EXPORT/IMPORT METHODS ==========
-        // ... (keep your existing Export/Import methods the same) ...
 
         // ========== EXPORT/IMPORT METHODS ==========
 
@@ -473,21 +463,6 @@ namespace StudentManagementSystem.Services
 
         // ========== DYNAMIC QR SUPPORT ==========
 
-        private async Task<bool> ValidateDynamicTokenAsync(int sessionId, string token)
-        {
-            var session = await _context.QRCodeSessions.FindAsync(sessionId);
-            if (session == null || !session.IsActive)
-                return false;
-
-            if (session.EnableDynamicQR)
-            {
-                return session.CurrentToken == token &&
-                       DateTime.Now.Subtract(session.LastTokenUpdate).TotalSeconds <= session.TokenUpdateIntervalSeconds * 2;
-            }
-
-            return session.Token == token;
-        }
-
         public async Task<string> GetCurrentTokenAsync(int sessionId)
         {
             var session = await _context.QRCodeSessions.FindAsync(sessionId);
@@ -579,30 +554,5 @@ namespace StudentManagementSystem.Services
                 throw;
             }
         }
-
-
-
-
-        //public async Task<QRCodeSession> CreateSessionAsync(QRCodeSession session) { ... }
-        //public async Task<QRAttendance> ScanQRCodeAsync(string token, int studentId, string? deviceInfo = null, string? ipAddress = null) { ... }
-        //public async Task<List<QRCodeSession>> GetActiveSessionsAsync() { ... }
-        //public async Task<QRCodeSession?> GetSessionByIdAsync(int id) { ... }
-        //public async Task<QRCodeSession?> GetSessionByTokenAsync(string token) { ... }
-        //public async Task<bool> ValidateSessionAsync(string token) { ... }
-        //public async Task<List<QRAttendance>> GetSessionAttendancesAsync(int sessionId) { ... }
-        //public async Task<bool> ReopenSessionAsync(int sessionId, int additionalMinutes = 15) { ... }
-        //public async Task<bool> DeleteSessionWithAttendanceAsync(int sessionId) { ... }
-
-        //// Export/Import
-        //public async Task<byte[]> ExportAttendanceToExcelAsync(int sessionId) { ... }
-        //public async Task<byte[]> ExportAttendanceToPdfAsync(int sessionId) { ... }
-        //public async Task<byte[]> ExportAllSessionsToExcelAsync(DateTime? startDate = null, DateTime? endDate = null) { ... }
-        //public async Task<ImportResult> ImportAttendanceFromExcelAsync(Stream fileStream) { ... }
-        //public byte[] GenerateAttendanceImportTemplate() { ... }
-        //public async Task<string> GetCurrentTokenAsync(int sessionId) { ... }
-        //public async Task UpdateSessionAsync(QRCodeSession session) { ... }
-
-
-
     }
 }

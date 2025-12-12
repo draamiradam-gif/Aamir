@@ -16,7 +16,6 @@ namespace StudentManagementSystem.Services
         Task<List<AdminPrivilege>> GetAllAdminPrivilegesAsync();
         Task<AdminPrivilege?> GetAdminPrivilegeAsync(string adminId);
         Task<AdminPrivilege?> GetAdminPrivilegeByEmailAsync(string email);
-        Task<bool> UpdateAdminPrivilegesAsync(string adminId, List<PermissionModule> permissions, string updatedBy);
         Task<bool> CreateAdminWithPrivilegesAsync(CreateAdminViewModel model, string createdBy);
         Task<bool> DeactivateAdminAsync(string adminId, string deactivatedBy);
         Task<bool> ActivateAdminAsync(string adminId, string activatedBy);
@@ -43,7 +42,25 @@ namespace StudentManagementSystem.Services
         // Bulk Operations
         Task<bool> BulkUpdatePermissionsAsync(List<string> adminIds, List<PermissionModule> permissions, string updatedBy);
         Task<bool> BulkChangeAdminTypeAsync(List<string> adminIds, AdminType newAdminType, string updatedBy);
-    
-    }
 
+        Task<List<AdminApplication>> GetApprovedApplicationsAsync();
+
+        // CHOOSE ONE OF THESE - Don't have duplicates!
+
+        // Option 1: Single comprehensive method (Recommended)
+        Task<bool> UpdateAdminPrivilegesAsync(string adminId,
+            List<PermissionModule> permissions, string updatedBy, AdminType adminType,
+            string? universityScope, string? facultyScope, string? departmentScope,
+            string? newPassword = null);
+
+        // Option 2: Separate methods for password updates
+        /*
+        Task<bool> UpdateAdminPrivilegesAsync(string adminId, 
+            List<PermissionModule> permissions, string updatedBy, AdminType adminType,
+            string? universityScope, string? facultyScope, string? departmentScope);
+            
+        Task<bool> UpdateAdminPasswordAsync(string adminId, string newPassword, string updatedBy);
+        */
+
+    }
 }

@@ -43,19 +43,19 @@ namespace StudentManagementSystem.Controllers
             return View();
         }
 
-        [HttpGet]
-        public IActionResult SystemSettings()
-        {
-            if (!IsAdminUser())
-            {
-                return RedirectToAction("AccessDenied", "Home");
-            }
+        //[HttpGet]
+        //public IActionResult SystemSettings()
+        //{
+        //    if (!IsAdminUser())
+        //    {
+        //        return RedirectToAction("AccessDenied", "Home");
+        //    }
 
-            var roles = _roleManager.Roles.ToList();
-            ViewBag.Roles = roles;
+        //    var roles = _roleManager.Roles.ToList();
+        //    ViewBag.Roles = roles;
 
-            return View();
-        }
+        //    return View();
+        //}
 
         [HttpGet]
         public IActionResult Backup()
@@ -258,6 +258,26 @@ namespace StudentManagementSystem.Controllers
             return RedirectToAction("PortalAccess", "Home");
         }
 
+        [HttpGet]
+        public IActionResult Settings()
+        {
+            return RedirectToAction("Index", "Settings");
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "SuperAdmin")]
+        public IActionResult SystemSettings()
+        {
+            return RedirectToAction("Index", "Settings");
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "SuperAdmin")]
+        public IActionResult AdminSettings()
+        {
+            return RedirectToAction("SystemSettings", "Admin");
+        }
+
         //[HttpGet]
         //public IActionResult Backup()
         //{
@@ -280,56 +300,7 @@ namespace StudentManagementSystem.Controllers
 
         //[HttpGet]
         //public async Task<IActionResult> Permissions()
-        //{
-        //    if (!IsAdminUser())
-        //    {
-        //        return RedirectUnauthorized("Admin access required.");
-        //    }
 
-        //    var permissions = await _permissionService.GetAllPermissionsAsync();
-        //    var roles = await _roleManager.Roles.ToListAsync();
-
-        //    ViewBag.Roles = roles;
-        //    return View(permissions);
-        //}
-
-        //[HttpGet]
-        //public async Task<IActionResult> Roles()
-        //{
-        //    if (!IsAdminUser())
-        //    {
-        //        return RedirectUnauthorized("Admin access required.");
-        //    }
-
-        //    var roles = await _roleManager.Roles.ToListAsync();
-        //    return View(roles);
-        //}
-
-        //[HttpGet]
-        //public async Task<IActionResult> Users()
-        //{
-        //    if (!IsAdminUser())
-        //    {
-        //        return RedirectUnauthorized("Admin access required.");
-        //    }
-
-        //    var users = await _userManager.Users.ToListAsync();
-        //    var userRoles = new List<UserRolesViewModel>();
-
-        //    foreach (var user in users)
-        //    {
-        //        var roles = await _userManager.GetRolesAsync(user);
-        //        userRoles.Add(new UserRolesViewModel
-        //        {
-        //            UserId = user.Id,
-        //            UserName = user.UserName,
-        //            Email = user.Email,
-        //            Roles = roles.ToList()
-        //        });
-        //    }
-
-        //    return View(userRoles);
-        //}
     }
 
     public class UserRolesViewModel

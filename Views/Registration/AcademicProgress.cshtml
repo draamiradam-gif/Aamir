@@ -13,10 +13,19 @@
             <i class="fas fa-download me-2"></i>Export
         </button>
         <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf me-2"></i>PDF Report</a></li>
-            <li><a class="dropdown-item" href="#"><i class="fas fa-file-excel me-2"></i>Excel Report</a></li>
+            <li>
+                <a class="dropdown-item" href="#" onclick="exportProgress('pdf')">
+                    <i class="fas fa-file-pdf me-2"></i>PDF Report
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" onclick="exportProgress('excel')">
+                    <i class="fas fa-file-excel me-2"></i>Excel Report
+                </a>
+            </li>
         </ul>
     </div>
+
 </div>
 
 <!-- Progress Overview -->
@@ -189,7 +198,28 @@
                                 </td>
                                 <td>@semester.Credits</td>
                                 <td>
-                                    @GetTrendIcon(semester.GPA, GetPreviousGPA(ViewBag.ProgressData, semester.Semester))
+                                    @{
+                                        var previousGPA = GetPreviousGPA((List<dynamic>)ViewBag.ProgressData, semester.Semester);
+                                        if (previousGPA.HasValue)
+                                        {
+                                            if (semester.GPA > previousGPA.Value)
+                                            {
+                                                <i class="fas fa-arrow-up text-success"></i>
+                                            }
+                                            else if (semester.GPA < previousGPA.Value)
+                                            {
+                                                <i class="fas fa-arrow-down text-danger"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-minus text-secondary"></i>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-minus text-secondary"></i>
+                                        }
+                                    }
                                 </td>
                                 <td>
                                     <span class="badge @GetGPAStatusBadge(semester.GPA)">
@@ -313,4 +343,13 @@
         var graduationDate = DateTime.Now.AddMonths(semestersRemaining * 6);
         return graduationDate.ToString("MMMM yyyy");
     }
+}
+@section Scripts {
+    <script>
+        function exportProgress(format) {
+            const studentId = @Model.Id;
+            const url = `/Registration/ExportAcademicProgress?studentId=${studentId}&format=${format}`;
+            window.location.href = url;
+        }
+    </script>
 }

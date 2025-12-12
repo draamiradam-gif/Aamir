@@ -1,0 +1,291 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@model EmailAnnouncementsViewModel
+@{
+    ViewData["Title"] = "Send Announcements";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-bullhorn me-2"></i>@ViewData["Title"]
+            </h1>
+            <p class="text-muted">Send email announcements to users and administrators</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Compose Announcement</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="SendAnnouncement" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label asp-for="Subject" class="form-label fw-bold">Subject *</label>
+                            <input asp-for="Subject" class="form-control" placeholder="Enter email subject">
+                            <span asp-validation-for="Subject" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Message" class="form-label fw-bold">Message *</label>
+                            <textarea asp-for="Message" class="form-control" rows="8"
+                                      placeholder="Enter your announcement message..."></textarea>
+                            <span asp-validation-for="Message" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Recipients</label>
+
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" asp-for="SendToEveryone"
+                                       id="sendEveryone" value="true">
+                                <label class="form-check-label" for="sendEveryone">
+                                    <strong>Everyone</strong> - Send to all @Model.TotalRecipients users and admins
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" asp-for="SendToAllAdmins"
+                                       id="sendAdmins" value="true">
+                                <label class="form-check-label" for="sendAdmins">
+                                    <strong>All Administrators</strong> - Send to all @Model.AdminCount admins
+                                </label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" id="sendCustom"
+                                       name="selectionType" value="custom">
+                                <label class="form-check-label" for="sendCustom">
+                                    <strong>Custom Selection</strong>
+                                </label>
+                            </div>
+
+                            <div id="customSelection" style="display: none;" class="mt-3 p-3 border rounded">
+                                <div class="mb-3">
+                                    <label class="form-label">Select Specific Users/Admins</label>
+                                    <select class="form-select" multiple id="userSelect">
+                                        <!-- Will be populated via AJAX -->
+                                    </select>
+                                    <small class="text-muted">Hold Ctrl to select multiple users</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Or Enter Custom Emails</label>
+                                    <textarea class="form-control" rows="3"
+                                              placeholder="Enter email addresses, one per line"></textarea>
+                                    <small class="text-muted">Separate email addresses with commas or new lines</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Admin List
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Send Announcement
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Recipient Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Total Users</span>
+                            <span class="badge bg-primary rounded-pill">@Model.UserCount</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Total Administrators</span>
+                            <span class="badge bg-success rounded-pill">@Model.AdminCount</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Total Recipients</span>
+                            <span class="badge bg-info rounded-pill">@Model.TotalRecipients</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6>Quick Actions</h6>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="selectAllAdmins()">
+                                <i class="fas fa-user-shield me-2"></i>Select All Admins
+                            </button>
+                            <a href="@Url.Action("Index", "UserManagement")" class="btn btn-outline-info">
+                                <i class="fas fa-users me-2"></i>Browse All Users
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Handle recipient selection
+            $('input[name="selectionType"]').change(function() {
+                if ($(this).val() === 'custom') {
+                    $('#customSelection').show();
+                } else {
+                    $('#customSelection').hide();
+                }
+            });
+
+            // Load users for selection
+            $.get('@Url.Action("GetUsersForEmail", "AdminManagement")', function(data) {
+                const select = $('#userSelect');
+                data.forEach(user => {
+                    select.append(`<option value="${user.id}">${user.name} (${user.email})</option>`);
+                });
+            });
+
+            // Form submission
+            $('form').submit(function(e) {
+                // Collect selected users
+                const selectedUsers = $('#userSelect').val() || [];
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'SelectedUsers',
+                    value: selectedUsers.join(',')
+                }).appendTo(this);
+
+                // Collect custom emails
+                const customEmails = $('#customSelection textarea').val()
+                    .split(/[\n,]/)
+                    .map(email => email.trim())
+                    .filter(email => email.length > 0);
+
+                if (customEmails.length > 0) {
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'CustomEmails',
+                        value: customEmails.join(',')
+                    }).appendTo(this);
+                }
+            });
+        });
+
+        function selectAllAdmins() {
+            // Check "All Administrators" radio
+            $('#sendAdmins').prop('checked', true);
+            $('input[name="selectionType"]').prop('checked', false);
+            $('#customSelection').hide();
+        }
+
+
+
+
+
+                // Handle individual delete button clicks
+        $(document).on('click', '.delete-admin-btn', function(e) {
+            e.preventDefault();
+
+            const adminId = $(this).data('id');
+            const adminName = $(this).data('name');
+
+            if (confirm(`Are you sure you want to delete ${adminName}? This action cannot be undone!`)) {
+                $.ajax({
+                    url: '@Url.Action("DeleteAdmin", "AdminManagement")',
+                    type: 'POST',
+                    data: { adminId: adminId },
+                    success: function(response) {
+                        if (response.success) {
+                            showToast('success', response.message);
+                            // Reload the page after 1 second
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            showToast('error', response.message);
+                        }
+                    },
+                    error: function() {
+                        showToast('error', 'Error deleting admin');
+                    }
+                });
+            }
+        });
+
+        // Show toast notifications
+        function showToast(type, message) {
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0"
+                     role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>`;
+
+            $('.toast-container').append(toastHtml);
+            $('.toast').last().toast('show');
+
+            // Remove toast after 5 seconds
+            setTimeout(() => {
+                $('.toast').last().remove();
+            }, 5000);
+        }
+
+                // Handle send email button clicks
+        $(document).on('click', '.send-email-btn', function(e) {
+            e.preventDefault();
+
+            const email = $(this).data('email');
+
+            // Show email modal or redirect to email page
+            $('#sendEmailModal').modal('show');
+            $('#recipientEmail').val(email);
+        });
+
+        // Or if you want a simple prompt
+        $(document).on('click', '.send-email-btn', function(e) {
+            e.preventDefault();
+
+            const email = $(this).data('email');
+            const subject = prompt('Enter email subject:');
+            if (!subject) return;
+
+            const message = prompt('Enter email message:');
+            if (!message) return;
+
+            $.ajax({
+                url: '@Url.Action("SendEmail", "AdminManagement")',
+                type: 'POST',
+                data: {
+                    to: email,
+                    subject: subject,
+                    message: message
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Email sent successfully!');
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error sending email');
+                }
+            });
+        });
+    </script>
+}

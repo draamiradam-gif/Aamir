@@ -16,17 +16,17 @@
             </button>
             <ul class="dropdown-menu">
                 <li>
-                    <a class="dropdown-item" href="@Url.Action("ExportRegistrations", new { semesterId = Model.SelectedSemester?.Id, format = "excel", filter = Model.CurrentFilter })">
+                    <a class="dropdown-item export-option" href="#" data-format="excel">
                         <i class="fas fa-file-excel me-2"></i>Export to Excel
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="@Url.Action("ExportRegistrations", new { semesterId = Model.SelectedSemester?.Id, format = "csv", filter = Model.CurrentFilter })">
+                    <a class="dropdown-item export-option" href="#" data-format="csv">
                         <i class="fas fa-file-csv me-2"></i>Export to CSV
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="@Url.Action("ExportRegistrations", new { semesterId = Model.SelectedSemester?.Id, format = "pdf", filter = Model.CurrentFilter })">
+                    <a class="dropdown-item export-option" href="#" data-format="pdf">
                         <i class="fas fa-file-pdf me-2"></i>Export to PDF
                     </a>
                 </li>
@@ -34,7 +34,7 @@
         </div>
 
         <!-- Import Button -->
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+        <button type="button" class="btn btn-primary" id="importBtn">
             <i class="fas fa-upload me-2"></i>Import
         </button>
 
@@ -549,6 +549,227 @@
                 bsAlert.close();
             });
         }, 5000);
+
+
+        // Add this to Management.cshtml Scripts section
+        $(document).ready(function() {
+            // Export functionality
+            $('.export-option').click(function(e) {
+                e.preventDefault();
+                const format = $(this).data('format');
+                const semesterId = @(Model.SelectedSemester?.Id ?? 0);
+                const filter = '@Model.CurrentFilter';
+
+                window.location.href = '@Url.Action("ExportRegistrations", "Registration")' +
+                    `?semesterId=${semesterId}&format=${format}&filter=${filter}`;
+            });
+
+            // Import button
+            $('#importBtn').click(function() {
+                $('#importModal').modal('show');
+            });
+
+            // Load counts for navigation
+            loadRegistrationCounts();
+        });
+
+        function loadRegistrationCounts() {
+            // Load pending count
+            $.get('@Url.Action("GetPendingCount", "Registration")')
+                .done(function(count) {
+                    $('#pendingCount').text(count);
+                });
+
+            // Load active rules count
+            $.get('@Url.Action("GetActiveRulesCount", "Registration")')
+                .done(function(count) {
+                    $('#activeRulesCount').text(count);
+                });
+        }
+    </script>
+        // In Management.cshtml, wrap your JavaScript in a DOMContentLoaded event
+    <script>
+                // Add this to Management.cshtml Scripts section
+                // Replace ALL JavaScript in Management.cshtml with this:
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Management page loaded');
+
+            // Fix export functionality
+            document.querySelectorAll('.export-option').forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const format = this.getAttribute('data-format');
+                    const semesterId = @(Model.SelectedSemester?.Id ?? 0);
+                    const filter = '@Model.CurrentFilter';
+
+                    const url = '@Url.Action("ExportRegistrations", "Registration")' +
+                        `?semesterId=${semesterId}&format=${format}&filter=${encodeURIComponent(filter)}`;
+
+                    console.log('Exporting to:', url);
+                    window.location.href = url;
+                });
+            });
+
+            // Fix import button
+            const importBtn = document.getElementById('importBtn');
+            if (importBtn) {
+                importBtn.addEventListener('click', function() {
+                    const importModal = document.getElementById('importModal');
+                    if (importModal) {
+                        const modal = new bootstrap.Modal(importModal);
+                        modal.show();
+                    } else {
+                        console.error('Import modal not found');
+                    }
+                });
+            }
+
+            // Fix select all functionality - SAFE CHECK
+            const selectAllCheckbox = document.getElementById('selectAll');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.registration-checkbox');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                    updateBulkActions();
+                });
+            }
+
+            // Fix individual checkbox selection
+            document.querySelectorAll('.registration-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateBulkActions();
+                });
+            });
+
+            // Initialize
+            updateBulkActions();
+
+            console.log('Management page initialization complete');
+        });
+
+        // Update bulk actions visibility
+        function updateBulkActions() {
+            const selectedCount = document.querySelectorAll('.registration-checkbox:checked').length;
+            const selectedCountElement = document.getElementById('selectedCount');
+            const bulkActionsElement = document.getElementById('bulkActions');
+
+            if (selectedCountElement) {
+                selectedCountElement.textContent = `${selectedCount} selected`;
+            }
+
+            if (bulkActionsElement) {
+                bulkActionsElement.style.display = selectedCount > 0 ? 'block' : 'none';
+            }
+        }
+
+        // Define missing functions
+        function bulkApprove() {
+            const selectedIds = Array.from(document.querySelectorAll('.registration-checkbox:checked'))
+                .map(cb => cb.value);
+
+            if (selectedIds.length === 0) {
+                alert('Please select at least one registration to approve.');
+                return;
+            }
+
+            if (confirm(`Approve ${selectedIds.length} selected registrations?`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("BulkApprove", "Registration")';
+
+                const semesterIdInput = document.createElement('input');
+                semesterIdInput.type = 'hidden';
+                semesterIdInput.name = 'semesterId';
+                semesterIdInput.value = '@Model.SelectedSemester?.Id';
+                form.appendChild(semesterIdInput);
+
+                selectedIds.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'registrationIds';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.registration-checkbox').forEach(cb => cb.checked = false);
+            const selectAll = document.getElementById('selectAll');
+            if (selectAll) {
+                selectAll.checked = false;
+            }
+            updateBulkActions();
+        }
+
+        // Define global functions for navigation
+        function showPendingRegistrations() {
+            window.location.href = '@Url.Action("Management", "Registration")?filter=pending';
+        }
+
+        function showRegistrationStats() {
+            window.location.href = '@Url.Action("Analytics", "Registration")';
+        }
+
+        // // Update bulk actions visibility
+        // function updateBulkActions() {
+        //     const selectedCount = document.querySelectorAll('.registration-checkbox:checked').length;
+        //     const selectedCountElement = document.getElementById('selectedCount');
+        //     const bulkActionsElement = document.getElementById('bulkActions');
+
+        //     if (selectedCountElement) {
+        //         selectedCountElement.textContent = `${selectedCount} selected`;
+        //     }
+
+        //     if (bulkActionsElement) {
+        //         bulkActionsElement.style.display = selectedCount > 0 ? 'block' : 'none';
+        //     }
+        // }
+
+        // // Define missing functions
+        // function bulkApprove() {
+        //     const selectedIds = Array.from(document.querySelectorAll('.registration-checkbox:checked'))
+        //         .map(cb => cb.value);
+
+        //     if (selectedIds.length === 0) {
+        //         alert('Please select at least one registration to approve.');
+        //         return;
+        //     }
+
+        //     if (confirm(`Approve ${selectedIds.length} selected registrations?`)) {
+        //         const form = document.createElement('form');
+        //         form.method = 'POST';
+        //         form.action = '@Url.Action("BulkApprove", "Registration")';
+
+        //         const semesterIdInput = document.createElement('input');
+        //         semesterIdInput.type = 'hidden';
+        //         semesterIdInput.name = 'semesterId';
+        //         semesterIdInput.value = '@Model.SelectedSemester?.Id';
+        //         form.appendChild(semesterIdInput);
+
+        //         selectedIds.forEach(id => {
+        //             const input = document.createElement('input');
+        //             input.type = 'hidden';
+        //             input.name = 'registrationIds';
+        //             input.value = id;
+        //             form.appendChild(input);
+        //         });
+
+        //         document.body.appendChild(form);
+        //         form.submit();
+        //     }
+        // }
+
+        // function clearSelection() {
+        //     document.querySelectorAll('.registration-checkbox').forEach(cb => cb.checked = false);
+        //     document.getElementById('selectAll').checked = false;
+        //     updateBulkActions();
+        // }
     </script>
 }
 

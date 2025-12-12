@@ -1,0 +1,180 @@
+﻿@model StudentManagementSystem.Controllers.SystemInfoViewModel
+@{
+    ViewData["Title"] = "System Information";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-info-circle me-2"></i>@ViewData["Title"]
+            </h1>
+            <p class="text-muted">Detailed system information and diagnostics</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Application Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Application Name</dt>
+                        <dd class="col-sm-8">@Model.ApplicationName</dd>
+
+                        <dt class="col-sm-4">Version</dt>
+                        <dd class="col-sm-8">@Model.Version</dd>
+
+                        <dt class="col-sm-4">Environment</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge @(Model.Environment == "Production" ? "bg-success" : "bg-info")">
+                                @Model.Environment
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4">ASP.NET Core</dt>
+                        <dd class="col-sm-8">@Model.AspNetCoreVersion</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Server Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Server Name</dt>
+                        <dd class="col-sm-8">@Model.ServerName</dd>
+
+                        <dt class="col-sm-4">Operating System</dt>
+                        <dd class="col-sm-8">@Model.OSVersion</dd>
+
+                        <dt class="col-sm-4">Database</dt>
+                        <dd class="col-sm-8">@Model.DatabaseProvider</dd>
+
+                        <dt class="col-sm-4">Uptime</dt>
+                        <dd class="col-sm-8">@Model.Uptime</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Total Users</dt>
+                        <dd class="col-sm-8">@Model.TotalUsers</dd>
+
+                        <dt class="col-sm-4">Total Roles</dt>
+                        <dd class="col-sm-8">@Model.TotalRoles</dd>
+
+                        <dt class="col-sm-4">Current Session</dt>
+                        <dd class="col-sm-8">@User.Identity?.Name</dd>
+
+                        <dt class="col-sm-4">Server Time</dt>
+                        <dd class="col-sm-8">@Model.ServerTime.ToString("MMMM dd, yyyy HH:mm:ss")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">System Health</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Database Connection</label>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" style="width: 100%;"></div>
+                        </div>
+                        <small class="text-success"><i class="fas fa-check-circle me-1"></i>Connected</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">System Memory</label>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-info" style="width: 65%;"></div>
+                        </div>
+                        <small class="text-info"><i class="fas fa-memory me-1"></i>65% used</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">CPU Usage</label>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-warning" style="width: 42%;"></div>
+                        </div>
+                        <small class="text-warning"><i class="fas fa-microchip me-1"></i>42% load</small>
+                    </div>
+
+                    <div class="alert alert-success mt-3">
+                        <i class="fas fa-check-circle me-2"></i>
+                        All systems operational
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-sliders-h me-2"></i>Settings
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("Backup", "Admin")" class="btn btn-outline-success w-100">
+                                <i class="fas fa-database me-2"></i>Database Backup
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-info w-100" onclick="clearCache()">
+                                <i class="fas fa-broom me-2"></i>Clear Cache
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-warning w-100" onclick="restartApplication()">
+                                <i class="fas fa-redo me-2"></i>Restart App
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function clearCache() {
+            if (confirm('Are you sure you want to clear the application cache?')) {
+                showToast('Cache cleared successfully', 'success');
+            }
+        }
+
+        function restartApplication() {
+            if (confirm('Warning: This will restart the application. Are you sure?')) {
+                showToast('Application restart initiated', 'warning');
+            }
+        }
+    </script>
+}

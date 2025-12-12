@@ -2,17 +2,79 @@
 @{
     ViewData["Title"] = "User Management";
     var userRoles = ViewBag.UserRoles as Dictionary<string, List<string>> ?? new Dictionary<string, List<string>>();
+    var adminDetails = ViewBag.AdminDetails as Dictionary<string, AdminPrivilege> ?? new Dictionary<string, AdminPrivilege>();
 }
 
 <div class="container-fluid">
+    <!-- Single Header Section -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-users-cog me-2"></i>User Management</h2>
-        <a href="@Url.Action("Create", "UserManagement")" class="btn btn-success">
-            <i class="fas fa-user-plus me-2"></i>Create New User
-        </a>
+        <div>
+            <h2><i class="fas fa-users-cog me-2"></i>User Management</h2>
+            <p class="text-muted mb-0">Manage system users and admin permissions</p>
+        </div>
+        <div>
+            <!-- Email Actions -->
+            <a href="@Url.Action("SendBulkUserEmail", "UserManagement")" class="btn btn-info me-2">
+                <i class="fas fa-mail-bulk me-2"></i>Bulk Email
+            </a>
+
+            <!-- User Management Actions -->
+            <a href="@Url.Action("CreateAdmin", "AdminManagement")" class="btn btn-success me-2">
+                <i class="fas fa-user-shield me-2"></i>Create Admin
+            </a>
+            <a href="@Url.Action("Create", "UserManagement")" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i>Create User
+            </a>
+            <a href="@Url.Action("Create", "AdminManagement")" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i>Super Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    @{
+        var totalUsers = Model.Count();
+        var adminUsers = Model.Count(u => userRoles.ContainsKey(u.Id) && userRoles[u.Id].Any(r => r == "Admin" || r == "SuperAdmin"));
+    }
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">TOTAL USERS</h6>
+                            <h2 class="mb-0">@totalUsers</h2>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">ADMINS</h6>
+                            <h2 class="mb-0">@adminUsers</h2>
+                        </div>
+                        <i class="fas fa-user-shield fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Users List</h5>
+            <div class="input-group" style="width: 300px;">
+                <input type="text" id="userSearch" class="form-control" placeholder="Search users...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
         <div class="card-body">
             @if (TempData["SuccessMessage"] != null)
             {
@@ -31,31 +93,101 @@
             }
 
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover" id="usersTable">
                     <thead class="table-dark">
                         <tr>
-                            <th>ID</th>
                             <th>Username</th>
                             <th>Email</th>
                             <th>Roles</th>
+                            <th>Admin Type</th>
+                            <th>Scope</th>
                             <th>Email Confirmed</th>
-                            <th>Actions</th>
+                            <th width="200">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var user in Model)
                         {
+                            var isAdmin = adminDetails.ContainsKey(user.Id);
+                            var adminPrivilege = isAdmin ? adminDetails[user.Id] : null;
                             <tr>
-                                <td>@user.Id</td>
-                                <td>@user.UserName</td>
-                                <td>@user.Email</td>
+                                <td>
+                                    <div class="fw-medium">@user.UserName</div>
+                                    <small class="text-muted">ID: @user.Id.Substring(0, 8)...</small>
+                                </td>
+                                <td>
+                                    <a href="mailto:@user.Email">@user.Email</a>
+                                    @if (user.PhoneNumber != null)
+                                    {
+                                        <div class="mt-1">
+                                            <small class="text-muted">
+                                                <i class="fas fa-phone me-1"></i>@user.PhoneNumber
+                                            </small>
+                                        </div>
+                                    }
+                                </td>
                                 <td>
                                     @if (userRoles.ContainsKey(user.Id))
                                     {
                                         foreach (var role in userRoles[user.Id])
                                         {
-                                            <span class="badge bg-primary me-1">@role</span>
-                                        }
+                                            <span class="badge
+                                                            @(role == "SuperAdmin" ? "bg-danger" :
+                                                                                                    role == "Admin" ? "bg-success" :
+                                                                                                    role == "UniversityAdmin" ? "bg-primary" :
+                                                                                                    role == "FacultyAdmin" ? "bg-info" :
+                                                                                                    role == "DepartmentAdmin" ? "bg-success" :
+                                                                                                    role == "FinanceAdmin" ? "bg-warning" :
+                                                                                                    role == "StudentAdmin" ? "bg-teal" :
+                                                                                                    role == "Faculty" ? "bg-secondary" :
+                                                                                                    role == "Student" ? "bg-info" :
+                                                                                                    "bg-secondary") me-1 mb-1">
+                                    @role
+                                </span>
+                                                                }
+                                    }
+                                </td>
+                                <td>
+                                    @if (isAdmin && adminPrivilege != null)
+                                    {
+                                        <span class="badge @GetAdminTypeBadgeClass(adminPrivilege.AdminType)">
+                                            @adminPrivilege.AdminType
+                                        </span>
+                                    }
+                                    else if (userRoles.ContainsKey(user.Id) && userRoles[user.Id].Any(r => r == "Admin" || r == "SuperAdmin"))
+                                    {
+                                        <span class="badge bg-secondary">Admin (No Privileges)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (isAdmin && adminPrivilege != null)
+                                    {
+                                        <div class="small">
+                                            @if (adminPrivilege.University != null)
+                                            {
+                                                <div><i class="fas fa-university me-1"></i>@adminPrivilege.University.Name</div>
+                                            }
+                                            @if (adminPrivilege.Faculty != null)
+                                            {
+                                                <div><i class="fas fa-building me-1"></i>@adminPrivilege.Faculty.Name</div>
+                                            }
+                                            @if (adminPrivilege.Department != null)
+                                            {
+                                                <div><i class="fas fa-sitemap me-1"></i>@adminPrivilege.Department.Name</div>
+                                            }
+                                            @if (adminPrivilege.University == null && adminPrivilege.Faculty == null && adminPrivilege.Department == null)
+                                            {
+                                                <span class="text-muted">Global</span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
                                     }
                                 </td>
                                 <td>
@@ -70,12 +202,43 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
+                                        <!-- View Details -->
+                                        <a href="@Url.Action("Details", "UserManagement", new { id = user.Id })"
+                                           class="btn btn-outline-info" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+
+                                        <!-- Send Email -->
+                                        <a href="@Url.Action("SendUserEmail", "UserManagement", new { id = user.Id })"
+                                           class="btn btn-outline-secondary" title="Send Email">
+                                            <i class="fas fa-envelope"></i>
+                                        </a>
+
+                                        <!-- Admin Actions -->
+                                        @if (isAdmin)
+                                        {
+                                            <a href="@Url.Action("EditAdminPrivileges", "AdminManagement", new { adminId = user.Id })"
+                                               class="btn btn-outline-warning" title="Edit Admin Privileges">
+                                                <i class="fas fa-user-shield"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a href="@Url.Action("MakeAdmin", "AdminManagement", new { userId = user.Id })"
+                                               class="btn btn-outline-success" title="Make Admin">
+                                                <i class="fas fa-user-plus"></i>
+                                            </a>
+                                        }
+
+                                        <!-- Edit User -->
                                         <a href="@Url.Action("Edit", "UserManagement", new { id = user.Id })"
-                                           class="btn btn-primary">
+                                           class="btn btn-outline-primary" title="Edit User">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button class="btn btn-danger"
-                                                onclick="confirmDelete('@user.Id', '@user.UserName')">
+
+                                        <!-- Delete User -->
+                                        <button class="btn btn-outline-danger"
+                                                onclick="confirmDelete('@user.Id', '@(user.UserName ?? "Unknown")')" title="Delete">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -91,13 +254,53 @@
 
 @section Scripts {
     <script>
-        function confirmDelete(userId, userName) {
-            if (confirm(`Are you sure you want to delete user "${userName}"?`)) {
-                // You'll need to implement delete functionality
-                alert('Delete functionality would be implemented here for user: ' + userName);
-                // Typically you would make an AJAX call or redirect to Delete action
-                // window.location.href = '@Url.Action("Delete", "UserManagement")' + '?id=' + userId;
-            }
-        }
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#usersTable').DataTable({
+                pageLength: 25,
+                responsive: true,
+                columnDefs: [
+                    { orderable: false, targets: [6] } // Disable sorting on Actions column
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search users...",
+                    lengthMenu: "_MENU_ records per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ users",
+                    infoEmpty: "No users found",
+                    infoFiltered: "(filtered from _MAX_ total)"
+                }
+            });
+
+            // Search functionality
+            $('#userSearch').on('keyup', function() {
+                table.search(this.value).draw();
+            });
+
+            // Delete confirmation with null handling
+            window.confirmDelete = function(userId, userName) {
+                if (confirm(`Are you sure you want to delete user "${userName}"?`)) {
+                    window.location.href = '@Url.Action("Delete", "UserManagement")' + '?id=' + userId;
+                }
+            };
+        });
     </script>
+}
+
+@functions {
+    public string GetAdminTypeBadgeClass(AdminType adminType)
+    {
+        return adminType switch
+        {
+            AdminType.SuperAdmin => "bg-danger",
+            AdminType.UniversityAdmin => "bg-primary",
+            AdminType.FacultyAdmin => "bg-info",
+            AdminType.DepartmentAdmin => "bg-success",
+            AdminType.EmployeeAdmin => "bg-warning",
+            AdminType.FinanceAdmin => "bg-purple",
+            AdminType.StudentAdmin => "bg-teal",
+            AdminType.CustomAdmin => "bg-indigo",
+            _ => "bg-secondary"
+        };
+    }
 }

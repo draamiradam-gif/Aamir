@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
 
 namespace StudentManagementSystem.Models.ViewModels
@@ -29,23 +30,38 @@ namespace StudentManagementSystem.Models.ViewModels
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = string.Empty;
 
-        public List<string> SelectedRoles { get; set; } = new List<string>(); // Initialized
+        // For template selection
+        [Display(Name = "Template")]
+        public int? TemplateId { get; set; }
+
+        public List<AdminPrivilegeTemplate> AvailableTemplates { get; set; } = new List<AdminPrivilegeTemplate>();
+
+        // For role selection
+        public List<string> SelectedRoles { get; set; } = new List<string>();
+
+        // For permission selection (if using template)
+        public List<PermissionModule> SelectedPermissions { get; set; } = new List<PermissionModule>();
+
+        // Select List for UI
+        public SelectList TemplateList => new SelectList(AvailableTemplates, "Id", "TemplateName", TemplateId);
     }
 
     public class EditUserViewModel
     {
         public string Id { get; set; } = string.Empty; // Initialized
+                
 
-        [Required]
-        [EmailAddress]
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email address")]
         [Display(Name = "Email")]
-        public string Email { get; set; } = string.Empty; // Initialized
+        public string Email { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Username is required")]
         [Display(Name = "Username")]
-        public string UserName { get; set; } = string.Empty; // Initialized
+        public string UserName { get; set; } = string.Empty;
 
         public List<string> SelectedRoles { get; set; } = new List<string>(); // Initialized
         public List<IdentityRole>? AllRoles { get; set; } = new List<IdentityRole>(); // Initialized
     }
+
 }

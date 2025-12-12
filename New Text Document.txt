@@ -138,7 +138,8 @@ Update-Database -Context ApplicationDbContext
 
 
 
-
+Add-Migration RegistrationSystemEnhancements
+Update-Database
 
 
 

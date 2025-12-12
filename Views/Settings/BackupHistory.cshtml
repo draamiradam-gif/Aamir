@@ -1,0 +1,105 @@
+﻿@model List<StudentManagementSystem.Models.BackupInfo>
+@{
+    ViewData["Title"] = "Backup History";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-history me-2"></i>@ViewData["Title"]
+            </h1>
+            <p class="text-muted">View previous database backups</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-body">
+                    @if (Model == null || !Model.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-database fa-3x text-muted mb-3"></i>
+                            <h4>No Backups Found</h4>
+                            <p class="text-muted">No backup history available.</p>
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-modern">
+                                <i class="fas fa-plus me-2"></i>Create Backup
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>File Name</th>
+                                    <th>Size</th>
+                                    <th>Database</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var backup in Model.OrderByDescending(b => b.Created))
+                                {
+                                    <tr class="@(backup.Success ? "" : "table-danger")">
+                                        <td>@backup.Created.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td>@backup.FileName</td>
+                                        <td>@FormatFileSize(backup.FileSize)</td>
+                                        <td>@backup.DatabaseName</td>
+                                        <td>@backup.CreatedBy</td>
+                                        <td>
+                                            @if (backup.Success)
+                                            {
+                                                <a href="@Url.Action("DownloadBackup", "Settings", new { fileName = backup.FileName })"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <form method="post"
+                                                      action="@Url.Action("DeleteBackup", "Settings", new { fileName = backup.FileName })"
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('Are you sure you want to delete this backup?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger ms-1">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-danger">Failed</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // You can add JavaScript here if needed
+    </script>
+}
+
+@functions {
+    public string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        double len = bytes;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

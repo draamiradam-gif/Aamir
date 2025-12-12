@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using StudentManagementSystem.Data;
 using StudentManagementSystem.Models;
+using StudentManagementSystem.ViewModels;
 
 namespace StudentManagementSystem.Services
 {
@@ -30,7 +31,7 @@ namespace StudentManagementSystem.Services
             _studentService = studentService;
         }
 
-        public async Task<RegistrationResult> RegisterCourses(RegistrationRequest request)
+        public async Task<RegistrationResult> RegisterCourses(ViewModels.RegistrationRequest request)
         {
             var result = new RegistrationResult();
             var student = await _context.Students

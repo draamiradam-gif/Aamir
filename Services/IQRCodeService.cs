@@ -6,7 +6,10 @@ namespace StudentManagementSystem.Services
     {
         // Session Management
         Task<QRCodeSession> CreateSessionAsync(QRCodeSession session);
-        Task<QRAttendance> ScanQRCodeAsync(string token, int studentId, string? deviceInfo = null, string? ipAddress = null);
+
+        // ✅ FIXED: Changed from int studentId to string studentIdString
+        Task<QRAttendance> ScanQRCodeAsync(string token, string studentIdString, string? deviceInfo = null, string? ipAddress = null);
+
         Task<List<QRCodeSession>> GetActiveSessionsAsync();
         Task<QRCodeSession?> GetSessionByIdAsync(int id);
         Task<bool> ValidateSessionAsync(string token);
@@ -23,7 +26,5 @@ namespace StudentManagementSystem.Services
         Task<string> GetCurrentTokenAsync(int sessionId);
         Task UpdateSessionAsync(QRCodeSession session);
         Task<QRCodeSession?> GetSessionByTokenAsync(string token);
-
-
     }
 }

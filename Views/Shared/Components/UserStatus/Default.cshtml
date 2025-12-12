@@ -1,0 +1,10 @@
+﻿@model StudentManagementSystem.ViewComponents.UserStatusViewModel
+
+@if (!Model.IsAuthenticated || !Model.IsAdmin)
+{
+    <li class="nav-item">
+        <a class="nav-link" href="@Url.Action("Apply", "Applications")">
+            <i class="fas fa-user-plus me-2"></i>Apply for Admin Access
+        </a>
+    </li>
+}

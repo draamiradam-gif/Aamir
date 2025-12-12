@@ -5,6 +5,7 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using StudentManagementSystem.Models;
 using System.Text;
+using StudentManagementSystem.ViewModels;
 
 namespace StudentManagementSystem.Services
 {

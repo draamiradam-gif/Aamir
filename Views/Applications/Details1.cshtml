@@ -1,0 +1,182 @@
+﻿@model StudentManagementSystem.Models.AdminApplication
+@{
+    ViewData["Title"] = "Application Details";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-clipboard-list me-2 text-center"></i>Application Details
+            </h1>
+            <p class="text-muted">Review admin application details</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card-modern">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Application Information</h5>
+                    <span class="badge @GetStatusBadgeClass(Model.Status.ToString())">
+                        @Model.Status
+                    </span>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Applicant Name:</dt>
+                        <dd class="col-sm-9">@Model.ApplicantName</dd>
+
+                        <dt class="col-sm-3">Email:</dt>
+                        <dd class="col-sm-9">@Model.Email</dd>
+
+                        <dt class="col-sm-3">Phone:</dt>
+                        <dd class="col-sm-9">@Model.Phone</dd>
+
+                        <dt class="col-sm-3">Admin Type:</dt>
+                        <dd class="col-sm-9">@Model.AppliedAdminType</dd>
+
+                        @if (Model.University != null)
+                        {
+                            <dt class="col-sm-3">University:</dt>
+                            <dd class="col-sm-9">@Model.University.Name</dd>
+                        }
+
+                        @if (Model.Faculty != null)
+                        {
+                            <dt class="col-sm-3">Faculty/College:</dt>
+                            <dd class="col-sm-9">@Model.Faculty.Name</dd>
+                        }
+
+                        @if (Model.Department != null)
+                        {
+                            <dt class="col-sm-3">Department:</dt>
+                            <dd class="col-sm-9">@Model.Department.Name</dd>
+                        }
+
+                        <dt class="col-sm-3">Justification:</dt>
+                        <dd class="col-sm-9">@Model.Justification</dd>
+
+                        @if (!string.IsNullOrEmpty(Model.Experience))
+                        {
+                            <dt class="col-sm-3">Experience:</dt>
+                            <dd class="col-sm-9">@Model.Experience</dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.Qualifications))
+                        {
+                            <dt class="col-sm-3">Qualifications:</dt>
+                            <dd class="col-sm-9">@Model.Qualifications</dd>
+                        }
+
+                        <dt class="col-sm-3">Applied Date:</dt>
+                        <dd class="col-sm-9">@Model.AppliedDate.ToString("MMMM dd, yyyy HH:mm")</dd>
+
+                        @if (Model.ReviewedDate.HasValue)
+                        {
+                            <dt class="col-sm-3">Reviewed:</dt>
+                            <dd class="col-sm-9">
+                                @Model.ReviewedDate.Value.ToString("MMMM dd, yyyy HH:mm")
+                                <br />
+                                <small class="text-muted">By: @Model.ReviewedBy</small>
+                            </dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.ReviewNotes))
+                        {
+                            <dt class="col-sm-3">Review Notes:</dt>
+                            <dd class="col-sm-9">@Model.ReviewNotes</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Status == ApplicationStatus.Pending)
+                    {
+                        <form method="post" action="@Url.Action("Approve", "Applications", new { id = Model.Id })"
+                              class="mb-3" onsubmit="return confirm('Approve this application?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-check me-2"></i>Approve Application
+                            </button>
+                        </form>
+
+                        <button type="button" class="btn btn-danger w-100" onclick="showRejectModal(@Model.Id)">
+                            <i class="fas fa-times me-2"></i>Reject Application
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            This application has already been @Model.Status.ToString().ToLower().
+                        </div>
+                    }
+
+                    <a href="@Url.Action("Index", "Applications")" class="btn btn-outline-secondary w-100 mt-2">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal (same as in Index) -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="rejectForm" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="appId" name="id">
+                    <div class="mb-3">
+                        <label for="rejectNotes" class="form-label">Reason for Rejection</label>
+                        <textarea class="form-control" id="rejectNotes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showRejectModal(appId) {
+            document.getElementById('appId').value = appId;
+            document.getElementById('rejectForm').action = '@Url.Action("Reject", "Applications")' + '/' + appId;
+
+            const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+            modal.show();
+        }
+    </script>
+}
+
+@functions {
+    public string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning",
+            "Approved" => "bg-success",
+            "Rejected" => "bg-danger",
+            "Revoked" => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+}

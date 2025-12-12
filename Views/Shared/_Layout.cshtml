@@ -1,6 +1,8 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
+@Html.AntiForgeryToken()
+
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
@@ -10,6 +12,7 @@
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- DataTables CSS -->
@@ -24,6 +27,9 @@
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <!-- Custom Styles -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="~/js/dropdown-fix.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    @* <script src="~/js/theme-manager.js"></script> *@
 
     <style>
         /* Improved dropdown spacing */
@@ -103,12 +109,12 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item" href="@Url.Action("Index", "AdminManagement")">
+                                <a class="dropdown-item" href="@Url.Action("Dashboard", "AdminManagement")">
                                     <i class="fas fa-tachometer-alt me-2 text-success"></i>Admin Dashboard
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="@Url.Action("Dashboard", "AdminManagement")">
+                                <a class="dropdown-item" href="@Url.Action("Analytics", "AdminManagement")">
                                     <i class="fas fa-chart-bar me-2"></i>Analytics
                                 </a>
                             </li>
@@ -119,24 +125,28 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item" href="@Url.Action("Index", "AdminManagement")">
+                                <a class="dropdown-item" href="@Url.Action("Permissions", "Admin")">
                                     <i class="fas fa-key me-2"></i>Permissions
                                 </a>
                             </li>
-                            @* <li>
-                                <a class="dropdown-item" href="@Url.Action("Index", "UserManagement")">
-                                    <i class="fas fa-user-tag me-2"></i>Roles & Users
-                                </a>
-                            </li> *@
-
                             @if (userRoles.Contains("SuperAdmin"))
                             {
-                                <li>
+                                @* <li>
                                     <a class="dropdown-item" href="@Url.Action("Applications", "AdminManagement")">
                                         <i class="fas fa-clipboard-list me-2"></i>Applications
-                                        <span class="badge bg-danger quick-access-badge">New</span>
+                                        @if (ViewBag.PendingApplicationsCount > 0)
+                                        {
+                                            <span class="badge bg-danger ms-2">@ViewBag.PendingApplicationsCount</span>
+                                        }
+                                    </a>
+                                </li> *@
+                                <!-- Or if you have an ApplicationsController -->
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("Index", "Applications")">
+                                        <i class="fas fa-clipboard-list me-2"></i>Applications
                                     </a>
                                 </li>
+
                             }
                         </ul>
                     </div>
@@ -218,21 +228,25 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item" href="@Url.Action("Settings", "System")">
-                                    <i class="fas fa-sliders-h me-2"></i>Settings
+                                <!-- Change from SystemController to SettingsController -->
+                                <a class="dropdown-item" href="@Url.Action("AdminSettings", "Admin")">
+                                    <i class="fas fa-sliders-h me-2"></i>Admin Settings
                                 </a>
                             </li>
                             <li>
+                                <!-- Change from AdminController to AdminController (keep this) -->
                                 <a class="dropdown-item" href="@Url.Action("Logs", "Admin")">
                                     <i class="fas fa-history me-2"></i>Logs
                                 </a>
                             </li>
                             <li>
+                                <!-- Change from AdminController to AdminController (keep this) -->
                                 <a class="dropdown-item" href="@Url.Action("Analytics", "Admin")">
                                     <i class="fas fa-chart-line me-2"></i>Analytics
                                 </a>
                             </li>
                             <li>
+                                <!-- Change from AdminController to AdminController (keep this) -->
                                 <a class="dropdown-item" href="@Url.Action("Backup", "Admin")">
                                     <i class="fas fa-database me-2"></i>Backup
                                 </a>
@@ -241,7 +255,8 @@
                             {
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <a class="dropdown-item" href="@Url.Action("SystemSettings", "Admin")">
+                                    <!-- Change from AdminController to SettingsController -->
+                                    <a class="dropdown-item" href="@Url.Action("Index", "Settings")">
                                         <i class="fas fa-tools me-2"></i>System Settings
                                     </a>
                                 </li>
@@ -249,10 +264,36 @@
                         </ul>
                     </div>
                 </div>
+                @* <!-- In your homepage, add a card for admin applications -->
+                <div class="col-md-4 mb-4">
+                    <div class="card-modern h-100">
+                        <div class="card-body text-center d-flex flex-column">
+                            <div class="mb-3">
+                                <i class="fas fa-user-shield fa-3x text-primary"></i>
+                            </div>
+                            <h5 class="card-title">Admin Access</h5>
+                            <p class="card-text flex-grow-1">
+                                Need administrative privileges? Apply for admin access to manage the system.
+                            </p>
+                            <a href="@Url.Action("Apply", "Applications")" class="btn btn-modern mt-2">
+                                <i class="fas fa-paper-plane me-2"></i>Apply Now
+                            </a>
+                        </div>
+                    </div>
+                </div> *@
             }
 
             <!-- User Status & Actions -->
             <div class="navbar-nav ms-auto">
+                <!-- Apply for Admin Access - Shows when user is not logged in or not an admin -->
+                @if (User.Identity == null || !User.Identity.IsAuthenticated || !(User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+                {
+                    <div class="nav-item">
+                        <a class="nav-link text-warning" href="@Url.Action("Apply", "Applications")">
+                            <i class="fas fa-user-plus me-2"></i>Apply for Admin
+                        </a>
+                    </div>
+                }
                 @if (isSignedIn)
                 {
                     if (user != null)
@@ -283,7 +324,7 @@
                         @if (isAdmin)
                                 {
                                     <li>
-                                        <a class="dropdown-item" href="@Url.Action("Dashboard", "Admin")">
+                                        <a class="dropdown-item" href="@Url.Action("Dashboard", "AdminManagement")">
                                             <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
                                         </a>
                                     </li>
@@ -453,8 +494,18 @@
                 </div>
                 <div class="col-md-4 text-md-end">
                     <p class="mb-0 opacity-75 small">
-                        &copy; 2024 AcademicPro System v2.0
-                    </p>
+                        &copy; 2026 AcademicPro System v2.0
+                    </p>                    
+                </div>
+				<!-- In your homepage, add a card for admin applications -->
+                <div class="position-fixed bottom-0" style="right: 400px ;width: 300px; z-index: 1030;">
+                    <div class="card-modern">
+                        <div class="card-body text-center d-flex flex-column p-2">
+                            <a href="@Url.Action("Apply", "Applications")" class="btn btn-modern">
+                                <i class="fas fa-paper-plane me-2"></i>Apply For Admin Access
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -462,7 +513,7 @@
 
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    @* <script src="~/js/site.js" asp-append-version="true"></script> *@
 
     <script>
         // Mobile sidebar functionality
@@ -508,22 +559,22 @@
         });
 
         // DataTables initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if any table needs DataTables
-            const tables = document.querySelectorAll('table.dataTable');
-            tables.forEach(table => {
-                if ($.fn.DataTable) {
-                    $(table).DataTable({
-                        pageLength: 25,
-                        responsive: true,
-                        language: {
-                            search: "_INPUT_",
-                            searchPlaceholder: "Search..."
-                        }
-                    });
-                }
-            });
-        });
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     // Check if any table needs DataTables
+        //     const tables = document.querySelectorAll('table.dataTable');
+        //     tables.forEach(table => {
+        //         if ($.fn.DataTable) {
+        //             $(table).DataTable({
+        //                 pageLength: 25,
+        //                 responsive: true,
+        //                 language: {
+        //                     search: "_INPUT_",
+        //                     searchPlaceholder: "Search..."
+        //                 }
+        //             });
+        //         }
+        //     });
+        // });
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -549,7 +600,147 @@
             }
         });
     </script>
+    <!-- Add this right before closing </body> tag -->
+    <script>
+        // Emergency modal fix - always load first
+        (function() {
+            // Immediately unlock page
+            document.body.style.cssText = 'overflow: auto !important; position: static !important;';
+
+            // Remove any modal-open classes
+            document.body.classList.remove('modal-open');
+
+            // Remove backdrops immediately
+            const removeBackdrops = function() {
+                const elements = document.querySelectorAll('*');
+                elements.forEach(el => {
+                    const style = window.getComputedStyle(el);
+                    if (style.position === 'fixed' &&
+                        (style.width === '100%' || style.width === '100vw') &&
+                        (style.height === '100%' || style.height === '100vh') &&
+                        (style.backgroundColor !== 'transparent' || style.zIndex > 1000)) {
+                        el.style.display = 'none';
+                        el.remove();
+                    }
+                });
+            };
+
+            // Run immediately and periodically
+            removeBackdrops();
+            setInterval(removeBackdrops, 1000);
+
+            // Also run on any click
+            document.addEventListener('click', function() {
+                setTimeout(removeBackdrops, 10);
+            });
+        })();
+
+
+                // Handle individual delete button clicks
+        $(document).on('click', '.delete-admin-btn', function(e) {
+            e.preventDefault();
+
+            const adminId = $(this).data('id');
+            const adminName = $(this).data('name');
+
+            if (confirm(`Are you sure you want to delete ${adminName}? This action cannot be undone!`)) {
+                $.ajax({
+                    url: '@Url.Action("DeleteAdmin", "AdminManagement")',
+                    type: 'POST',
+                    data: { adminId: adminId },
+                    success: function(response) {
+                        if (response.success) {
+                            showToast('success', response.message);
+                            // Reload the page after 1 second
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            showToast('error', response.message);
+                        }
+                    },
+                    error: function() {
+                        showToast('error', 'Error deleting admin');
+                    }
+                });
+            }
+        });
+
+        // Show toast notifications
+        function showToast(type, message) {
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0"
+                     role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>`;
+
+            $('.toast-container').append(toastHtml);
+            $('.toast').last().toast('show');
+
+            // Remove toast after 5 seconds
+            setTimeout(() => {
+                $('.toast').last().remove();
+            }, 5000);
+        }
+
+                // Handle send email button clicks
+        $(document).on('click', '.send-email-btn', function(e) {
+            e.preventDefault();
+
+            const email = $(this).data('email');
+
+            // Show email modal or redirect to email page
+            $('#sendEmailModal').modal('show');
+            $('#recipientEmail').val(email);
+        });
+
+        // Or if you want a simple prompt
+        $(document).on('click', '.send-email-btn', function(e) {
+            e.preventDefault();
+
+            const email = $(this).data('email');
+            const subject = prompt('Enter email subject:');
+            if (!subject) return;
+
+            const message = prompt('Enter email message:');
+            if (!message) return;
+
+            $.ajax({
+                url: '@Url.Action("SendEmail", "AdminManagement")',
+                type: 'POST',
+                data: {
+                    to: email,
+                    subject: subject,
+                    message: message
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Email sent successfully!');
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error sending email');
+                }
+            });
+        });
+    </script>
+    <!-- In _Layout.cshtml -->
+    <link href="~/css/site.css" rel="stylesheet" />
+    <script src="~/js/safe-floating-windows.js"></script>
+    <script src="~/js/site.js"></script>
+    <script src="~/js/navigation-fixes.js"></script>
+    <script src="~/js/sidebar-collapsible.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        <!-- Toast notifications will be inserted here -->
+    </div>
 </body>
 </html>

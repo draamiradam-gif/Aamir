@@ -100,6 +100,8 @@ namespace StudentManagementSystem.Models
         // Computed properties
         //[NotMapped]
         //public decimal WeightedScore => (MarksObtained / GradingComponent?.MaximumMarks ?? 1) * (GradingComponent?.WeightPercentage ?? 0);
+        [Display(Name = "Weighted Score")]
+        [Column(TypeName = "decimal(5,2)")]
         public decimal WeightedScore { get; set; }
 
         [NotMapped]

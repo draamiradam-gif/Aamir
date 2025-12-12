@@ -11,12 +11,14 @@ namespace StudentManagementSystem.Services
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly ILogger<AdminService> _logger;
 
-        public AdminService(ApplicationDbContext context, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
+        public AdminService(ApplicationDbContext context, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, ILogger<AdminService> logger)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
+            _logger = logger;
         }
 
         // Application Management
@@ -143,7 +145,7 @@ namespace StudentManagementSystem.Services
                 .Include(p => p.University)
                 .Include(p => p.Faculty)
                 .Include(p => p.Department)
-                .Where(p => p.IsActive)
+                //.Where(p => p.IsActive)
                 .OrderBy(p => p.AdminType)
                 .ThenBy(p => p.Admin.UserName)
                 .ToListAsync();
@@ -153,7 +155,7 @@ namespace StudentManagementSystem.Services
         {
             return await _context.AdminPrivileges
                 .Include(p => p.Admin)
-                .FirstOrDefaultAsync(p => p.AdminId == adminId && p.IsActive);
+                .FirstOrDefaultAsync(p => p.AdminId == adminId);// && p.IsActive);
         }
 
         public async Task<AdminPrivilege?> GetAdminPrivilegeByEmailAsync(string email)
@@ -163,28 +165,155 @@ namespace StudentManagementSystem.Services
 
             return await _context.AdminPrivileges
                 .Include(p => p.Admin)
-                .FirstOrDefaultAsync(p => p.AdminId == user.Id && p.IsActive);
+                .FirstOrDefaultAsync(p => p.AdminId == user.Id);// && p.IsActive);
         }
 
-        public async Task<bool> UpdateAdminPrivilegesAsync(string adminId, List<PermissionModule> permissions, string updatedBy)
+        public async Task<bool> UpdateAdminPrivilegesAsync(string adminId,
+            List<PermissionModule> permissions, string updatedBy, AdminType adminType,
+            string? universityScope, string? facultyScope, string? departmentScope,
+            string? newPassword = null)
         {
             try
             {
-                var privilege = await _context.AdminPrivileges.FirstOrDefaultAsync(p => p.AdminId == adminId);
-                if (privilege == null) return false;
+                var privilege = await _context.AdminPrivileges
+                    .FirstOrDefaultAsync(p => p.AdminId == adminId);
 
+                if (privilege == null)
+                {
+                    _logger.LogWarning($"Admin privilege not found for adminId: {adminId}");
+                    return false;
+                }
+
+                // Update privilege info
                 privilege.Permissions = permissions;
+                privilege.AdminType = adminType;
                 privilege.ModifiedDate = DateTime.Now;
+                privilege.ModifiedBy = updatedBy;
+
+                // Parse scope IDs - safely handle null/empty
+                if (!string.IsNullOrEmpty(universityScope) && int.TryParse(universityScope, out int uniId))
+                {
+                    privilege.UniversityId = uniId;
+                }
+                else
+                {
+                    privilege.UniversityId = null;
+                }
+
+                if (!string.IsNullOrEmpty(facultyScope) && int.TryParse(facultyScope, out int facultyId))
+                {
+                    privilege.FacultyId = facultyId;
+                }
+                else
+                {
+                    privilege.FacultyId = null;
+                }
+
+                if (!string.IsNullOrEmpty(departmentScope) && int.TryParse(departmentScope, out int deptId))
+                {
+                    privilege.DepartmentId = deptId;
+                }
+                else
+                {
+                    privilege.DepartmentId = null;
+                }
+
+                // Update password only if provided
+                if (!string.IsNullOrEmpty(newPassword))
+                {
+                    var user = await _userManager.FindByIdAsync(adminId);
+                    if (user != null)
+                    {
+                        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                        var passwordResult = await _userManager.ResetPasswordAsync(user, token, newPassword);
+                        if (!passwordResult.Succeeded)
+                        {
+                            _logger.LogWarning($"Failed to update password for admin {adminId}: {string.Join(", ", passwordResult.Errors.Select(e => e.Description))}");
+                            // Continue with other updates even if password fails
+                        }
+                        else
+                        {
+                            _logger.LogInformation($"Password updated for admin {adminId}");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"User not found for adminId: {adminId}");
+                    }
+                }
 
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, $"Error updating admin privileges for adminId: {adminId}");
                 return false;
             }
         }
+        public async Task<bool> UpdateAdminPrivilegesWithPasswordAsync(string adminId,
+            List<PermissionModule> permissions, string updatedBy, AdminType adminType,
+            string? universityScope, string? facultyScope, string? departmentScope,
+            string? newPassword = null)
+        {
+            try
+            {
+                var privilege = await _context.AdminPrivileges
+                    .FirstOrDefaultAsync(p => p.AdminId == adminId);
 
+                if (privilege == null) return false;
+
+                // Update privilege info
+                privilege.Permissions = permissions;
+                privilege.AdminType = adminType;
+                privilege.ModifiedDate = DateTime.Now;
+                privilege.ModifiedBy = updatedBy;
+
+                // Parse scope IDs
+                if (int.TryParse(universityScope, out int uniId))
+                    privilege.UniversityId = uniId;
+                else
+                    privilege.UniversityId = null;
+
+                if (int.TryParse(facultyScope, out int facultyId))
+                    privilege.FacultyId = facultyId;
+                else
+                    privilege.FacultyId = null;
+
+                if (int.TryParse(departmentScope, out int deptId))
+                    privilege.DepartmentId = deptId;
+                else
+                    privilege.DepartmentId = null;
+
+                // Update password only if provided
+                if (!string.IsNullOrEmpty(newPassword))
+                {
+                    var user = await _userManager.FindByIdAsync(adminId);
+                    if (user != null)
+                    {
+                        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                        var passwordResult = await _userManager.ResetPasswordAsync(user, token, newPassword);
+                        if (!passwordResult.Succeeded)
+                        {
+                            _logger.LogWarning($"Failed to update password for admin {adminId}");
+                            // Continue with other updates even if password fails
+                        }
+                        else
+                        {
+                            _logger.LogInformation($"Password updated for admin {adminId}");
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating admin privileges");
+                return false;
+            }
+        }
         public async Task<bool> CreateAdminWithPrivilegesAsync(CreateAdminViewModel model, string createdBy)
         {
             try
@@ -444,5 +573,19 @@ namespace StudentManagementSystem.Services
             await Task.Delay(100); // Simulate email sending
             Console.WriteLine($"Credentials sent to {email}: {password} for role {adminType}");
         }
+
+        public async Task<List<AdminApplication>> GetApprovedApplicationsAsync()
+        {
+            return await _context.AdminApplications
+                .Include(a => a.University)
+                .Include(a => a.Faculty)
+                .Include(a => a.Department)
+                .Where(a => a.Status == ApplicationStatus.Approved && string.IsNullOrEmpty(a.ApplicantId))
+                .OrderByDescending(a => a.ReviewedDate)
+                .ToListAsync();
+        }
+
+        
+
     }
 }

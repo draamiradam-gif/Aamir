@@ -1,0 +1,489 @@
+﻿@model IEnumerable<StudentManagementSystem.Models.AdminApplication>
+@{
+    ViewData["Title"] = "Admin Applications";
+    var pendingCount = ViewBag.PendingCount ?? 0;
+    var approvedCount = Model.Count(a => a.Status == ApplicationStatus.Approved);
+    var rejectedCount = Model.Count(a => a.Status == ApplicationStatus.Rejected);
+}
+
+<div class="container-fluid">
+    <!-- Header with Stats -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>@ViewData["Title"]
+                    </h1>
+                    <p class="text-muted">Review and manage admin access requests</p>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1><i class="fas fa-clipboard-list me-2"></i>Admin Applications</h1>
+                    <div>
+                        <!-- Add this button -->
+                        <a href="@Url.Action("SendBulkEmail", "Applications")" class="btn btn-info me-2">
+                            <i class="fas fa-mail-bulk me-2"></i>Bulk Email
+                        </a>
+
+                        <a href="@Url.Action("Index")" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Admins
+                        </a>
+                        <a href="@Url.Action("ExportApplications")" class="btn btn-success">
+                            <i class="fas fa-file-export me-2"></i>Export
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">TOTAL</h6>
+                            <h2 class="mb-0">@Model.Count()</h2>
+                        </div>
+                        <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">PENDING</h6>
+                            <h2 class="mb-0">@pendingCount</h2>
+                        </div>
+                        <i class="fas fa-clock fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">APPROVED</h6>
+                            <h2 class="mb-0">@approvedCount</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">REJECTED</h6>
+                            <h2 class="mb-0">@rejectedCount</h2>
+                        </div>
+                        <i class="fas fa-times-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Admin Type</label>
+                            <select id="typeFilter" class="form-select">
+                                <option value="">All Types</option>
+                                @foreach (var type in Enum.GetValues(typeof(AdminType)))
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Date From</label>
+                            <input type="date" id="dateFrom" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Date To</label>
+                            <input type="date" id="dateTo" class="form-control">
+                        </div>
+                        <div class="col-md-12">
+                            <div class="d-flex gap-2">
+                                <button id="applyFilters" class="btn btn-primary">
+                                    <i class="fas fa-filter me-2"></i>Apply Filters
+                                </button>
+                                <button id="clearFilters" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-2"></i>Clear
+                                </button>
+                                <div class="ms-auto">
+                                    <input type="text" id="globalSearch" class="form-control" placeholder="Search applications...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications Table -->
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Applications List</h5>
+                    <span class="badge bg-primary">@Model.Count() total</span>
+                </div>
+                <div class="card-body">
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+                            <h4>No Applications Found</h4>
+                            <p class="text-muted">There are no admin applications to review.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="applicationsTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Applicant</th>
+                                        <th>Email</th>
+                                        <th>Admin Type</th>
+                                        <th>Scope</th>
+                                        <th>Status</th>
+                                        <th>Applied Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var app in Model)
+                                    {
+                                        <tr data-status="@app.Status" data-type="@app.AppliedAdminType"
+                                            data-date="@app.AppliedDate.ToString("yyyy-MM-dd")">
+                                            <td>@app.Id</td>
+                                            <td>
+                                                <div class="fw-medium">@app.ApplicantName</div>
+                                                <small class="text-muted">@app.Phone</small>
+                                            </td>
+                                            <td>
+                                                <a href="mailto:@app.Email">@app.Email</a>
+                                                @if (!string.IsNullOrEmpty(app.Experience))
+                                                {
+                                                    <div class="mt-1">
+                                                        <small class="text-muted" title="@app.Experience">
+                                                            <i class="fas fa-briefcase me-1"></i>Has Experience
+                                                        </small>
+                                                    </div>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetAdminTypeBadgeClass(app.AppliedAdminType)">
+                                                    @app.AppliedAdminType
+                                                </span>
+                                                @if (app.AssignedAdminType.HasValue && app.AssignedAdminType != app.AppliedAdminType)
+                                                {
+                                                    <div class="mt-1">
+                                                        <small class="text-muted">
+                                                            Assigned: @app.AssignedAdminType
+                                                        </small>
+                                                    </div>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (app.University != null || app.Faculty != null || app.Department != null)
+                                                {
+                                                    <div class="small">
+                                                        @if (app.University != null)
+                                                        {
+                                                            <div><i class="fas fa-university me-1"></i>@app.University.Name</div>
+                                                        }
+                                                        @if (app.Faculty != null)
+                                                        {
+                                                            <div><i class="fas fa-building me-1"></i>@app.Faculty.Name</div>
+                                                        }
+                                                        @if (app.Department != null)
+                                                        {
+                                                            <div><i class="fas fa-sitemap me-1"></i>@app.Department.Name</div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Global</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(app.Status.ToString())">
+                                                    @app.Status
+                                                </span>
+                                                @if (!string.IsNullOrEmpty(app.ReviewNotes))
+                                                {
+                                                    <div class="mt-1">
+                                                        <small class="text-muted" title="@app.ReviewNotes">
+                                                            <i class="fas fa-comment me-1"></i>Has Notes
+                                                        </small>
+                                                    </div>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div>@app.AppliedDate.ToString("MMM dd, yyyy")</div>
+                                                <small class="text-muted">@app.AppliedDate.ToString("HH:mm")</small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="@Url.Action("Review", "Applications", new { id = app.Id })"
+                                                       class="btn btn-outline-primary" title="Review">
+                                                        <i class="fas fa-clipboard-check"></i>
+                                                    </a>
+                                                    <!-- Send Individual Email button -->
+                                                    <a href="@Url.Action("SendEmail", "Applications", new { id = app.Id })"
+                                                       class="btn btn-outline-info ms-1" title="Send Email">
+                                                        <i class="fas fa-envelope"></i>
+                                                    </a>
+                                                    @if (app.Status == ApplicationStatus.Pending)
+                                                    {
+                                                        <!-- Approve button -->
+                                                        <form method="post" action="@Url.Action("Approve", "Applications", new { id = app.Id })"
+                                                              class="d-inline" onsubmit="return confirm('Approve this application?');">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-outline-success ms-1" title="Approve">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                        </form>
+
+                                                        <!-- Reject button -->
+                                                        <button type="button" class="btn btn-outline-danger ms-1"
+                                                                onclick="showRejectModal(@app.Id)" title="Reject">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    }
+
+                                                    @if (app.Status == ApplicationStatus.Approved)
+                                                    {
+                                                        <!-- ADD THIS BUTTON FOR APPROVED APPLICATIONS -->
+                                                        <form method="post" action="@Url.Action("CreateAdminFromApplication", "Applications", new { id = app.Id })"
+                                                              class="d-inline" onsubmit="return confirm('Create admin account for this approved application?');">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-outline-info ms-1" title="Create Admin Account">
+                                                                <i class="fas fa-user-plus"></i> Create Admin
+                                                            </button>
+                                                        </form>
+                                                    }
+
+                                                    @if (app.IsBlocked)
+                                                    {
+                                                        <form method="post" action="@Url.Action("Unblock", "Applications", new { id = app.Id })"
+                                                              class="d-inline" onsubmit="return confirm('Unblock this user?');">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-outline-warning ms-1" title="Unblock">
+                                                                <i class="fas fa-unlock"></i>
+                                                            </button>
+                                                        </form>
+                                                    }
+
+
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="rejectForm" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="appId" name="id">
+                    <div class="mb-3">
+                        <label for="rejectNotes" class="form-label">Reason for Rejection</label>
+                        <textarea class="form-control" id="rejectNotes" name="notes" rows="3"
+                                  placeholder="Optional notes..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .badge {
+            font-size: 0.8em;
+            padding: 0.35em 0.65em;
+        }
+
+        .table th {
+            font-weight: 600;
+            border-top: none;
+        }
+
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        #applicationsTable tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#applicationsTable').DataTable({
+                pageLength: 25,
+                responsive: true,
+                order: [[6, 'desc']], // Sort by Applied Date descending
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search applications...",
+                    lengthMenu: "_MENU_ records per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ applications",
+                    infoEmpty: "No applications found",
+                    infoFiltered: "(filtered from _MAX_ total)"
+                },
+                columnDefs: [
+                    { orderable: false, targets: [7] } // Disable sorting on Actions column
+                ]
+            });
+
+            // Global search
+            $('#globalSearch').on('keyup', function() {
+                table.search(this.value).draw();
+            });
+
+            // Apply filters
+            $('#applyFilters').on('click', function() {
+                var status = $('#statusFilter').val();
+                var type = $('#typeFilter').val();
+                var dateFrom = $('#dateFrom').val();
+                var dateTo = $('#dateTo').val();
+
+                // Combine filters
+                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                    var rowStatus = table.row(dataIndex).data()[5]; // Status column
+                    var rowType = table.row(dataIndex).data()[3]; // Type column
+                    var rowDate = table.row(dataIndex).data()[6]; // Date column
+
+                    var statusMatch = status === '' || rowStatus.includes(status);
+                    var typeMatch = type === '' || rowType.includes(type);
+                    var dateMatch = true;
+
+                    if (dateFrom || dateTo) {
+                        var rowDateObj = new Date(rowDate);
+                        var fromDate = dateFrom ? new Date(dateFrom) : null;
+                        var toDate = dateTo ? new Date(dateTo) : null;
+
+                        if (fromDate && rowDateObj < fromDate) dateMatch = false;
+                        if (toDate && rowDateObj > toDate) dateMatch = false;
+                    }
+
+                    return statusMatch && typeMatch && dateMatch;
+                });
+
+                table.draw();
+                $.fn.dataTable.ext.search.pop(); // Remove filter function
+            });
+
+            // Clear filters
+            $('#clearFilters').on('click', function() {
+                $('#statusFilter').val('');
+                $('#typeFilter').val('');
+                $('#dateFrom').val('');
+                $('#dateTo').val('');
+                $('#globalSearch').val('');
+                table.search('').draw();
+                table.columns().search('').draw();
+            });
+
+            // Reject modal function
+            window.showRejectModal = function(appId) {
+                document.getElementById('appId').value = appId;
+                document.getElementById('rejectForm').action = '@Url.Action("Reject", "Applications")' + '/' + appId;
+                const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+                modal.show();
+            };
+
+            // Auto focus on reject notes when modal opens
+            $('#rejectModal').on('shown.bs.modal', function() {
+                $('#rejectNotes').focus();
+            });
+        });
+    </script>
+}
+
+@functions {
+    public string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning",
+            "Approved" => "bg-success",
+            "Rejected" => "bg-danger",
+            "Revoked" => "bg-secondary",
+            "Blocked" => "bg-dark",
+            "UnderReview" => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+
+    public string GetAdminTypeBadgeClass(AdminType adminType)
+    {
+        return adminType switch
+        {
+            AdminType.SuperAdmin => "bg-danger",
+            AdminType.UniversityAdmin => "bg-primary",
+            AdminType.FacultyAdmin => "bg-info",
+            AdminType.DepartmentAdmin => "bg-success",
+            AdminType.EmployeeAdmin => "bg-warning",
+            AdminType.FinanceAdmin => "bg-purple",
+            AdminType.StudentAdmin => "bg-teal",
+            AdminType.CustomAdmin => "bg-indigo",
+            _ => "bg-secondary"
+        };
+    }
+}

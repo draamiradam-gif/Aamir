@@ -24,10 +24,12 @@ namespace StudentManagementSystem.Models
 
         [Required]
         public AdminType AppliedAdminType { get; set; }
+        public AdminType? AssignedAdminType { get; set; }
 
         public int? UniversityId { get; set; }
         public int? FacultyId { get; set; }
         public int? DepartmentId { get; set; }
+        public string? ApplicantId { get; set; }
 
         [Required]
         [StringLength(1000)]
@@ -51,6 +53,15 @@ namespace StudentManagementSystem.Models
 
         [StringLength(500)]
         public string? ReviewNotes { get; set; }
+        public bool IsBlocked { get; set; } = false;
+
+        [StringLength(500)]
+        public string? BlockReason { get; set; }
+
+        public DateTime? BlockedDate { get; set; }
+
+        [StringLength(100)]
+        public string? BlockedBy { get; set; }
 
         // Navigation properties
         [ForeignKey("UniversityId")]
@@ -61,6 +72,11 @@ namespace StudentManagementSystem.Models
 
         [ForeignKey("DepartmentId")]
         public virtual Department? Department { get; set; }
+
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;        
+        
+
+
     }
 
     public class AdminPrivilege
@@ -116,6 +132,15 @@ namespace StudentManagementSystem.Models
 
         [ForeignKey("DepartmentScope")]
         public virtual Department? Department { get; set; }
+        
+        // ADD THESE if missing:
+        public int? UniversityId { get; set; }
+        public int? FacultyId { get; set; }
+        public int? DepartmentId { get; set; }
+        
+        public string? ModifiedBy { get; set; } 
+
+        
     }
 
     public class AdminPrivilegeTemplate

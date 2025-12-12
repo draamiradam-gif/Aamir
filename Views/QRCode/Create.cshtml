@@ -80,6 +80,17 @@
                         <a asp-action="Index" class="btn btn-secondary">Back to List</a>
                     </div>
                 </form>
+                @* <!-- Add this debug section -->
+                <div class="mt-3 p-3 border rounded">
+                    <h6><i class="fas fa-bug"></i> Debug Info</h6>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="checkForm()">
+                        Check Form State
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="submitManually()">
+                        Submit Manually
+                    </button>
+                    <div id="debugOutput" class="mt-2 small text-muted"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -102,7 +113,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> *@
 
 @section Scripts {
     <script>
@@ -115,6 +126,101 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('TokenIntervalGroup').style.display =
                 document.getElementById('EnableDynamicQR').checked ? 'block' : 'none';
+        });
+    </script>
+    <script>
+        function debugLog(message) {
+            console.log(message);
+            const output = document.getElementById('debugOutput');
+            if (output) {
+                output.innerHTML += '<div>' + message + '</div>';
+            }
+        }
+
+        function checkForm() {
+            debugLog("=== FORM CHECK ===");
+
+            // Check Course dropdown
+            const courseSelect = document.getElementById('CourseId');
+            debugLog("Course dropdown exists: " + (courseSelect !== null));
+            debugLog("Selected CourseId: " + (courseSelect ? courseSelect.value : 'N/A'));
+            debugLog("Course options: " + (courseSelect ? courseSelect.options.length : 0));
+
+            // Check Session Title
+            const titleInput = document.getElementById('SessionTitle');
+            debugLog("Title input exists: " + (titleInput !== null));
+            debugLog("Title value: " + (titleInput ? titleInput.value : 'N/A'));
+
+            // Check form
+            const form = document.querySelector('form');
+            debugLog("Form exists: " + (form !== null));
+            debugLog("Form action: " + (form ? form.action : 'N/A'));
+            debugLog("Form method: " + (form ? form.method : 'N/A'));
+
+            // Check __RequestVerificationToken
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            debugLog("Anti-forgery token exists: " + (token !== null));
+        }
+
+        function submitManually() {
+            debugLog("Attempting manual submission...");
+            const form = document.querySelector('form');
+
+            if (!form) {
+                debugLog("ERROR: Form not found!");
+                return;
+            }
+
+            // Create FormData
+            const formData = new FormData(form);
+
+            // Log form data
+            debugLog("Form Data:");
+            for (let [key, value] of formData.entries()) {
+                debugLog("  " + key + ": " + value);
+            }
+
+            // Submit via fetch to see what happens
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                debugLog("Response status: " + response.status);
+                debugLog("Response URL: " + response.url);
+                return response.text();
+            })
+            .then(text => {
+                debugLog("Response received (first 500 chars):");
+                debugLog(text.substring(0, 500));
+            })
+            .catch(error => {
+                debugLog("Fetch error: " + error.message);
+            });
+        }
+
+        // Add event listeners for debugging
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog("Page loaded");
+
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    debugLog("Form submit event triggered!");
+                    console.log("Submit event details:", e);
+                });
+            }
+
+            // Also add input change listeners
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    debugLog(this.name + " changed to: " + this.value);
+                });
+            });
         });
     </script>
 }

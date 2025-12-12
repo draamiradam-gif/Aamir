@@ -8,29 +8,69 @@
     <h1 class="display-6">
         <i class="fas fa-ruler-combined me-2"></i>Registration Rules
     </h1>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRuleModal">
-        <i class="fas fa-plus me-2"></i>Add New Rule
-    </button>
+    <div class="d-flex gap-2">
+        <!-- Add New Rule Button -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRuleModal">
+            <i class="fas fa-plus me-2"></i>Add New Rule
+        </button>
+        
+        <!-- Import from Courses Button -->
+        <form asp-action="ImportRulesFromCourses" method="post">
+            <button type="submit" class="btn btn-info">
+                <i class="fas fa-sync-alt me-2"></i>Import from Courses
+            </button>
+        </form>
+        
+        <!-- Quick Actions Dropdown -->
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-cog me-2"></i>Actions
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <a class="dropdown-item" href="#" id="validateRulesBtn">
+                        <i class="fas fa-check-circle me-2"></i>Validate All Rules
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" id="exportRulesBtn">
+                        <i class="fas fa-download me-2"></i>Export Rules
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" id="toggleAllRulesBtn">
+                        <i class="fas fa-power-off me-2"></i>Toggle All Rules
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
 </div>
 
-<!-- Rules Table -->
+<!-- Enhanced Rules Table -->
 <div class="card">
-    <div class="card-header bg-light">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0">
             <i class="fas fa-list me-2"></i>Registration Rules
+            <span class="badge bg-primary ms-2">@Model.Rules.Count rules</span>
         </h5>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="showInactiveRules" checked>
+            <label class="form-check-label" for="showInactiveRules">Show Inactive</label>
+        </div>
     </div>
     <div class="card-body">
         @if (Model.Rules.Any())
         {
             <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-striped table-hover" id="rulesTable">
                     <thead class="table-dark">
                         <tr>
                             <th>Rule Name</th>
                             <th>Type</th>
                             <th>Department</th>
                             <th>Requirements</th>
+                            <th>Source</th>
                             <th>Enforcement</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -39,38 +79,92 @@
                     <tbody>
                         @foreach (var rule in Model.Rules)
                         {
-                            <tr>
+                            <tr class="rule-row @(rule.IsActive ? "" : "table-secondary")" 
+                                data-rule-id="@rule.Id" 
+                                data-is-active="@rule.IsActive.ToString().ToLower()">
                                 <td>
-                                    <strong>@rule.RuleName</strong>
+                                    <div class="d-flex align-items-center">
+                                        <strong>@rule.RuleName</strong>
+                                        @if (rule.CourseId.HasValue)
+                                        {
+                                            <span class="badge bg-info ms-2" title="Imported from course">Course</span>
+                                        }
+                                    </div>
                                     @if (!string.IsNullOrEmpty(rule.Description))
                                     {
-                                        <br>
-                                        <small class="text-muted">@rule.Description</small>
+                                        <small class="text-muted d-block">@rule.Description</small>
                                     }
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">@rule.RuleType</span>
+                                    <span class="badge @GetRuleTypeBadge(rule.RuleType)">
+                                        @rule.RuleType
+                                    </span>
                                 </td>
                                 <td>
-                                    @rule.Department?.Name ?? "All Departments"
+                                    @(rule.Department?.Name ?? "All Departments")
                                 </td>
                                 <td>
-                                    @GetRuleRequirements(rule)
+                                    <div class="small">
+                                        @if (rule.MinimumGPA.HasValue)
+                                        {
+                                            <div class="mb-1">
+                                                <i class="fas fa-chart-line me-1"></i>
+                                                <span>GPA ≥ @rule.MinimumGPA.Value.ToString("F2")</span>
+                                            </div>
+                                        }
+                                        @if (rule.MinimumPassedHours.HasValue)
+                                        {
+                                            <div class="mb-1">
+                                                <i class="fas fa-clock me-1"></i>
+                                                <span>Hours ≥ @rule.MinimumPassedHours.Value</span>
+                                            </div>
+                                        }
+                                        @if (rule.MaximumCreditHours.HasValue)
+                                        {
+                                            <div class="mb-1">
+                                                <i class="fas fa-balance-scale me-1"></i>
+                                                <span>Max Credits: @rule.MaximumCreditHours.Value</span>
+                                            </div>
+                                        }
+                                        @if (rule.MinimumCreditHours.HasValue)
+                                        {
+                                            <div class="mb-1">
+                                                <i class="fas fa-balance-scale-left me-1"></i>
+                                                <span>Min Credits: @rule.MinimumCreditHours.Value</span>
+                                            </div>
+                                        }
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge @GetEnforcementBadgeClass(rule.EnforcementLevel)">
+                                    @if (rule.Course != null)
+                                    {
+                                        <small>
+                                            <i class="fas fa-book me-1"></i>
+                                            @rule.Course.CourseCode
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Manual</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="badge @GetEnforcementBadge(rule.EnforcementLevel)">
                                         @rule.EnforcementLevel
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge @(rule.IsActive ? "bg-success" : "bg-secondary")">
-                                        @(rule.IsActive ? "Active" : "Inactive")
-                                    </span>
+                                    <div class="form-check form-switch d-inline-block">
+                                        <input class="form-check-input rule-toggle" 
+                                               type="checkbox" 
+                                               data-rule-id="@rule.Id"
+                                               @(rule.IsActive ? "checked" : "")>
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-primary btn-sm"
-                                                data-bs-toggle="modal" data-bs-target="#editRuleModal"
+                                        <button type="button" class="btn btn-outline-primary btn-sm edit-rule-btn"
                                                 data-rule-id="@rule.Id"
                                                 data-rule-name="@rule.RuleName"
                                                 data-description="@rule.Description"
@@ -82,15 +176,21 @@
                                                 data-minimum-credit-hours="@rule.MinimumCreditHours"
                                                 data-grade-level="@rule.GradeLevel"
                                                 data-enforcement-level="@rule.EnforcementLevel"
-                                                data-is-active="@rule.IsActive">
+                                                data-is-course-based="@rule.CourseId.HasValue"
+                                                data-course-id="@rule.CourseId">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <form asp-action="ToggleRule" method="post" class="d-inline">
-                                            <input type="hidden" name="id" value="@rule.Id" />
-                                            <button type="submit" class="btn btn-outline-@(rule.IsActive ? "warning" : "success") btn-sm">
-                                                <i class="fas fa-@(rule.IsActive ? "pause" : "play")"></i>
-                                            </button>
-                                        </form>
+                                        
+                                        <button type="button" class="btn btn-outline-info btn-sm duplicate-rule-btn"
+                                                data-rule-id="@rule.Id">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                        
+                                        <button type="button" class="btn btn-outline-danger btn-sm delete-rule-btn"
+                                                data-rule-id="@rule.Id"
+                                                data-rule-name="@rule.RuleName">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -101,56 +201,71 @@
         }
         else
         {
-            <div class="text-center py-4">
+            <div class="text-center py-5">
                 <i class="fas fa-ruler-combined fa-3x text-muted mb-3"></i>
                 <h5 class="text-muted">No rules configured</h5>
-                <p class="text-muted">Add your first registration rule to get started.</p>
+                <p class="text-muted mb-4">Add your first registration rule or import from courses</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRuleModal">
+                        <i class="fas fa-plus me-2"></i>Add First Rule
+                    </button>
+                    <button type="button" class="btn btn-info" id="importFromCoursesEmptyBtn">
+                        <i class="fas fa-sync me-2"></i>Import from Courses
+                    </button>
+                </div>
             </div>
         }
     </div>
 </div>
 
-<!-- Add Rule Modal -->
-<div class="modal fade" id="addRuleModal" tabindex="-1">
+<!-- Add Rule Modal (Fixed) -->
+<div class="modal fade" id="addRuleModal" tabindex="-1" aria-labelledby="addRuleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Registration Rule</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addRuleModalLabel">
+                    <i class="fas fa-plus me-2"></i>Add New Registration Rule
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form asp-action="SaveRule" method="post">
+            <form id="addRuleForm" asp-action="SaveRule" method="post">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label for="RuleName">Rule Name *</label>
-                                <input type="text" class="form-control" name="RuleName" required />
+                                <label for="RuleName" class="form-label">Rule Name *</label>
+                                <input type="text" class="form-control" id="RuleName" name="RuleName" required 
+                                       placeholder="Enter rule name (e.g., 'Minimum GPA Requirement')">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label for="RuleType">Rule Type *</label>
-                                <select class="form-control" name="RuleType" required>
+                                <label for="RuleType" class="form-label">Rule Type *</label>
+                                <select class="form-control" id="RuleType" name="RuleType" required>
                                     <option value="">Select Rule Type</option>
-                                    @foreach (RuleType type in Enum.GetValues(typeof(RuleType)))
-                                    {
-                                        <option value="@type">@type</option>
-                                    }
+                                    <option value="Prerequisite">Prerequisite</option>
+                                    <option value="CreditLimit">Credit Limit</option>
+                                    <option value="GPARequirement">GPA Requirement</option>
+                                    <option value="Departmental">Departmental</option>
+                                    <option value="GradeLevel">Grade Level</option>
+                                    <option value="TimeConflict">Time Conflict</option>
+                                    <option value="MaximumCourses">Maximum Courses</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group mb-3">
-                        <label for="Description">Description</label>
-                        <textarea class="form-control" name="Description" rows="2"></textarea>
+                        <label for="Description" class="form-label">Description</label>
+                        <textarea class="form-control" id="Description" name="Description" rows="2"
+                                  placeholder="Describe what this rule does..."></textarea>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label for="DepartmentId">Department</label>
-                                <select class="form-control" name="DepartmentId">
+                                <label for="DepartmentId" class="form-label">Department (Optional)</label>
+                                <select class="form-control" id="DepartmentId" name="DepartmentId">
                                     <option value="">All Departments</option>
                                     @foreach (var dept in Model.Departments)
                                     {
@@ -161,12 +276,11 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label for="EnforcementLevel">Enforcement Level *</label>
-                                <select class="form-control" name="EnforcementLevel" required>
-                                    @foreach (EnforcementLevel level in Enum.GetValues(typeof(EnforcementLevel)))
-                                    {
-                                        <option value="@level">@level</option>
-                                    }
+                                <label for="EnforcementLevel" class="form-label">Enforcement Level *</label>
+                                <select class="form-control" id="EnforcementLevel" name="EnforcementLevel" required>
+                                    <option value="Warning">Warning</option>
+                                    <option value="Block">Block</option>
+                                    <option value="Recommendation">Recommendation</option>
                                 </select>
                             </div>
                         </div>
@@ -175,20 +289,24 @@
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group mb-3">
-                                <label for="MinimumGPA">Minimum GPA</label>
-                                <input type="number" class="form-control" name="MinimumGPA" step="0.01" min="0" max="4.0" />
+                                <label for="MinimumGPA" class="form-label">Minimum GPA</label>
+                                <input type="number" class="form-control" id="MinimumGPA" name="MinimumGPA" 
+                                       step="0.01" min="0" max="4.0" placeholder="e.g., 2.0">
+                                <small class="text-muted">Leave empty if not required</small>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group mb-3">
-                                <label for="MinimumPassedHours">Minimum Passed Hours</label>
-                                <input type="number" class="form-control" name="MinimumPassedHours" min="0" />
+                                <label for="MinimumPassedHours" class="form-label">Minimum Passed Hours</label>
+                                <input type="number" class="form-control" id="MinimumPassedHours" name="MinimumPassedHours" 
+                                       min="0" placeholder="e.g., 30">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group mb-3">
-                                <label for="GradeLevel">Grade Level</label>
-                                <input type="number" class="form-control" name="GradeLevel" min="1" max="4" />
+                                <label for="GradeLevel" class="form-label">Minimum Grade Level</label>
+                                <input type="number" class="form-control" id="GradeLevel" name="GradeLevel" 
+                                       min="1" max="4" placeholder="e.g., 2">
                             </div>
                         </div>
                     </div>
@@ -196,21 +314,28 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label for="MinimumCreditHours">Minimum Credit Hours</label>
-                                <input type="number" class="form-control" name="MinimumCreditHours" min="0" />
+                                <label for="MinimumCreditHours" class="form-label">Minimum Credit Hours</label>
+                                <input type="number" class="form-control" id="MinimumCreditHours" name="MinimumCreditHours" 
+                                       min="0" placeholder="e.g., 12">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label for="MaximumCreditHours">Maximum Credit Hours</label>
-                                <input type="number" class="form-control" name="MaximumCreditHours" min="0" />
+                                <label for="MaximumCreditHours" class="form-label">Maximum Credit Hours</label>
+                                <input type="number" class="form-control" id="MaximumCreditHours" name="MaximumCreditHours" 
+                                       min="0" placeholder="e.g., 18">
                             </div>
                         </div>
                     </div>
 
                     <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" name="IsActive" value="true" checked />
-                        <label class="form-check-label">Active Rule</label>
+                        <input class="form-check-input" type="checkbox" id="IsActive" name="IsActive" value="true" checked>
+                        <label class="form-check-label" for="IsActive">Active Rule</label>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Tip:</strong> You can also import rules from existing courses by clicking "Import from Courses"
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -222,165 +347,629 @@
     </div>
 </div>
 
-<!-- Edit Rule Modal -->
-<div class="modal fade" id="editRuleModal" tabindex="-1">
+<!-- Import from Courses Modal -->
+<div class="modal fade" id="importFromCoursesModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Registration Rule</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-sync me-2"></i>Import Rules from Courses
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form asp-action="SaveRule" method="post">
-                <input type="hidden" name="Id" id="editRuleId" />
-                <div class="modal-body" id="editRuleForm">
-                    <!-- Form will be populated by JavaScript -->
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    This will create rules based on course prerequisites and requirements. Existing rules will not be modified.
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Rule</button>
+                
+                <div class="mb-4">
+                    <h6>Select Course Criteria:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="importGPA" checked>
+                                <label class="form-check-label" for="importGPA">
+                                    Import GPA requirements
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="importPrerequisites" checked>
+                                <label class="form-check-label" for="importPrerequisites">
+                                    Import prerequisite requirements
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="importPassedHours" checked>
+                                <label class="form-check-label" for="importPassedHours">
+                                    Import passed hours requirements
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="importCreditLimits">
+                                <label class="form-check-label" for="importCreditLimits">
+                                    Import credit limits
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </form>
+                
+                <div id="importPreview" class="border rounded p-3 mb-3" style="max-height: 300px; overflow-y: auto;">
+                    <p class="text-muted text-center">Select criteria above to preview rules</p>
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="autoActivate" checked>
+                    <label class="form-check-label" for="autoActivate">
+                        Automatically activate imported rules
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" id="startImportBtn">
+                    <i class="fas fa-sync me-2"></i>Start Import
+                </button>
+            </div>
+
+            <!-- Bulk Actions Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cogs me-2"></i>Bulk Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <form asp-action="BulkActivateRules" method="post">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-check me-2"></i>Activate All
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-3">
+                            <form asp-action="BulkDeactivateRules" method="post">
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="fas fa-pause me-2"></i>Deactivate All
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-info w-100" data-bs-toggle="modal" data-bs-target="#exportRulesModal">
+                                <i class="fas fa-download me-2"></i>Export Rules
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#importRulesModal">
+                                <i class="fas fa-upload me-2"></i>Import Rules
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Rule Modal -->
+            <div class="modal fade" id="editRuleModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-edit me-2"></i>Edit Registration Rule
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="saveRuleForm" method="post">
+                            <input type="hidden" name="Id" id="editRuleId" value="0" />
+                            <div class="modal-body">
+                                <!-- Copy the form from addRuleModal but with id="editRuleId" -->
+                                <!-- Make sure all fields have proper IDs and names -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="RuleName" class="form-label">Rule Name *</label>
+                                            <input type="text" class="form-control" id="RuleName" name="RuleName" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="RuleType" class="form-label">Rule Type *</label>
+                                            <select class="form-control" id="RuleType" name="RuleType" required>
+                                                <!-- Options here -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Add all other form fields -->
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Rules Modal -->
+            <div class="modal fade" id="exportRulesModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title">Export Rules</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Select export format:</p>
+                            <div class="d-grid gap-2">
+                                <a href="@Url.Action("ExportRules", "Registration", new { format = "excel" })"
+                                   class="btn btn-success">
+                                    <i class="fas fa-file-excel me-2"></i>Export to Excel
+                                </a>
+                                <a href="@Url.Action("ExportRules", "Registration", new { format = "csv" })"
+                                   class="btn btn-primary">
+                                    <i class="fas fa-file-csv me-2"></i>Export to CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Rules Modal -->
+            <div class="modal fade" id="importRulesModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">Import Rules</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form asp-action="ImportRules" method="post" enctype="multipart/form-data">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="rulesFile" class="form-label">Select Rules File</label>
+                                    <input type="file" class="form-control" name="rulesFile" accept=".xlsx,.xls,.csv" required>
+                                    <small class="text-muted">Supported formats: Excel (.xlsx, .xls) or CSV (.csv)</small>
+                                </div>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    File should contain columns: RuleName, Description, RuleType, DepartmentId, MinimumGPA, etc.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Import</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        // Edit modal setup
-        const editRuleModal = document.getElementById('editRuleModal');
-        editRuleModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-
-            const formHtml = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="RuleName">Rule Name *</label>
-                            <input type="text" class="form-control" name="RuleName" value="${button.getAttribute('data-rule-name')}" required />
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="RuleType">Rule Type *</label>
-                            <select class="form-control" name="RuleType" required>
-                                <option value="">Select Rule Type</option>
-                                @foreach (RuleType type in Enum.GetValues(typeof(RuleType)))
-                                {
-                                        <option value="@type">@type</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group mb-3">
-                    <label for="Description">Description</label>
-                    <textarea class="form-control" name="Description" rows="2">${button.getAttribute('data-description') || ''}</textarea>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="DepartmentId">Department</label>
-                            <select class="form-control" name="DepartmentId">
-                                <option value="">All Departments</option>
-                                @foreach (var dept in Model.Departments)
-                                {
-                                        <option value="@dept.Id">@dept.Name</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="EnforcementLevel">Enforcement Level *</label>
-                            <select class="form-control" name="EnforcementLevel" required>
-                                @foreach (EnforcementLevel level in Enum.GetValues(typeof(EnforcementLevel)))
-                                {
-                                        <option value="@level">@level</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="MinimumGPA">Minimum GPA</label>
-                            <input type="number" class="form-control" name="MinimumGPA" value="${button.getAttribute('data-minimum-gpa') || ''}" step="0.01" min="0" max="4.0" />
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="MinimumPassedHours">Minimum Passed Hours</label>
-                            <input type="number" class="form-control" name="MinimumPassedHours" value="${button.getAttribute('data-minimum-passed-hours') || ''}" min="0" />
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label for="GradeLevel">Grade Level</label>
-                            <input type="number" class="form-control" name="GradeLevel" value="${button.getAttribute('data-grade-level') || ''}" min="1" max="4" />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="MinimumCreditHours">Minimum Credit Hours</label>
-                            <input type="number" class="form-control" name="MinimumCreditHours" value="${button.getAttribute('data-minimum-credit-hours') || ''}" min="0" />
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="MaximumCreditHours">Maximum Credit Hours</label>
-                            <input type="number" class="form-control" name="MaximumCreditHours" value="${button.getAttribute('data-maximum-credit-hours') || ''}" min="0" />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" name="IsActive" value="true" ${button.getAttribute('data-is-active') === 'True' ? 'checked' : ''} />
-                    <label class="form-check-label">Active Rule</label>
-                </div>
-            `;
-
-            document.getElementById('editRuleId').value = button.getAttribute('data-rule-id');
-            document.getElementById('editRuleForm').innerHTML = formHtml;
-
-            // Set select values
-            document.querySelector('#editRuleForm select[name="RuleType"]').value = button.getAttribute('data-rule-type');
-            document.querySelector('#editRuleForm select[name="DepartmentId"]').value = button.getAttribute('data-department-id') || '';
-            document.querySelector('#editRuleForm select[name="EnforcementLevel"]').value = button.getAttribute('data-enforcement-level');
+        // Initialize DataTable
+        $(document).ready(function () {
+            $('#rulesTable').DataTable({
+                pageLength: 25,
+                responsive: true,
+                columnDefs: [
+                    { orderable: false, targets: [7] } // Disable sorting on Actions column
+                ]
+            });
+            
+            // Show/hide inactive rules
+            $('#showInactiveRules').change(function() {
+                const show = $(this).is(':checked');
+                $('.rule-row').each(function() {
+                    const isActive = $(this).data('is-active') === 'true';
+                    if (!isActive && !show) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                });
+            });
+            
+            // Import from Courses button
+            $('#importFromCoursesBtn, #importFromCoursesEmptyBtn').click(function() {
+                $('#importFromCoursesModal').modal('show');
+                loadImportPreview();
+            });
+            
+            // Toggle rule status
+            $('.rule-toggle').change(function() {
+                const ruleId = $(this).data('rule-id');
+                const isActive = $(this).is(':checked');
+                
+                $.post('@Url.Action("ToggleRule", "Registration")', { id: ruleId })
+                    .done(function() {
+                        showToast('Rule ' + (isActive ? 'activated' : 'deactivated'), 'success');
+                        // Update row appearance
+                        const row = $('[data-rule-id="' + ruleId + '"]');
+                        row.toggleClass('table-secondary', !isActive);
+                        row.data('is-active', isActive.toString().toLowerCase());
+                    })
+                    .fail(function() {
+                        showToast('Failed to update rule status', 'error');
+                        $(this).prop('checked', !isActive); // Revert checkbox
+                    });
+            });
+            
+            // Delete rule confirmation
+            $('.delete-rule-btn').click(function() {
+                const ruleId = $(this).data('rule-id');
+                const ruleName = $(this).data('rule-name');
+                
+                if (confirm(`Are you sure you want to delete rule "${ruleName}"?`)) {
+                    $.post('@Url.Action("DeleteRule", "Registration")', { id: ruleId })
+                        .done(function() {
+                            showToast('Rule deleted successfully', 'success');
+                            location.reload();
+                        })
+                        .fail(function() {
+                            showToast('Failed to delete rule', 'error');
+                        });
+                }
+            });
+            
+            // Edit rule button
+            $('.edit-rule-btn').click(function() {
+                const ruleId = $(this).data('rule-id');
+                // Load edit form via AJAX
+                loadEditForm(ruleId);
+            });
+            
+            // Duplicate rule
+            $('.duplicate-rule-btn').click(function() {
+                const ruleId = $(this).data('rule-id');
+                duplicateRule(ruleId);
+            });
+            
+            // Validate all rules
+            $('#validateRulesBtn').click(function() {
+                validateAllRules();
+            });
+            
+            // Export rules
+            $('#exportRulesBtn').click(function() {
+                exportRules();
+            });
+            
+            // Toggle all rules
+            $('#toggleAllRulesBtn').click(function() {
+                toggleAllRules();
+            });
         });
+        ///////////////////
+
+
+            $(document).ready(function() {
+        // Destroy existing DataTable instance if it exists
+        if ($.fn.dataTable.isDataTable('#rulesTable')) {
+            $('#rulesTable').DataTable().destroy();
+        }
+
+        // Initialize DataTable
+        var table = $('#rulesTable').DataTable({
+            pageLength: 25,
+            responsive: true,
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                 '<"row"<"col-sm-12"tr>>' +
+                 '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            columnDefs: [
+                { orderable: false, targets: [7] }
+            ],
+            language: {
+                search: "Filter rules:",
+                lengthMenu: "Show _MENU_ rules"
+            }
+        });
+
+            // Edit Rule Modal
+            $(document).on('click', '.edit-rule-btn', function() {
+                const ruleId = $(this).data('rule-id');
+
+                $.get('@Url.Action("GetRuleForEdit", "Registration")', { id: ruleId })
+                    .done(function(data) {
+                        // Populate the edit modal
+                        $('#editRuleId').val(data.id);
+                        $('#RuleName').val(data.ruleName);
+                        $('#Description').val(data.description);
+                        $('#RuleType').val(data.ruleType);
+                        $('#DepartmentId').val(data.departmentId || '');
+                        $('#MinimumGPA').val(data.minimumGPA || '');
+                        $('#MinimumPassedHours').val(data.minimumPassedHours || '');
+                        $('#MaximumCreditHours').val(data.maximumCreditHours || '');
+                        $('#MinimumCreditHours').val(data.minimumCreditHours || '');
+                        $('#GradeLevel').val(data.gradeLevel || '');
+                        $('#EnforcementLevel').val(data.enforcementLevel);
+                        $('#IsActive').prop('checked', data.isActive);
+                        $('#CourseId').val(data.courseId || '');
+
+                        // Show modal
+                        $('#editRuleModal').modal('show');
+                    })
+                    .fail(function() {
+                        alert('Failed to load rule for editing');
+                    });
+            });
+
+            // Save Rule Form (both add and edit)
+            $('#saveRuleForm').submit(function(e) {
+                e.preventDefault();
+
+                const formData = $(this).serialize();
+                const isEdit = $('#editRuleId').val() !== '';
+
+                $.post('@Url.Action("SaveRule", "Registration")', formData)
+                    .done(function(response) {
+                        if (response.success) {
+                            location.reload(); // Reload page to see changes
+                        } else {
+                            alert(response.message || 'Failed to save rule');
+                        }
+                    })
+                    .fail(function() {
+                        alert('An error occurred while saving the rule');
+                    });
+            });
+
+            // Delete Rule
+            $(document).on('click', '.delete-rule-btn', function() {
+                const ruleId = $(this).data('rule-id');
+                const ruleName = $(this).data('rule-name');
+
+                if (confirm(`Are you sure you want to delete rule "${ruleName}"?`)) {
+                    $.post('@Url.Action("DeleteRule", "Registration")', { id: ruleId })
+                        .done(function(response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                alert(response.message || 'Failed to delete rule');
+                            }
+                        })
+                        .fail(function() {
+                            alert('An error occurred while deleting the rule');
+                        });
+                }
+            });
+
+            // Toggle Rule Status
+            $(document).on('change', '.rule-toggle', function() {
+                const ruleId = $(this).data('rule-id');
+                const isActive = $(this).is(':checked');
+
+                $.post('@Url.Action("ToggleRule", "Registration")', { id: ruleId })
+                    .done(function() {
+                        // Update row appearance
+                        const row = $(`[data-rule-id="${ruleId}"]`);
+                        row.toggleClass('table-secondary', !isActive);
+                        showToast(`Rule ${isActive ? 'activated' : 'deactivated'} successfully`, 'success');
+                    })
+                    .fail(function() {
+                        $(this).prop('checked', !isActive); // Revert checkbox
+                        showToast('Failed to update rule status', 'error');
+                    });
+            });
+
+            // Import from Courses
+            $('#startImportBtn').click(function() {
+                const criteria = {
+                    importGPA: $('#importGPA').is(':checked'),
+                    importPrerequisites: $('#importPrerequisites').is(':checked'),
+                    importPassedHours: $('#importPassedHours').is(':checked'),
+                    importCreditLimits: $('#importCreditLimits').is(':checked'),
+                    autoActivate: $('#autoActivate').is(':checked')
+                };
+
+                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Importing...');
+
+                $.post('@Url.Action("ImportRulesFromCourses", "Registration")', criteria)
+                    .done(function(result) {
+                        if (result.success) {
+                            showToast(result.message, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showToast(result.message, 'error');
+                        }
+                    })
+                    .fail(function() {
+                        showToast('Import failed', 'error');
+                    })
+                    .always(function() {
+                        $('#startImportBtn').prop('disabled', false).html('<i class="fas fa-sync me-2"></i>Start Import');
+                    });
+            });
+
+            // Helper function for notifications
+            function showToast(message, type) {
+                // Create toast notification
+                const toastId = 'toast-' + Date.now();
+                const toastHtml = `
+                    <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                                ${message}
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `;
+
+                $('.toast-container').append(toastHtml);
+                const toast = new bootstrap.Toast(document.getElementById(toastId));
+                toast.show();
+
+                // Remove toast after hiding
+                $(`#${toastId}`).on('hidden.bs.toast', function () {
+                    $(this).remove();
+                });
+            }
+        });
+
+
+        //////////////////
+
+
+
+        function loadImportPreview() {
+            const criteria = {
+                importGPA: $('#importGPA').is(':checked'),
+                importPrerequisites: $('#importPrerequisites').is(':checked'),
+                importPassedHours: $('#importPassedHours').is(':checked'),
+                importCreditLimits: $('#importCreditLimits').is(':checked')
+            };
+            
+            $('#importPreview').html(`
+                <div class="text-center">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Loading preview...</p>
+                </div>
+            `);
+            
+            $.get('@Url.Action("GetCourseRulesPreview", "Registration")', criteria)
+                .done(function(data) {
+                    if (data.length > 0) {
+                        let html = '<h6>Rules to be imported:</h6>';
+                        html += '<ul class="mb-0">';
+                        data.forEach(rule => {
+                            html += `<li><strong>${rule.courseCode}</strong>: ${rule.ruleDescription}</li>`;
+                        });
+                        html += '</ul>';
+                        html += `<p class="mt-2"><strong>Total: ${data.length} rules</strong></p>`;
+                        $('#importPreview').html(html);
+                    } else {
+                        $('#importPreview').html('<p class="text-muted">No rules found matching the criteria.</p>');
+                    }
+                })
+                .fail(function() {
+                    $('#importPreview').html('<p class="text-danger">Failed to load preview.</p>');
+                });
+        }
+        
+        function startImport() {
+            const criteria = {
+                importGPA: $('#importGPA').is(':checked'),
+                importPrerequisites: $('#importPrerequisites').is(':checked'),
+                importPassedHours: $('#importPassedHours').is(':checked'),
+                importCreditLimits: $('#importCreditLimits').is(':checked'),
+                autoActivate: $('#autoActivate').is(':checked')
+            };
+            
+            $('#startImportBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Importing...');
+            
+            $.post('@Url.Action("ImportRulesFromCourses", "Registration")', criteria)
+                .done(function(result) {
+                    showToast(`Imported ${result.importedCount} rules successfully`, 'success');
+                    $('#importFromCoursesModal').modal('hide');
+                    location.reload();
+                })
+                .fail(function() {
+                    showToast('Import failed', 'error');
+                })
+                .always(function() {
+                    $('#startImportBtn').prop('disabled', false).html('<i class="fas fa-sync me-2"></i>Start Import');
+                });
+        }
+        
+        function showToast(message, type) {
+            // Use your existing toast function or create a simple one
+            alert(message); // Replace with proper toast
+        }
+
+                function loadEditForm(ruleId) {
+            $.get('@Url.Action("GetRuleForEdit", "Registration")', { id: ruleId })
+                .done(function(data) {
+                    // Populate edit modal with data
+                    $('#editRuleModal').modal('show');
+                    // ... populate form fields ...
+                })
+                .fail(function() {
+                    showToast('Failed to load rule for editing', 'error');
+                });
+        }
+
+        function duplicateRule(ruleId) {
+            if (confirm('Duplicate this rule?')) {
+                $.post('@Url.Action("DuplicateRule", "Registration")', { id: ruleId })
+                    .done(function() {
+                        showToast('Rule duplicated successfully', 'success');
+                        location.reload();
+                    })
+                    .fail(function() {
+                        showToast('Failed to duplicate rule', 'error');
+                    });
+            }
+        }
+
+        function validateAllRules() {
+            $.post('@Url.Action("ValidateAllRules", "Registration")')
+                .done(function(result) {
+                    if (result.valid) {
+                        showToast('All rules are valid', 'success');
+                    } else {
+                        showToast(`Found ${result.errors.length} issues`, 'warning');
+                        // Show errors in a modal
+                        showValidationErrors(result.errors);
+                    }
+                })
+                .fail(function() {
+                    showToast('Validation failed', 'error');
+                });
+        }
+
+        function exportRules() {
+            window.location.href = '@Url.Action("ExportRules", "Registration")?format=excel';
+        }
+
+        function toggleAllRules() {
+            if (confirm('Toggle all rules active/inactive?')) {
+                $.post('@Url.Action("ToggleAllRules", "Registration")')
+                    .done(function() {
+                        showToast('All rules toggled', 'success');
+                        location.reload();
+                    })
+                    .fail(function() {
+                        showToast('Failed to toggle rules', 'error');
+                    });
+            }
+        }
+
+        // Wire up import button
+        $('#startImportBtn').click(startImport);
+        
+        // Update preview when criteria changes
+        $('#importGPA, #importPrerequisites, #importPassedHours, #importCreditLimits').change(loadImportPreview);
     </script>
 }
 
 @functions {
-    private string GetRuleRequirements(RegistrationRule rule)
+    private string GetRuleTypeBadge(RuleType type)
     {
-        var requirements = new List<string>();
-
-        if (rule.MinimumGPA.HasValue)
-            requirements.Add($"GPA ≥ {rule.MinimumGPA.Value}");
-
-        if (rule.MinimumPassedHours.HasValue)
-            requirements.Add($"Hours ≥ {rule.MinimumPassedHours.Value}");
-
-        if (rule.MaximumCreditHours.HasValue)
-            requirements.Add($"Max Credits: {rule.MaximumCreditHours.Value}");
-
-        if (rule.MinimumCreditHours.HasValue)
-            requirements.Add($"Min Credits: {rule.MinimumCreditHours.Value}");
-
-        if (rule.GradeLevel.HasValue)
-            requirements.Add($"Level: {rule.GradeLevel.Value}");
-
-        return string.Join(", ", requirements);
+        return type switch
+        {
+            RuleType.Prerequisite => "bg-primary",
+            RuleType.CreditLimit => "bg-warning",
+            RuleType.GPARequirement => "bg-success",
+            RuleType.Departmental => "bg-info",
+            RuleType.GradeLevel => "bg-secondary",
+            RuleType.TimeConflict => "bg-danger",
+            RuleType.MaximumCourses => "bg-purple",
+            _ => "bg-dark"
+        };
     }
-
-    private string GetEnforcementBadgeClass(EnforcementLevel level)
+    
+    private string GetEnforcementBadge(EnforcementLevel level)
     {
         return level switch
         {

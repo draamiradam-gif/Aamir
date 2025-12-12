@@ -34,15 +34,96 @@ namespace StudentManagementSystem.Controllers
 
         // GET: Courses
         [HttpGet]
+        //public async Task<IActionResult> Index(string searchString, string department, int? semester, string sortBy = "CourseCode", string sortOrder = "asc")
+        //{
+        //    // ✅ Simple admin check
+        //    //var redirectResult = RedirectIfNoPermission("Courses.View");
+        //    //if (redirectResult != null) return redirectResult;
+
+        //    try
+        //    {
+        //        // ✅ USE DIRECT DB CONTEXT TO INCLUDE PREREQUISITES
+        //        var courses = _context.Courses
+        //            .Include(c => c.CourseDepartment)
+        //            .Include(c => c.CourseSemester)
+        //            .Include(c => c.Prerequisites)
+        //                .ThenInclude(p => p.PrerequisiteCourse)
+        //            .AsQueryable();
+
+        //        // Apply filters
+        //        if (!string.IsNullOrEmpty(searchString))
+        //        {
+        //            courses = courses.Where(c =>
+        //                c.CourseCode.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+        //                c.CourseName.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+        //                (c.Description != null && c.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        //            );
+        //        }
+
+        //        if (!string.IsNullOrEmpty(department))
+        //        {
+        //            courses = courses.Where(c => c.Department == department);
+        //        }
+
+        //        if (semester.HasValue)
+        //        {
+        //            courses = courses.Where(c => c.SemesterId == semester.Value);
+        //        }
+
+        //        // ✅ ADD PREREQUISITES SORTING
+        //        courses = sortBy?.ToLower() switch
+        //        {
+        //            "prerequisites" => sortOrder == "desc"
+        //                ? courses.OrderByDescending(c => c.Prerequisites.Count)
+        //                : courses.OrderBy(c => c.Prerequisites.Count),
+        //            "coursecode" => sortOrder == "desc"
+        //                ? courses.OrderByDescending(c => c.CourseCode)
+        //                : courses.OrderBy(c => c.CourseCode),
+        //            "coursename" => sortOrder == "desc"
+        //                ? courses.OrderByDescending(c => c.CourseName)
+        //                : courses.OrderBy(c => c.CourseName),
+        //            "description" => sortOrder == "desc"
+        //                ? courses.OrderByDescending(c => c.Description)
+        //                : courses.OrderBy(c => c.Description),
+        //            "credits" => sortOrder == "desc"
+        //                ? courses.OrderByDescending(c => c.Credits)
+        //                : courses.OrderBy(c => c.Credits),
+        //            "department" => sortOrder == "desc"
+        //                ? courses.OrderByDescending(c => c.Department)
+        //                : courses.OrderBy(c => c.Department),
+        //            "semester" => sortOrder == "desc"
+        //                ? courses.OrderByDescending(c => c.SemesterId)
+        //                : courses.OrderBy(c => c.SemesterId),
+        //            "enrollment" => sortOrder == "desc"
+        //                ? courses.OrderByDescending(c => c.CurrentEnrollment)
+        //                : courses.OrderBy(c => c.CurrentEnrollment),
+        //            "status" => sortOrder == "desc"
+        //                ? courses.OrderByDescending(c => c.IsActive)
+        //                : courses.OrderBy(c => c.IsActive),
+        //            _ => courses.OrderBy(c => c.CourseCode)
+        //        };
+
+        //        var courseList = await courses.ToListAsync();
+
+        //        ViewData["CurrentFilter"] = searchString;
+        //        ViewData["CurrentDepartment"] = department;
+        //        ViewData["CurrentSemester"] = semester;
+        //        ViewData["CurrentSort"] = sortBy;
+        //        ViewData["CurrentOrder"] = sortOrder;
+
+        //        return View(courseList);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error loading courses");
+        //        TempData["Error"] = "Error loading courses.";
+        //        return View(new List<Course>());
+        //    }
+        //}
         public async Task<IActionResult> Index(string searchString, string department, int? semester, string sortBy = "CourseCode", string sortOrder = "asc")
         {
-            // ✅ Simple admin check
-            //var redirectResult = RedirectIfNoPermission("Courses.View");
-            //if (redirectResult != null) return redirectResult;
-
             try
             {
-                // ✅ USE DIRECT DB CONTEXT TO INCLUDE PREREQUISITES
                 var courses = _context.Courses
                     .Include(c => c.CourseDepartment)
                     .Include(c => c.CourseSemester)
@@ -70,40 +151,61 @@ namespace StudentManagementSystem.Controllers
                     courses = courses.Where(c => c.SemesterId == semester.Value);
                 }
 
-                // ✅ ADD PREREQUISITES SORTING
-                courses = sortBy?.ToLower() switch
+                // Get all course IDs first
+                var courseIds = await courses.Select(c => c.Id).ToListAsync();
+
+                // Calculate enrollment for all courses in one query (Efficient)
+                var enrollmentCounts = await _context.CourseEnrollments
+                    .Where(ce => courseIds.Contains(ce.CourseId) &&
+                                ce.IsActive &&
+                                ce.GradeStatus == GradeStatus.InProgress)
+                    .GroupBy(ce => ce.CourseId)
+                    .Select(g => new { CourseId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.CourseId, x => x.Count);
+
+                // Get the courses with all includes
+                var courseList = await courses.ToListAsync();
+
+                // Assign enrollment counts
+                foreach (var course in courseList)
                 {
-                    "prerequisites" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.Prerequisites.Count)
-                        : courses.OrderBy(c => c.Prerequisites.Count),
-                    "coursecode" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.CourseCode)
-                        : courses.OrderBy(c => c.CourseCode),
-                    "coursename" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.CourseName)
-                        : courses.OrderBy(c => c.CourseName),
-                    "description" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.Description)
-                        : courses.OrderBy(c => c.Description),
-                    "credits" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.Credits)
-                        : courses.OrderBy(c => c.Credits),
-                    "department" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.Department)
-                        : courses.OrderBy(c => c.Department),
-                    "semester" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.SemesterId)
-                        : courses.OrderBy(c => c.SemesterId),
-                    "enrollment" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.CurrentEnrollment)
-                        : courses.OrderBy(c => c.CurrentEnrollment),
-                    "status" => sortOrder == "desc"
-                        ? courses.OrderByDescending(c => c.IsActive)
-                        : courses.OrderBy(c => c.IsActive),
-                    _ => courses.OrderBy(c => c.CourseCode)
+                    course.CurrentEnrollment = enrollmentCounts.TryGetValue(course.Id, out var count) ? count : 0;
+                }
+
+                // Apply sorting in memory (since CurrentEnrollment is not in database)
+                courseList = (sortBy?.ToLower(), sortOrder?.ToLower()) switch
+                {
+                    ("enrollment", "desc") => courseList.OrderByDescending(c => c.CurrentEnrollment).ToList(),
+                    ("enrollment", "asc") => courseList.OrderBy(c => c.CurrentEnrollment).ToList(),
+                    ("prerequisites", "desc") => courseList.OrderByDescending(c => c.Prerequisites?.Count ?? 0).ToList(),
+                    ("prerequisites", "asc") => courseList.OrderBy(c => c.Prerequisites?.Count ?? 0).ToList(),
+                    ("coursecode", "desc") => courseList.OrderByDescending(c => c.CourseCode).ToList(),
+                    ("coursecode", "asc") => courseList.OrderBy(c => c.CourseCode).ToList(),
+                    ("coursename", "desc") => courseList.OrderByDescending(c => c.CourseName).ToList(),
+                    ("coursename", "asc") => courseList.OrderBy(c => c.CourseName).ToList(),
+                    ("description", "desc") => courseList.OrderByDescending(c => c.Description ?? "").ToList(),
+                    ("description", "asc") => courseList.OrderBy(c => c.Description ?? "").ToList(),
+                    ("credits", "desc") => courseList.OrderByDescending(c => c.Credits).ToList(),
+                    ("credits", "asc") => courseList.OrderBy(c => c.Credits).ToList(),
+                    ("department", "desc") => courseList.OrderByDescending(c => c.Department).ToList(),
+                    ("department", "asc") => courseList.OrderBy(c => c.Department).ToList(),
+                    ("semester", "desc") => courseList.OrderByDescending(c => c.SemesterId).ToList(),
+                    ("semester", "asc") => courseList.OrderBy(c => c.SemesterId).ToList(),
+                    ("status", "desc") => courseList.OrderByDescending(c => c.IsActive).ToList(),
+                    ("status", "asc") => courseList.OrderBy(c => c.IsActive).ToList(),
+                    _ => courseList.OrderBy(c => c.CourseCode).ToList()
                 };
 
-                var courseList = await courses.ToListAsync();
+                // Get filter options for dropdowns
+                ViewBag.Departments = await _context.Departments
+                    .Select(d => d.Name)
+                    .Distinct()
+                    .ToListAsync();
+
+                ViewBag.Semesters = await _context.Semesters
+                    .Where(s => s.IsActive)
+                    .OrderByDescending(s => s.StartDate)
+                    .ToListAsync();
 
                 ViewData["CurrentFilter"] = searchString;
                 ViewData["CurrentDepartment"] = department;
@@ -116,11 +218,10 @@ namespace StudentManagementSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading courses");
-                TempData["Error"] = "Error loading courses.";
+                TempData["ErrorMessage"] = "Error loading courses: " + ex.Message;
                 return View(new List<Course>());
             }
         }
-
         // GET: Courses/Create
         [HttpGet]
         public async Task<IActionResult> Create(int? semesterId, int? copyFromCourseId)

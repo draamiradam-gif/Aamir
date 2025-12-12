@@ -304,14 +304,14 @@
         }
 
         // Handle form submission - SIMPLIFIED
-        async function handleFormSubmit(e) {
+                async function handleFormSubmit(e) {
             e.preventDefault();
 
             const studentId = document.getElementById('studentId')?.value;
             const submitBtn = document.getElementById('submitBtn');
             const resultDiv = document.getElementById('result');
 
-            if (!studentId || studentId < 1) {
+            if (!studentId || studentId.trim() === '') {
                 showResult('Please enter a valid student ID', 'danger');
                 return;
             }
@@ -332,7 +332,7 @@
                     },
                     body: JSON.stringify({
                         token: token,
-                        studentId: parseInt(studentId),
+                        studentId: studentId.trim(), // ✅ Use string value
                         deviceInfo: navigator.userAgent
                     })
                 });

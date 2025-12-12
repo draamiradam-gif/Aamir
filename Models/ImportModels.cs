@@ -16,6 +16,9 @@ namespace StudentManagementSystem.Models
 
         // ADD THESE MISSING PROPERTIES:
         public List<InvalidStudent> InvalidStudents { get; set; } = new List<InvalidStudent>();
+
+        public string? ErrorMessage { get; set; }
+        public int SkippedCount { get; set; }
     }
 
     // ADD THIS CLASS FOR INVALID STUDENTS

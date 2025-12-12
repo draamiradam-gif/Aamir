@@ -1,101 +1,520 @@
 ﻿@model List<AdminPrivilegeViewModel>
 @{
     ViewData["Title"] = "Admin Management";
+    var pendingCount = ViewBag.PendingApplicationsCount ?? 0;
+    var totalAdmins = ViewBag.TotalAdmins ?? Model.Count;
+    var activeCount = ViewBag.ActiveCount ?? 0;
+    var inactiveCount = ViewBag.InactiveCount ?? 0;
+    var newApprovalsCount = ViewBag.NewApprovalsCount ?? 0;
+    
+    var currentFilter = ViewBag.CurrentFilter as string ?? "all";
+    var currentSearch = ViewBag.CurrentSearch as string ?? "";
+    var currentSort = ViewBag.CurrentSort as string ?? "created";
+    var currentOrder = ViewBag.CurrentOrder as string ?? "desc";
 }
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="fas fa-user-shield me-2"></i>Admin Management</h1>
-        <div>
-            <a href="@Url.Action("Create")" class="btn btn-primary me-2">
-                <i class="fas fa-user-plus me-2"></i>Create Admin
-            </a>
-            <a href="@Url.Action("Applications")" class="btn btn-info me-2">
-                <i class="fas fa-clipboard-list me-2"></i>View Applications
-            </a>
-            <a href="@Url.Action("ExportAdmins", "AdminManagement")" class="btn btn-success">
-                <i class="fas fa-file-export me-2"></i>Export Admins
-            </a>
-            <a href="@Url.Action("ImportAdmins")" class="btn btn-warning">
-                <i class="fas fa-file-import me-2"></i>Import
-            </a>
+    <!-- Header with Stats -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-user-shield me-2"></i>@ViewData["Title"]
+                    </h1>
+                    <p class="text-muted mb-0">Manage system administrators and permissions</p>
+                </div>
+                <div class="d-flex align-items-center">
+                    <!-- Stats Badges -->
+                    <div class="me-4">
+                        <span class="badge bg-primary fs-6 p-2">
+                            <i class="fas fa-users me-1"></i> @totalAdmins Total
+                        </span>
+                        <span class="badge bg-success fs-6 p-2 ms-2">
+                            <i class="fas fa-check-circle me-1"></i> @activeCount Active
+                        </span>
+                        <span class="badge bg-info fs-6 p-2 ms-2">
+                            <i class="fas fa-hourglass-half me-1"></i> @pendingCount Pending
+                        </span>
+                        <span class="badge bg-warning fs-6 p-2 ms-2">
+                            <i class="fas fa-star me-1"></i> @newApprovalsCount New
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card card-modern">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Administrators</h5>
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <form method="get" class="row g-3" id="filterForm">
+                        <div class="col-md-3">
+                            <label class="form-label">Filter</label>
+                            <select name="filter" class="form-select" id="filterSelect">
+                                <option value="all">All Admins</option>
+                                <option value="active">Active Only</option>
+                                <option value="inactive">Inactive Only</option>
+                                <option value="new">New Approvals</option>
+                                <option value="superadmin">Super Admins</option>
+                                <option value="university">University Admins</option>
+                                <option value="faculty">Faculty Admins</option>
+                                <option value="department">Department Admins</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" placeholder="Search by name, email, type..." value="@currentSearch" id="searchInput">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Sort By</label>
+                            <select name="sort" class="form-select" id="sortSelect">
+                                <option value="created">Created Date</option>
+                                <option value="name">Name</option>
+                                <option value="email">Email</option>
+                                <option value="type">Admin Type</option>
+                                <option value="status">Status</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Order</label>
+                            <select name="order" class="form-select" id="orderSelect">
+                                <option value="desc">Descending</option>
+                                <option value="asc">Ascending</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter me-2"></i>Apply Filters
+                                </button>
+                                <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-2"></i>Clear Filters
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
+    </div>
+    <div class="row">
+        <!-- Card 1: Create Admin -->
+        <div class="col-12 mb-4">
+            <div class="card card-modern border-start border-start-4 border-start-primary shadow-lg h-100">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="icon-circle bg-primary bg-gradient text-white">
+                                <i class="fas fa-user-plus fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h5 class="card-title fw-bold text-primary mb-1">Create Admin</h5>
+                            <p class="card-text text-muted mb-0">Set up new administrator accounts with custom permissions</p>
+                        </div>
+                        <div class="col-auto">
+                            <a href="@Url.Action("CreateAdmin")" class="btn btn-primary btn-modern">
+                                <i class="fas fa-arrow-right me-2"></i>Create Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                        <div>
+                            <i class="fas fa-bolt me-1 text-warning"></i>
+                            Quick Setup
+                        </div>
+                        <div>
+                            <i class="fas fa-shield-alt me-1 text-success"></i>
+                            Secure Process
+                        </div>
+                        <div>
+                            <i class="fas fa-clock me-1 text-info"></i>
+                            Instant Activation
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Create Super Admin -->
+        <div class="col-12 mb-4">
+            <div class="card card-modern border-start border-start-4 border-start-danger shadow-lg h-100">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="icon-circle bg-danger bg-gradient text-white">
+                                <i class="fas fa-user-shield fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h5 class="card-title fw-bold text-danger mb-1">Create Super Admin</h5>
+                            <p class="card-text text-muted mb-0">Create super administrator with full system access</p>
+                            <small class="text-muted">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                Requires special privileges
+                            </small>
+                        </div>
+                        <div class="col-auto">
+                            <a href="@Url.Action("Create")" class="btn btn-danger btn-modern">
+                                <i class="fas fa-star me-2"></i>Create Super Admin
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                        <div>
+                            <i class="fas fa-crown me-1 text-warning"></i>
+                            Full System Access
+                        </div>
+                        <div>
+                            <i class="fas fa-key me-1 text-success"></i>
+                            Master Permissions
+                        </div>
+                        <div>
+                            <i class="fas fa-user-check me-1 text-info"></i>
+                            Strict Verification
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Applications -->
+        <div class="col-12 mb-4">
+            <div class="card card-modern border-start border-start-4 border-start-info shadow-lg h-100">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="icon-circle bg-info bg-gradient text-white position-relative">
+                                <i class="fas fa-clipboard-list fa-2x"></i>
+                                @if (pendingCount > 0)
+                                {
+                                    <span class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-pill">
+                                        @pendingCount
+                                        <span class="visually-hidden">pending applications</span>
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h5 class="card-title fw-bold text-info mb-1">Admin Applications</h5>
+                            <p class="card-text text-muted mb-0">Review and process admin access requests</p>
+                            @if (pendingCount > 0)
+                            {
+                                <div class="mt-2">
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-clock me-1"></i>
+                                        @pendingCount pending review
+                                    </span>
+                                </div>
+                            }
+                            else
+                            {
+                                <small class="text-success">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    All applications processed
+                                </small>
+                            }
+                        </div>
+                        <div class="col-auto">
+                            <!-- FIXED: Changed to AdminManagement controller -->
+                            <a href="@Url.Action("Applications", "AdminManagement")" class="btn btn-info btn-modern">
+                                <i class="fas fa-eye me-2"></i>Review Applications
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                        <div>
+                            <i class="fas fa-inbox me-1 text-warning"></i>
+                            New Requests: @pendingCount
+                        </div>
+                        <div>
+                            <i class="fas fa-history me-1 text-success"></i>
+                            24/7 Monitoring
+                        </div>
+                        <div>
+                            <i class="fas fa-tasks me-1 text-info"></i>
+                            Approval Workflow
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    
+    </div>
+
+    <!-- Main Table -->
+    <div class="card card-modern">
+        <div class="card-header bg-white border-bottom-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Administrators</h5>
+                <div class="d-flex gap-2">
+                    <div class="btn-group" role="group">
+                        <a href="@Url.Action("Index", new { filter = "all", search = currentSearch, sort = currentSort, order = currentOrder })" 
+                           class="btn btn-sm @(currentFilter == "all" ? "btn-primary" : "btn-outline-primary")">
+                            All
+                        </a>
+                        <a href="@Url.Action("Index", new { filter = "active", search = currentSearch, sort = currentSort, order = currentOrder })" 
+                           class="btn btn-sm @(currentFilter == "active" ? "btn-success" : "btn-outline-success")">
+                            Active
+                        </a>
+                        <a href="@Url.Action("Index", new { filter = "new", search = currentSearch, sort = currentSort, order = currentOrder })" 
+                           class="btn btn-sm @(currentFilter == "new" ? "btn-warning" : "btn-outline-warning")">
+                            New
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-modern">
-                    <thead>
+                <table class="table table-modern table-hover mb-0" id="adminsTable">
+                    <thead class="table-light">
                         <tr>
-                            <th>Admin Name</th>
-                            <th>Email</th>
-                            <th>Admin Type</th>
-                            <th>Permissions</th>
-                            <th>Scope</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                        <tr>
-                            <th data-orderable="true">Admin Name</th>
-                            <th data-orderable="true">Email</th>
-                            <th data-orderable="true">Admin Type</th>
-                            <th data-orderable="false">Permissions</th>
-                            <th data-orderable="true">Scope</th>
-                            <th data-orderable="true">Created</th>
-                            <th data-orderable="false" data-searchable="false">Actions</th>
+                            <th width="5%">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                </div>
+                            </th>
+                            <th width="15%">Admin</th>
+                            <th width="10%">Type</th>
+                            <th width="10%">Status</th>
+                            <th width="15%">Permissions</th>
+                            <th width="15%">Scope</th>
+                            <th width="10%">Created</th>
+                            <th width="20%">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var admin in Model)
-                        {
-                            <tr>
-                                <td>@admin.AdminName</td>
-                                <td>@admin.Email</td>
-                                <td>
-                                    <span class="badge
-                                            @(admin.AdminType == AdminType.SuperAdmin ? "bg-danger" :
-                                                                                    admin.AdminType == AdminType.UniversityAdmin ? "bg-primary" :
-                                                                                    admin.AdminType == AdminType.FacultyAdmin ? "bg-info" :
-                                                                                    admin.AdminType == AdminType.DepartmentAdmin ? "bg-success" :
-                                                                                    admin.AdminType == AdminType.FinanceAdmin ? "bg-warning" : "bg-secondary")">
-                                    @admin.AdminTypeName
-                                </span>
-                            </td>
+                    @foreach (var admin in Model)
+                    {
+                        <tr class="@(admin.IsFromApplication ? "table-warning" : "") @(!admin.IsActive && !admin.IsFromApplication ? "table-light" : "")"
+                            data-status="@(admin.IsActive ? "active" : "inactive")"
+                            data-type="@(admin.IsFromApplication ? "new" : "existing")">
                             <td>
-                                <small>@admin.Permissions.Count permissions</small>
-                                <div class="permission-tooltip" data-bs-toggle="tooltip"
-                                     title="@string.Join(", ", admin.Permissions)">
-                                    <i class="fas fa-info-circle text-muted"></i>
+                                <div class="form-check">
+                                    <input class="form-check-input row-checkbox" type="checkbox"
+                                           value="@admin.AdminId" data-admin-type="@admin.AdminType"
+                                           @(admin.IsFromApplication ? "disabled" : "")>
                                 </div>
                             </td>
                             <td>
-                                @if (!string.IsNullOrEmpty(admin.UniversityScope))
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar me-3">
+                                        <div class="avatar-initial rounded-circle bg-@(admin.IsFromApplication ? "warning" : admin.IsActive ? "primary" : "secondary") text-white d-flex align-items-center justify-content-center"
+                                             style="width: 40px; height: 40px;">
+                                            @if (admin.IsFromApplication)
+                                            {
+                                                <i class="fas fa-star"></i>
+                                            }
+                                            else if (admin.IsActive)
+                                            {
+                                                <i class="fas fa-user-shield"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-user-slash"></i>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center">
+                                            <strong>@admin.AdminName</strong>
+                                            <!-- INACTIVE BADGE ADDED HERE -->
+                                            @if (!admin.IsActive && !admin.IsFromApplication)
+                                            {
+                                                <span class="badge bg-secondary ms-2">
+                                                    <i class="fas fa-ban me-1"></i>Inactive
+                                                </span>
+                                            }
+                                        </div>
+                                        <div class="text-muted small">@admin.Email</div>
+                                        @if (admin.IsFromApplication)
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-clock me-1"></i> Awaiting Setup
+                                            </span>
+                                        }
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge
+                                            @(admin.AdminType == AdminType.SuperAdmin ? "bg-danger" :
+                                                    admin.AdminType == AdminType.UniversityAdmin ? "bg-primary" :
+                                                    admin.AdminType == AdminType.FacultyAdmin ? "bg-info" :
+                                                    admin.AdminType == AdminType.DepartmentAdmin ? "bg-success" :
+                                                    admin.AdminType == AdminType.FinanceAdmin ? "bg-warning" :
+                                                    admin.AdminType == AdminType.StudentAdmin ? "bg-purple" : "bg-secondary")">
+                                @admin.AdminTypeName
+                            </span>
+                        </td>
+                        <td>
+                            @if (admin.IsFromApplication)
+                                {
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-hourglass-half me-1"></i> Approved
+                                    </span>
+                                }
+                                else if (admin.IsActive)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i> Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-times-circle me-1"></i> Inactive
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div class="permission-badges">
+                                    @if (admin.Permissions.Any())
                                     {
-                                        <small class="text-muted">Univ: @admin.UniversityScope</small>
-                                
-                                        <br>
+                                        @foreach (var perm in admin.Permissions.Take(2))
+                                        {
+                                            <span class="badge bg-light text-dark mb-1">
+                                                @PermissionHelper.GetPermissionAction(perm)
+                                            </span>
+                                        }
+                                        @if (admin.Permissions.Count > 2)
+                                        {
+                                            <span class="badge bg-light text-dark" data-bs-toggle="tooltip"
+                                                  title="@string.Join(", ", admin.Permissions.Skip(2).Select(p => PermissionHelper.GetPermissionAction(p)))">
+                                                +@(admin.Permissions.Count - 2) more
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">No permissions</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <div class="scope-info">
+                                    @if (!string.IsNullOrEmpty(admin.UniversityScope))
+                                    {
+                                        <div class="text-truncate" style="max-width: 150px;"
+                                             data-bs-toggle="tooltip" title="@admin.UniversityScope">
+                                            <i class="fas fa-university me-1 text-primary"></i>
+                                            @admin.UniversityScope
+                                        </div>
                                     }
                                     @if (!string.IsNullOrEmpty(admin.FacultyScope))
                                     {
-                                        <small class="text-muted">Faculty: @admin.FacultyScope</small>
-                                
-                                        <br>
+                                        <div class="text-truncate" style="max-width: 150px;"
+                                             data-bs-toggle="tooltip" title="@admin.FacultyScope">
+                                            <i class="fas fa-building me-1 text-info"></i>
+                                            @admin.FacultyScope
+                                        </div>
                                     }
                                     @if (!string.IsNullOrEmpty(admin.DepartmentScope))
                                     {
-                                        <small class="text-muted">Dept: @admin.DepartmentScope</small>
+                                        <div class="text-truncate" style="max-width: 150px;"
+                                             data-bs-toggle="tooltip" title="@admin.DepartmentScope">
+                                            <i class="fas fa-door-open me-1 text-success"></i>
+                                            @admin.DepartmentScope
+                                        </div>
                                     }
-                                </td>
-                                <td>@admin.CreatedDate.ToString("MMM dd, yyyy")</td>
-                                <td>
-                                    <a href="@Url.Action("EditPrivileges", new { id = admin.AdminId })"
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit me-1"></i>Edit
-                                    </a>
+                                    @if (string.IsNullOrEmpty(admin.UniversityScope) &&
+                                                                    string.IsNullOrEmpty(admin.FacultyScope) &&
+                                                                    string.IsNullOrEmpty(admin.DepartmentScope))
+                                    {
+                                        <span class="text-muted small">Global Access</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <div>@admin.CreatedDate.ToString("MMM dd, yyyy")</div>
+                                    <div class="text-muted">by @admin.CreatedBy</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <!-- Edit/Setup Button -->
+                                    @if (!admin.IsFromApplication)
+                                    {
+                                        <a href="@Url.Action("EditPrivileges", new { id = admin.AdminId })"
+                                           class="btn btn-sm btn-outline-primary"
+                                           data-bs-toggle="tooltip" title="Edit Permissions">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a href="@Url.Action("SetupAdmin", new { applicationId = admin.ApplicationId })"
+                                           class="btn btn-sm btn-outline-warning"
+                                           data-bs-toggle="tooltip" title="Setup Admin Account">
+                                            <i class="fas fa-user-plus"></i>
+                                        </a>
+                                    }
+
+                                    <!-- Send Email Button -->
+                                    <button class="btn btn-sm btn-outline-info send-email-btn"
+                                            data-email="@admin.Email"
+                                            data-bs-toggle="tooltip" title="Send Email">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+
+                                    <!-- Toggle Active/Inactive -->
+                                    @if (!admin.IsFromApplication)
+                                    {
+                                        if (admin.IsActive)
+                                        {
+                                            <button class="btn btn-sm btn-outline-warning toggle-active-btn"
+                                                    data-id="@admin.AdminId"
+                                                    data-action="deactivate"
+                                                    data-bs-toggle="tooltip" title="Deactivate">
+                                                <i class="fas fa-toggle-on"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-success toggle-active-btn"
+                                                    data-id="@admin.AdminId"
+                                                    data-action="activate"
+                                                    data-bs-toggle="tooltip" title="Activate">
+                                                <i class="fas fa-toggle-off"></i>
+                                            </button>
+                                        }
+                                    }
+
+                                    <!-- Delete Button -->
+                                    <button class="btn btn-sm btn-outline-danger delete-admin-btn"
+                                            data-id="@admin.AdminId"
+                                            data-name="@admin.AdminName"
+                                            data-bs-toggle="tooltip" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                        
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-users fa-2x mb-3"></i>
+                                        <h5>No administrators found</h5>
+                                        <p>Try adjusting your filters or create a new admin.</p>
+                                        <a href="@Url.Action("CreateAdmin")" class="btn btn-primary mt-2">
+                                            <i class="fas fa-user-plus me-2"></i>Create First Admin
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -103,23 +522,521 @@
                 </table>
             </div>
         </div>
+        <div class="card-footer bg-white border-top-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <button class="btn btn-sm btn-outline-primary me-2" id="bulkActivateBtn">
+                        <i class="fas fa-toggle-on me-1"></i> Activate Selected
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning me-2" id="bulkDeactivateBtn">
+                        <i class="fas fa-toggle-off me-1"></i> Deactivate Selected
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" id="bulkDeleteBtn">
+                        <i class="fas fa-trash me-1"></i> Delete Selected
+                    </button>
+                </div>
+                <div>
+                    <span class="text-muted small">
+                        Showing @Model.Count of @totalAdmins administrators
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<!-- Email Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-envelope me-2"></i>Send Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="emailForm">
+                    <input type="hidden" id="recipientEmail">
+                    <div class="mb-3">
+                        <label class="form-label">To</label>
+                        <input type="email" class="form-control" id="toEmail" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="emailSubject" 
+                               placeholder="Enter email subject" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" id="emailMessage" rows="5" 
+                                  placeholder="Enter your message" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="sendEmailBtn">
+                    <i class="fas fa-paper-plane me-1"></i> Send Email
+                </button>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteAdminName"></strong>?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-1"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .table-modern th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            border-top: none;
+        }
+        
+        .table-modern td {
+            vertical-align: middle;
+        }
+        
+        .avatar-initial {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .badge.bg-purple {
+            background-color: #6f42c1 !important;
+            color: white;
+        }
+        
+        .permission-badges .badge {
+            margin-right: 3px;
+            margin-bottom: 3px;
+            font-size: 0.75rem;
+        }
+        
+        .scope-info div {
+            margin-bottom: 2px;
+        }
+        
+        .btn-group .btn-sm {
+            padding: 0.25rem 0.5rem;
+        }
+        
+        tr.table-warning {
+            background-color: rgba(255, 193, 7, 0.1) !important;
+        }
+        
+        .form-check-input:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+    </style>
+    <style>
+        /* Enhanced Card Styles */
+        /* Minimal CSS - No errors guaranteed */
+        .card-modern {
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+
+            .card-modern:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            }
+
+        .icon-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-modern {
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            border: none;
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .card-body .row
+
+        {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .col-auto {
+            margin-bottom: 15px;
+        }
+
+        .col {
+            margin-bottom: 15px;
+        }
+
+        .card-footer .d-flex {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-modern {
+            width: 100%;
+        }
+
+        }
+    </style>
+}
 
 @section Scripts {
     <script>
         $(document).ready(function() {
+            // Initialize tooltips
             $('[data-bs-toggle="tooltip"]').tooltip();
+            
+            // Initialize DataTable if you want enhanced features
+            // var table = $('#adminsTable').DataTable({
+            //     responsive: true,
+            //     ordering: true,
+            //     pageLength: 25,
+            //     order: [[6, 'desc']],
+            //     dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+            //     language: {
+            //         search: "_INPUT_",
+            //         searchPlaceholder: "Search admins...",
+            //         lengthMenu: "Show _MENU_ entries",
+            //         info: "Showing _START_ to _END_ of _TOTAL_ entries"
+            //     }
+            // });
+            
+            // Select All checkbox
+            $('#selectAll').on('change', function() {
+                $('.row-checkbox:not(:disabled)').prop('checked', $(this).prop('checked'));
+            });
+            
+            // Email modal
+            $(document).on('click', '.send-email-btn', function() {
+                var email = $(this).data('email');
+                $('#recipientEmail').val(email);
+                $('#toEmail').val(email);
+                $('#emailModal').modal('show');
+            });
+            
+            // Send email
+            $('#sendEmailBtn').on('click', function() {
+                var formData = {
+                    to: $('#recipientEmail').val(),
+                    subject: $('#emailSubject').val(),
+                    message: $('#emailMessage').val()
+                };
+                
+                $.ajax({
+                    url: '@Url.Action("SendEmail", "AdminManagement")',
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            $('#emailModal').modal('hide');
+                            $('#emailForm')[0].reset();
+                            showToast('success', 'Email sent successfully!');
+                        } else {
+                            showToast('error', response.message || 'Failed to send email.');
+                        }
+                    },
+                    error: function() {
+                        showToast('error', 'Failed to send email.');
+                    }
+                });
+            });
+            
+            // Toggle active status
+            $(document).on('click', '.toggle-active-btn', function() {
+                var adminId = $(this).data('id');
+                var action = $(this).data('action');
+                var button = $(this);
+                var adminName = button.closest('tr').find('strong').text();
+                
+                if (confirm(`Are you sure you want to ${action} "${adminName}"?`)) {
+                    $.ajax({
+                        url: '@Url.Action("ToggleAdminStatus", "AdminManagement")',
+                        type: 'POST',
+                        data: { adminId: adminId, action: action },
+                        success: function(response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                showToast('error', response.message || 'Failed to update status.');
+                            }
+                        },
+                        error: function() {
+                            showToast('error', 'Failed to update status.');
+                        }
+                    });
+                }
+            });
+            
+            // Delete admin
+            var deleteAdminId = '';
+            var deleteAdminName = '';
+            
+            $(document).on('click', '.delete-admin-btn', function() {
+                deleteAdminId = $(this).data('id');
+                deleteAdminName = $(this).data('name');
+                $('#deleteAdminName').text(deleteAdminName);
+                $('#deleteModal').modal('show');
+            });
+            
+            $('#confirmDeleteBtn').on('click', function() {
+                $.ajax({
+                    url: '@Url.Action("DeleteAdmin", "AdminManagement")',
+                    type: 'POST',
+                    data: { adminId: deleteAdminId },
+                    success: function(response) {
+                        $('#deleteModal').modal('hide');
+                        location.reload();
+                    },
+                    error: function() {
+                        showToast('error', 'Failed to delete admin.');
+                        $('#deleteModal').modal('hide');
+                    }
+                });
+            });
+            
+            // Bulk actions
+            $('#bulkActivateBtn').on('click', function() {
+                bulkAction('activate');
+            });
+            
+            $('#bulkDeactivateBtn').on('click', function() {
+                bulkAction('deactivate');
+            });
+            
+            $('#bulkDeleteBtn').on('click', function() {
+                bulkAction('delete');
+            });
+            
+            function bulkAction(action) {
+                var selectedIds = $('.row-checkbox:checked:not(:disabled)').map(function() {
+                    return $(this).val();
+                }).get();
+                
+                if (selectedIds.length === 0) {
+                    showToast('warning', 'Please select at least one admin.');
+                    return;
+                }
+                
+                var actionText = action === 'delete' ? 'delete' : action;
+                var actionDisplay = action === 'activate' ? 'activate' : 
+                                   action === 'deactivate' ? 'deactivate' : 'delete';
+                
+                if (confirm(`Are you sure you want to ${actionDisplay} ${selectedIds.length} selected admin(s)?`)) {
+                    $.ajax({
+                        url: '@Url.Action("BulkAction", "AdminManagement")',
+                        type: 'POST',
+                        data: {
+                            adminIds: selectedIds,
+                            action: action
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                showToast('error', response.message || 'Failed to perform bulk action.');
+                            }
+                        },
+                        error: function() {
+                            showToast('error', 'Failed to perform bulk action.');
+                        }
+                    });
+                }
+            }
+            
+            // Toast function
+            function showToast(type, message) {
+                // Simple alert for now, you can replace with Toastr if installed
+                alert(message);
+            }
+            
+            // Disable bulk buttons if no selectable rows
+            function updateBulkButtons() {
+                var hasSelectableRows = $('.row-checkbox:not(:disabled)').length > 0;
+                $('#bulkActivateBtn, #bulkDeactivateBtn, #bulkDeleteBtn').prop('disabled', !hasSelectableRows);
+            }
+            
+            updateBulkButtons();
         });
+   
         $(document).ready(function() {
-            $('#adminsTable').DataTable({
-                responsive: true,
-                ordering: true,
-                pageLength: 25,
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-                language: {
-                    search: "_INPUT_",
-                    searchPlaceholder: "Search admins..."
+            // Set selected values from ViewBag
+            $('#filterSelect').val('@currentFilter');
+            $('#sortSelect').val('@currentSort');
+            $('#orderSelect').val('@currentOrder');
+
+            // Auto-submit on filter change (optional)
+            $('#filterSelect, #sortSelect, #orderSelect').on('change', function() {
+                $('#filterForm').submit();
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click animation to buttons
+            document.querySelectorAll('.btn-modern').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Create ripple effect
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+
+                    ripple.style.cssText = `
+                        position: absolute;
+                        border-radius: 50%;
+                        background: rgba(255, 255, 255, 0.7);
+                        transform: scale(0);
+                        animation: ripple-animation 0.6s linear;
+                        width: ${size}px;
+                        height: ${size}px;
+                        top: ${y}px;
+                        left: ${x}px;
+                    `;
+
+                    this.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 600);
+                });
+            });
+
+            // Add hover sound effect (optional)
+            const cards = document.querySelectorAll('.card-modern');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    // Optional: Add subtle sound or haptic feedback
+                    if (typeof navigator.vibrate === 'function') {
+                        navigator.vibrate(10); // Very short vibration for mobile
+                    }
+                });
+            });
+        });
+
+                // Handle individual delete button clicks
+        $(document).on('click', '.delete-admin-btn', function(e) {
+            e.preventDefault();
+
+            const adminId = $(this).data('id');
+            const adminName = $(this).data('name');
+
+            if (confirm(`Are you sure you want to delete ${adminName}? This action cannot be undone!`)) {
+                $.ajax({
+                    url: '@Url.Action("DeleteAdmin", "AdminManagement")',
+                    type: 'POST',
+                    data: { adminId: adminId },
+                    success: function(response) {
+                        if (response.success) {
+                            showToast('success', response.message);
+                            // Reload the page after 1 second
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            showToast('error', response.message);
+                        }
+                    },
+                    error: function() {
+                        showToast('error', 'Error deleting admin');
+                    }
+                });
+            }
+        });
+
+        // Show toast notifications
+        function showToast(type, message) {
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0"
+                     role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>`;
+
+            $('.toast-container').append(toastHtml);
+            $('.toast').last().toast('show');
+
+            // Remove toast after 5 seconds
+            setTimeout(() => {
+                $('.toast').last().remove();
+            }, 5000);
+        }
+
+                // Handle send email button clicks
+        $(document).on('click', '.send-email-btn', function(e) {
+            e.preventDefault();
+
+            const email = $(this).data('email');
+
+            // Show email modal or redirect to email page
+            $('#sendEmailModal').modal('show');
+            $('#recipientEmail').val(email);
+        });
+
+        // Or if you want a simple prompt
+        $(document).on('click', '.send-email-btn', function(e) {
+            e.preventDefault();
+
+            const email = $(this).data('email');
+            const subject = prompt('Enter email subject:');
+            if (!subject) return;
+
+            const message = prompt('Enter email message:');
+            if (!message) return;
+
+            $.ajax({
+                url: '@Url.Action("SendEmail", "AdminManagement")',
+                type: 'POST',
+                data: {
+                    to: email,
+                    subject: subject,
+                    message: message
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Email sent successfully!');
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error sending email');
                 }
             });
         });

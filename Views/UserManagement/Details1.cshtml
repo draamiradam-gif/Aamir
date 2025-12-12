@@ -1,0 +1,148 @@
+﻿@model UserViewModel
+@{
+    ViewData["Title"] = "User Details";
+    var adminPrivilege = ViewBag.AdminPrivilege as AdminPrivilege;
+    var user = ViewBag.User as IdentityUser;
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0"><i class="fas fa-user me-2"></i>@ViewData["Title"]</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">User Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Username:</dt>
+                        <dd class="col-sm-9">@Model.UserName</dd>
+
+                        <dt class="col-sm-3">Email:</dt>
+                        <dd class="col-sm-9">@Model.Email</dd>
+
+                        <dt class="col-sm-3">Email Confirmed:</dt>
+                        <dd class="col-sm-9">
+                            @if (user?.EmailConfirmed == true)
+                            {
+                                <span class="badge bg-success">Yes</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning">No</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-3">Phone:</dt>
+                        <dd class="col-sm-9">@user?.PhoneNumber</dd>
+
+                        <dt class="col-sm-3">Roles:</dt>
+                        <dd class="col-sm-9">
+                            @foreach (var role in Model.Roles)
+                            {
+                                <span class="badge
+                                        @(role == "SuperAdmin" ? "bg-danger" :
+                                                                            role == "Admin" ? "bg-success" :
+                                                                            "bg-primary") me-1 mb-1">
+                                @role
+                            </span>
+                                                        }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        @if (adminPrivilege != null)
+        {
+            <div class="col-md-6">
+                <div class="card-modern">
+                    <div class="card-header">
+                        <h5 class="mb-0">Admin Privileges</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-4">Admin Type:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge @GetAdminTypeBadgeClass(adminPrivilege.AdminType)">
+                                    @adminPrivilege.AdminType
+                                </span>
+                            </dd>
+
+                            <dt class="col-sm-4">Scope:</dt>
+                            <dd class="col-sm-8">
+                                @if (adminPrivilege.University != null)
+                                {
+                                    <div><i class="fas fa-university me-1"></i>@adminPrivilege.University.Name</div>
+                                }
+                                @if (adminPrivilege.Faculty != null)
+                                {
+                                    <div><i class="fas fa-building me-1"></i>@adminPrivilege.Faculty.Name</div>
+                                }
+                                @if (adminPrivilege.Department != null)
+                                {
+                                    <div><i class="fas fa-sitemap me-1"></i>@adminPrivilege.Department.Name</div>
+                                }
+                                @if (adminPrivilege.University == null && adminPrivilege.Faculty == null && adminPrivilege.Department == null)
+                                {
+                                    <span class="text-muted">Global Access</span>
+                                }
+                            </dd>
+
+                            <dt class="col-sm-4">Permissions:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-info">@adminPrivilege.Permissions.Count permissions</span>
+                            </dd>
+
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                @if (adminPrivilege.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactive</span>
+                                }
+                            </dd>
+
+                            <dt class="col-sm-4">Created:</dt>
+                            <dd class="col-sm-8">@adminPrivilege.CreatedDate.ToString("MMMM dd, yyyy")</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Users
+            </a>
+        </div>
+    </div>
+</div>
+
+@functions {
+    public string GetAdminTypeBadgeClass(AdminType adminType)
+    {
+        return adminType switch
+        {
+            AdminType.SuperAdmin => "bg-danger",
+            AdminType.UniversityAdmin => "bg-primary",
+            AdminType.FacultyAdmin => "bg-info",
+            AdminType.DepartmentAdmin => "bg-success",
+            AdminType.EmployeeAdmin => "bg-warning",
+            AdminType.FinanceAdmin => "bg-purple",
+            AdminType.StudentAdmin => "bg-teal",
+            AdminType.CustomAdmin => "bg-indigo",
+            _ => "bg-secondary"
+        };
+    }
+}

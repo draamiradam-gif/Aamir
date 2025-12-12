@@ -1,0 +1,181 @@
+﻿@{
+    ViewData["Title"] = "System Analytics";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-chart-line me-2"></i>@ViewData["Title"]
+            </h1>
+            <p class="text-muted">System performance and usage analytics</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card-modern">
+                <div class="card-body text-center">
+                    <h2 class="text-primary">@(ViewBag.TotalUsers ?? "0")</h2>
+                    <p class="text-muted mb-0">Total Users</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card-modern">
+                <div class="card-body text-center">
+                    <h2 class="text-success">@(ViewBag.TotalStudents ?? "0")</h2>
+                    <p class="text-muted mb-0">Active Students</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card-modern">
+                <div class="card-body text-center">
+                    <h2 class="text-info">@(ViewBag.TotalCourses ?? "0")</h2>
+                    <p class="text-muted mb-0">Active Courses</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card-modern">
+                <div class="card-body text-center">
+                    <h2 class="text-warning">@(DateTime.Now.ToString("MMM dd"))</h2>
+                    <p class="text-muted mb-0">Today's Date</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">User Activity (Last 7 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userActivityChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">User Roles Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="rolesChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>@DateTime.Now.AddMinutes(-5).ToString("HH:mm")</td>
+                                <td>admin@system.com</td>
+                                <td><span class="badge bg-success">Login</span></td>
+                                <td>Successfully logged in</td>
+                            </tr>
+                            <tr>
+                                <td>@DateTime.Now.AddMinutes(-15).ToString("HH:mm")</td>
+                                <td>john.doe@student.edu</td>
+                                <td><span class="badge bg-info">Course Registration</span></td>
+                                <td>Registered for "Advanced Mathematics"</td>
+                            </tr>
+                            <tr>
+                                <td>@DateTime.Now.AddMinutes(-30).ToString("HH:mm")</td>
+                                <td>prof.smith@faculty.edu</td>
+                                <td><span class="badge bg-primary">Grade Entry</span></td>
+                                <td>Entered grades for Physics 101</td>
+                            </tr>
+                            <tr>
+                                <td>@DateTime.Now.AddHours(-1).ToString("HH:mm")</td>
+                                <td>admin@system.com</td>
+                                <td><span class="badge bg-warning">Settings Update</span></td>
+                                <td>Updated system configuration</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // User Activity Chart
+            const activityCtx = document.getElementById('userActivityChart').getContext('2d');
+            new Chart(activityCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'User Logins',
+                        data: [65, 59, 80, 81, 56, 55, 40],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+
+            // Roles Distribution Chart
+            const rolesCtx = document.getElementById('rolesChart').getContext('2d');
+            new Chart(rolesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Students', 'Faculty', 'Admins', 'Others'],
+                    datasets: [{
+                        data: [300, 50, 20, 30],
+                        backgroundColor: [
+                            'rgb(59, 130, 246)',
+                            'rgb(16, 185, 129)',
+                            'rgb(245, 158, 11)',
+                            'rgb(139, 92, 246)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

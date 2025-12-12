@@ -1,0 +1,208 @@
+﻿@model StudentManagementSystem.Models.AdminApplication
+@{
+    ViewData["Title"] = "Review Application";
+    var adminTypes = ViewBag.AdminTypes as List<dynamic>;
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-clipboard-check me-2"></i>Review Application
+            </h1>
+            <p class="text-muted">Review and make decision on admin application</p>
+        </div>
+    </div>
+	
+    <div class="row">
+        <!-- Application Details -->
+        <div class="col-md-8">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Application Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Applicant:</dt>
+                        <dd class="col-sm-9">@Model.ApplicantName</dd>
+                        
+                        <dt class="col-sm-3">Email:</dt>
+                        <dd class="col-sm-9">@Model.Email</dd>
+                        
+                        <dt class="col-sm-3">Phone:</dt>
+                        <dd class="col-sm-9">@Model.Phone</dd>
+                        
+                        <dt class="col-sm-3">Requested Role:</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge bg-primary">@Model.AppliedAdminType</span>
+                        </dd>
+                        
+                        <dt class="col-sm-3">Justification:</dt>
+                        <dd class="col-sm-9">@Model.Justification</dd>
+                        
+                        @if (!string.IsNullOrEmpty(Model.Experience))
+                        {
+                            <dt class="col-sm-3">Experience:</dt>
+                            <dd class="col-sm-9">@Model.Experience</dd>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(Model.Qualifications))
+                        {
+                            <dt class="col-sm-3">Qualifications:</dt>
+                            <dd class="col-sm-9">@Model.Qualifications</dd>
+                        }
+                        
+                        <dt class="col-sm-3">Applied Date:</dt>
+                        <dd class="col-sm-9">@Model.AppliedDate.ToString("MMMM dd, yyyy HH:mm")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review Actions -->
+        <div class="col-md-4">
+            <!-- Approve With Type -->
+            <div class="card-modern mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Approve Application</h5>
+                </div>
+                <div class="card-body">
+                    <!*****************!></!*****************>
+                    <!-- Add this debug section at the top of your Review view -->
+                    <div class="alert alert-danger">
+                        <h6>DEBUG - ViewBag.AdminTypes:</h6>
+                        <p>ViewBag.AdminTypes is null: @(ViewBag.AdminTypes == null)</p>
+
+                        @if (ViewBag.AdminTypes != null)
+                        {
+                            <p>Count: @ViewBag.AdminTypes.Count</p>
+                            <ul>
+                                @foreach (var item in ViewBag.AdminTypes)
+                                {
+                                    <li>Id: @item.Id, Name: @item.Name</li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-danger">ViewBag.AdminTypes IS NULL - Check your controller!</p>
+                        }
+                    </div>
+                    <!*****************!></!*****************>
+                    <form method="post" action="@Url.Action("ApproveWithType", "Applications")" 
+                          onsubmit="return confirm('Approve this application with selected admin type?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Assign Admin Type</label>
+                            @* <select name="assignedAdminType" class="form-select" required>
+                                <option value="">Select Admin Type...</option>
+                                @if (adminTypes != null)
+                                {
+                                    @foreach (var type in adminTypes)
+                                    {
+                                        if (Model?.AppliedAdminType == type.Id)
+                                        {
+                                            <option value="@type.Id" selected="selected">@type.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@type.Id">@type.Name</option>
+                                        }
+                                    }
+                                }
+                            </select> *@
+                            <select name="assignedAdminType" class="form-select" required>
+                                <option value="">Select Admin Type...</option>
+                                @if (ViewBag.AdminTypes != null)
+                                {
+                                    @foreach (var type in ViewBag.AdminTypes)
+                                    {
+                                        <option value="@type.Id">@type.Name</option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option value="" disabled>ERROR: No admin types loaded</option>
+                                }
+                            </select>
+                            <small class="text-muted">You can assign a different type than requested</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Approval Notes (Optional)</label>
+                            <textarea name="reviewNotes" class="form-control" rows="3" 
+                                      placeholder="Optional notes about approval..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check me-2"></i>Approve Application
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Reject -->
+            <div class="card-modern mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-times-circle me-2"></i>Reject Application</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="@Url.Action("Reject", "Applications")"
+                          onsubmit="return confirm('Reject this application?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Rejection Reason *</label>
+                            <textarea name="reviewNotes" class="form-control" rows="3" required
+                                      placeholder="Please provide reason for rejection..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="fas fa-times me-2"></i>Reject Application
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Block User -->
+            <div class="card-modern">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-ban me-2"></i>Block User</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="@Url.Action("Block", "Applications")"
+                          onsubmit="return confirm('WARNING: This will block the user from submitting further applications. Continue?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id">
+                        
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Warning:</strong> This will permanently block the user from submitting any future applications.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Block Reason *</label>
+                            <textarea name="blockReason" class="form-control" rows="3" required
+                                      placeholder="Why is this user being blocked?"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="fas fa-ban me-2"></i>Block User Permanently
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <a href="@Url.Action("Index", "Applications")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Applications
+            </a>
+        </div>
+    </div>
+</div>

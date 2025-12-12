@@ -25,6 +25,10 @@ public class ImportResult : BaseEntity
     public int SkippedRecords { get; set; }
     public TimeSpan ProcessingTime { get; set; }
     public DateTime ProcessedAt { get; set; } = DateTime.Now;
+
+    public string? ErrorMessage { get; set; }
+    public int SkippedCount { get; set; }
+
 }
 
 public class InvalidCourse

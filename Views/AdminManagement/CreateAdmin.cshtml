@@ -1,0 +1,472 @@
+﻿@model CreateAdminViewModel
+@{
+    ViewData["Title"] = "Create Admin";
+    // Get grouped permissions using the helper method
+    var permissionGroups = PermissionHelper.GetGroupedPermissions(Model.SelectedPermissions);
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-user-shield me-2"></i>@ViewData["Title"]
+            </h1>
+            <p class="text-muted">Create a new administrator account</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Admin Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="CreateAdmin">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Email" class="form-label fw-bold"></label>
+                                    <input asp-for="Email" class="form-control" placeholder="Enter email address" />
+                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="FullName" class="form-label fw-bold"></label>
+                                    <input asp-for="FullName" class="form-control" placeholder="Enter full name" />
+                                    <span asp-validation-for="FullName" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password Fields -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Password" class="form-label fw-bold"></label>
+                                    <input asp-for="Password" type="password" class="form-control" placeholder="Enter password" />
+                                    <span asp-validation-for="Password" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="ConfirmPassword" class="form-label fw-bold"></label>
+                                    <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Confirm password" />
+                                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Type -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="AdminType" class="form-label fw-bold"></label>
+                                    <select asp-for="AdminType" asp-items="Model.AdminTypeList" class="form-control">
+                                        <option value="">-- Select Admin Type --</option>
+                                    </select>
+                                    <span asp-validation-for="AdminType" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="TemplateId" class="form-label fw-bold">Template (Optional)</label>
+                                    <select asp-for="TemplateId" asp-items="Model.TemplateList" class="form-control" id="templateDropdown">
+                                        <option value="">-- Select Template --</option>
+                                    </select>
+                                    <small class="text-muted">Select a template to pre-fill permissions</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Template Details Section -->
+                        <div class="form-group mb-4" id="templateSection" style="display: none;">
+                            <label class="form-label fw-bold">Template Details</label>
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                The following permissions will be applied from the selected template. You can customize them below.
+                            </div>
+                            
+                            <!-- Template Details Card -->
+                            <div id="templateDetails" class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h6 id="templateName" class="card-title"></h6>
+                                    <p id="templateDescription" class="card-text"></p>
+                                    <div id="templatePermissions" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scope Limitations -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="UniversityScope" class="form-label fw-bold">University Scope</label>
+                                    <select asp-for="UniversityScope" asp-items="Model.UniversityList" class="form-control">
+                                        <option value="">-- Select University --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="FacultyScope" class="form-label fw-bold">Faculty Scope</label>
+                                    <select asp-for="FacultyScope" asp-items="Model.CollegeList" class="form-control">
+                                        <option value="">-- Select Faculty --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="DepartmentScope" class="form-label fw-bold">Department Scope</label>
+                                    <select asp-for="DepartmentScope" asp-items="Model.DepartmentList" class="form-control">
+                                        <option value="">-- Select Department --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Permissions Section -->
+                        <div class="form-group mb-4" id="permissionsSection">
+                            <label class="form-label fw-bold">Permissions</label>
+                            <div class="alert alert-warning mb-3" id="permissionsAlert" style="display: none;">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <span id="alertMessage">Template permissions have been pre-selected. You can customize them below.</span>
+                            </div>
+                            
+                            <!-- Quick Selection Buttons -->
+                            <div class="mb-3">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="selectAllPermissions">
+                                        <i class="fas fa-check-square me-1"></i>Select All
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="deselectAllPermissions">
+                                        <i class="fas fa-times-circle me-1"></i>Deselect All
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info btn-sm" id="applyDefaultForType">
+                                        <i class="fas fa-magic me-1"></i>Apply Default for Admin Type
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Permission Categories -->
+                            <div class="row">
+                                @foreach (var group in permissionGroups)
+                                {
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header bg-light">
+                                                <h6 class="mb-0">
+                                                    <i class="fas @GetGroupIcon(group.GroupName) me-2"></i>
+                                                    @group.DisplayName
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                @foreach (var permission in group.Permissions)
+                                                {
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input permission-checkbox" 
+                                                               type="checkbox" 
+                                                               name="SelectedPermissions" 
+                                                               value="@permission.Permission" 
+                                                               id="perm_@permission.Permission"
+                                                               @(permission.IsSelected ? "checked" : "")>
+                                                        <label class="form-check-label" for="perm_@permission.Permission">
+                                                            <span class="fw-medium">@permission.DisplayName</span>
+                                                            <small class="text-muted d-block">@permission.Description</small>
+                                                        </label>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="@Url.Action("Index", "AdminManagement")" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Admins
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus me-2"></i>Create Admin
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    // Helper function to get icons for permission groups
+    public string GetGroupIcon(string groupName)
+    {
+        return groupName switch
+        {
+            "UserManagement" => "fa-users",
+            "Student" => "fa-user-graduate",
+            "Course" => "fa-book-open",
+            "Grade" => "fa-chart-line",
+            "Finance" => "fa-money-bill-wave",
+            "University" => "fa-university",
+            "College" => "fa-building",
+            "Department" => "fa-door-open",
+            "System" => "fa-cogs",
+            "Admin" => "fa-user-shield",
+            "Application" => "fa-file-signature",
+            _ => "fa-cog"
+        };
+    }
+}
+
+<!-- Hidden element for storing template data -->
+<div id="templatesData" 
+     data-templates="@Html.Raw(Json.Serialize(Model.AvailableTemplates.Select(t => new {
+         Id = t.Id,
+         TemplateName = t.TemplateName,
+         Description = t.Description ?? "No description",
+         AdminType = t.AdminType,
+         DefaultPermissions = t.DefaultPermissions != null ? 
+             t.DefaultPermissions.Select(p => p.ToString()).ToList() : 
+             new List<string>()
+     })))"
+     style="display:none;"></div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Parse templates from data attribute
+            const templatesData = $('#templatesData').data('templates');
+            const templates = templatesData || [];
+
+            // Handle template dropdown change
+            $('#templateDropdown').on('change', function() {
+                const templateId = $(this).val();
+                const template = templates.find(t => t.Id == templateId);
+                
+                const templateSection = $('#templateSection');
+                const templateDetails = $('#templateDetails');
+                const permissionsAlert = $('#permissionsAlert');
+                const templateName = $('#templateName');
+                const templateDescription = $('#templateDescription');
+                const permissionsContainer = $('#templatePermissions');
+                
+                if (template) {
+                    // Show template section
+                    templateSection.show();
+                    templateDetails.show();
+                    
+                    // Set template details
+                    templateName.text(template.TemplateName || '');
+                    templateDescription.text(template.Description || '');
+                    
+                    // Clear previous permission selections
+                    $('.permission-checkbox').prop('checked', false);
+                    
+                    // Display permissions as badges
+                    permissionsContainer.empty();
+                    
+                    if (template.DefaultPermissions && template.DefaultPermissions.length > 0) {
+                        const header = $('<div>').addClass('fw-medium mb-2')
+                                               .text('Permissions included:');
+                        permissionsContainer.append(header);
+                        
+                        // Create badges and select checkboxes
+                        template.DefaultPermissions.forEach(permission => {
+                            if (typeof permission === 'string' && permission.trim()) {
+                                // Create badge
+                                const badge = $('<span>')
+                                    .addClass('badge bg-info me-1 mb-1')
+                                    .text(permission.replace('_', ' '));
+                                permissionsContainer.append(badge);
+                                
+                                // Select corresponding checkbox
+                                const checkbox = $(`input[name="SelectedPermissions"][value="${permission.replace(/"/g, '\\"')}"]`);
+                                if (checkbox.length) {
+                                    checkbox.prop('checked', true);
+                                }
+                            }
+                        });
+                        
+                        // Show alert about template permissions
+                        permissionsAlert.show();
+                        $('#alertMessage').text('Template permissions have been pre-selected. You can customize them below.');
+                    } else {
+                        permissionsContainer.append(
+                            $('<span>').addClass('text-muted').text('No permissions defined')
+                        );
+                        permissionsAlert.hide();
+                    }
+                } else {
+                    // Hide template section
+                    templateSection.hide();
+                    permissionsAlert.hide();
+                    
+                    // Clear all checkboxes
+                    $('.permission-checkbox').prop('checked', false);
+                }
+            });
+
+            // Handle permission checkbox changes
+            $('.permission-checkbox').on('change', function() {
+                // If user manually changes a checkbox, update the alert
+                const permissionsAlert = $('#permissionsAlert');
+                if ($('#templateDropdown').val() && permissionsAlert.is(':visible')) {
+                    $('#alertMessage').text('Template permissions have been pre-selected. You have customized some permissions.');
+                }
+            });
+
+            // Select All / Deselect All buttons
+            $('#selectAllPermissions').on('click', function() {
+                $('.permission-checkbox').prop('checked', true);
+                updatePermissionAlert();
+            });
+            
+            $('#deselectAllPermissions').on('click', function() {
+                $('.permission-checkbox').prop('checked', false);
+                updatePermissionAlert();
+            });
+            
+            // Apply default permissions for selected admin type
+            $('#applyDefaultForType').on('click', function() {
+                const adminType = $('#AdminType').val();
+                if (!adminType) {
+                    alert('Please select an Admin Type first.');
+                    return;
+                }
+                
+                // Ask for confirmation
+                if (!confirm('This will override all currently selected permissions with defaults for ' + adminType + '. Continue?')) {
+                    return;
+                }
+                
+                // Clear all first
+                $('.permission-checkbox').prop('checked', false);
+                
+                // Get default permissions for this admin type
+                // Note: This would need server-side implementation or a client-side map
+                // For now, we'll just show a message
+                alert('Default permissions feature would be implemented with server-side logic. For now, please use templates or select permissions manually.');
+                
+                // Future implementation would make an AJAX call to get defaults
+                // $.ajax({
+                //     url: '/AdminManagement/GetDefaultPermissions',
+                //     data: { adminType: adminType },
+                //     success: function(defaultPermissions) {
+                //         defaultPermissions.forEach(function(permission) {
+                //             $(`input[name="SelectedPermissions"][value="${permission}"]`).prop('checked', true);
+                //         });
+                //         updatePermissionAlert();
+                //     }
+                // });
+            });
+            
+            function updatePermissionAlert() {
+                const templateSelected = $('#templateDropdown').val();
+                if (templateSelected) {
+                    $('#permissionsAlert').show();
+                    $('#alertMessage').text('You have customized the template permissions.');
+                }
+            }
+
+            // Initialize with selected template if any
+            @if (Model.TemplateId.HasValue)
+            {
+                <text>
+                $('#templateDropdown').val(@Model.TemplateId.Value);
+                $('#templateDropdown').trigger('change');
+                </text>
+            }
+
+            // Admin type change handler to filter templates
+            $('#AdminType').on('change', function() {
+                const adminType = $(this).val();
+                const templateDropdown = $('#templateDropdown');
+                
+                if (adminType) {
+                    // Filter templates by admin type
+                    const filteredTemplates = templates.filter(t => 
+                        !t.AdminType || t.AdminType === '' || t.AdminType === adminType
+                    );
+                    
+                    // Store current selection
+                    const currentValue = templateDropdown.val();
+                    
+                    // Clear and repopulate dropdown
+                    templateDropdown.empty();
+                    templateDropdown.append($('<option>', {
+                        value: '',
+                        text: '-- Select Template --'
+                    }));
+                    
+                    filteredTemplates.forEach(template => {
+                        templateDropdown.append(
+                            $('<option>', {
+                                value: template.Id,
+                                text: template.TemplateName
+                            })
+                        );
+                    });
+                    
+                    // Restore selection if still valid
+                    if (currentValue && filteredTemplates.some(t => t.Id == currentValue)) {
+                        templateDropdown.val(currentValue);
+                    } else {
+                        templateDropdown.val('');
+                        templateDropdown.trigger('change');
+                    }
+                } else {
+                    // Show all templates
+                    templateDropdown.empty();
+                    templateDropdown.append($('<option>', {
+                        value: '',
+                        text: '-- Select Template --'
+                    }));
+                    
+                    // Add all templates
+                    templates.forEach(template => {
+                        templateDropdown.append(
+                            $('<option>', {
+                                value: template.Id,
+                                text: template.TemplateName
+                            })
+                        );
+                    });
+                    
+                    templateDropdown.trigger('change');
+                }
+            });
+
+            // Form validation
+            $('form').on('submit', function(e) {
+                // Check if at least one permission is selected
+                const hasPermissions = $('input[name="SelectedPermissions"]:checked').length > 0;
+                
+                if (!hasPermissions) {
+                    e.preventDefault();
+                    alert('Please select at least one permission for the admin user.');
+                    return false;
+                }
+                
+                // Check admin type is selected
+                if (!$('#AdminType').val()) {
+                    e.preventDefault();
+                    $('#AdminType').focus();
+                    alert('Please select an admin type.');
+                    return false;
+                }
+            });
+        });
+    </script>
+    
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -235,84 +235,107 @@
     <script>
         // Edit modal setup
         const editPeriodModal = document.getElementById('editPeriodModal');
-        editPeriodModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
+        if (editPeriodModal) {
+            editPeriodModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
 
-            const formHtml = `
-                <div class="form-group mb-3">
-                    <label for="PeriodName">Period Name *</label>
-                    <input type="text" class="form-control" name="PeriodName" value="${button.getAttribute('data-period-name')}" required />
-                </div>
+                // Get form from modal content
+                const modalContent = document.getElementById('editPeriodForm');
+                if (!modalContent) return;
 
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="StartDate">Start Date *</label>
-                            <input type="date" class="form-control" name="StartDate" value="${button.getAttribute('data-start-date')}" required />
+                // Generate form HTML with the data
+                const formHtml = `
+                    <div class="form-group mb-3">
+                        <label for="PeriodName">Period Name *</label>
+                        <input type="text" class="form-control" name="PeriodName"
+                               value="${button.getAttribute('data-period-name') || ''}" required />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="StartDate">Start Date *</label>
+                                <input type="date" class="form-control" name="StartDate"
+                                       value="${button.getAttribute('data-start-date') || ''}" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="EndDate">End Date *</label>
+                                <input type="date" class="form-control" name="EndDate"
+                                       value="${button.getAttribute('data-end-date') || ''}" required />
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="EndDate">End Date *</label>
-                            <input type="date" class="form-control" name="EndDate" value="${button.getAttribute('data-end-date')}" required />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="SemesterId">Semester *</label>
+                                <select class="form-control" name="SemesterId" required>
+                                    <option value="">Select Semester</option>
+                                    @foreach (var semester in Model.Semesters)
+                                    {
+                                            <option value="@semester.Id">@semester.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="RegistrationType">Registration Type *</label>
+                                <select class="form-control" name="RegistrationType" required>
+                                    @foreach (RegistrationType type in Enum.GetValues(typeof(RegistrationType)))
+                                    {
+                                            <option value="@type">@type</option>
+                                    }
+                                </select>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="SemesterId">Semester *</label>
-                            <select class="form-control" name="SemesterId" required>
-                                <option value="">Select Semester</option>
-                                @foreach (var semester in Model.Semesters)
-                                {
-                                        <option value="@semester.Id">@semester.Name</option>
-                                }
-                            </select>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="MaxCoursesPerStudent">Max Courses Per Student</label>
+                                <input type="number" class="form-control" name="MaxCoursesPerStudent"
+                                       value="${button.getAttribute('data-max-courses') || ''}" min="0" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="MaxCreditHours">Max Credit Hours</label>
+                                <input type="number" class="form-control" name="MaxCreditHours"
+                                       value="${button.getAttribute('data-max-credits') || ''}" min="0" />
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="RegistrationType">Registration Type *</label>
-                            <select class="form-control" name="RegistrationType" required>
-                                @foreach (RegistrationType type in Enum.GetValues(typeof(RegistrationType)))
-                                {
-                                        <option value="@type">@type</option>
-                                }
-                            </select>
-                        </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="IsActive" value="true"
+                               ${button.getAttribute('data-is-active') === 'True' ? 'checked' : ''} />
+                        <label class="form-check-label">Active Period</label>
                     </div>
-                </div>
+                `;
 
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="MaxCoursesPerStudent">Max Courses Per Student</label>
-                            <input type="number" class="form-control" name="MaxCoursesPerStudent" value="${button.getAttribute('data-max-courses') || ''}" min="0" />
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label for="MaxCreditHours">Max Credit Hours</label>
-                            <input type="number" class="form-control" name="MaxCreditHours" value="${button.getAttribute('data-max-credits') || ''}" min="0" />
-                        </div>
-                    </div>
-                </div>
+                // Set the period ID
+                document.getElementById('editPeriodId').value = button.getAttribute('data-period-id') || '';
 
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" name="IsActive" value="true" ${button.getAttribute('data-is-active') === 'True' ? 'checked' : ''} />
-                    <label class="form-check-label">Active Period</label>
-                </div>
-            `;
+                // Update form content
+                modalContent.innerHTML = formHtml;
 
-            document.getElementById('editPeriodId').value = button.getAttribute('data-period-id');
-            document.getElementById('editPeriodForm').innerHTML = formHtml;
+                // Set select values
+                const semesterSelect = modalContent.querySelector('select[name="SemesterId"]');
+                const typeSelect = modalContent.querySelector('select[name="RegistrationType"]');
 
-            // Set select values
-            document.querySelector('#editPeriodForm select[name="SemesterId"]').value = button.getAttribute('data-semester-id');
-            document.querySelector('#editPeriodForm select[name="RegistrationType"]').value = button.getAttribute('data-registration-type');
-        });
+                if (semesterSelect) {
+                    semesterSelect.value = button.getAttribute('data-semester-id') || '';
+                }
+                if (typeSelect) {
+                    typeSelect.value = button.getAttribute('data-registration-type') || 'Regular';
+                }
+            });
+        }
 
         // Date validation
         document.addEventListener('DOMContentLoaded', function() {
@@ -321,9 +344,20 @@
 
             if (startDateInput && endDateInput) {
                 startDateInput.addEventListener('change', function() {
-                    endDateInput.min = this.value;
+                    if (this.value) {
+                        endDateInput.min = this.value;
+                    }
                 });
             }
         });
+
+        // Define global functions
+        window.showPendingRegistrations = function() {
+            window.location.href = '@Url.Action("Management", "Registration")?filter=pending';
+        };
+
+        window.showRegistrationStats = function() {
+            window.location.href = '@Url.Action("Analytics", "Registration")';
+        };
     </script>
 }

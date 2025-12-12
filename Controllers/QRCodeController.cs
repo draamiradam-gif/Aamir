@@ -50,52 +50,166 @@ namespace StudentManagementSystem.Controllers
             return View();
         }
 
+        public async Task<QRCodeSession> CreateSessionAsync(QRCodeSession session)
+        {
+            try
+            {
+                Console.WriteLine("=== CREATE SESSION DEBUG ===");
+
+                // ✅ SET ExpiresAt BEFORE saving to database
+                if (session.ExpiresAt == default)
+                {
+                    session.CalculateExpiration(); // Call your calculation method
+                    Console.WriteLine($"Calculated ExpiresAt: {session.ExpiresAt}");
+                }
+
+                // Set other required properties
+                if (string.IsNullOrEmpty(session.Token))
+                {
+                    session.Token = Guid.NewGuid().ToString();
+                    Console.WriteLine($"Generated Token: {session.Token}");
+                }
+
+                if (session.CreatedAt == default)
+                {
+                    session.CreatedAt = DateTime.Now;
+                    Console.WriteLine($"Set CreatedAt: {session.CreatedAt}");
+                }
+
+                // Set dynamic QR properties
+                session.CurrentToken = session.Token;
+                session.LastTokenUpdate = DateTime.Now;
+                session.IsActive = true;
+
+                Console.WriteLine($"Adding session to database...");
+
+                _context.QRCodeSessions.Add(session);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"=== SESSION CREATED SUCCESSFULLY ===");
+                Console.WriteLine($"Session ID: {session.Id}");
+
+                return session;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"=== CREATE SESSION ERROR ===");
+                Console.WriteLine($"Error: {ex.Message}");
+
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+
+                throw;
+            }
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(QRCodeSession session)
         {
+            Console.WriteLine("=== CREATE POST ACTION ===");
+
             if (!IsAdminUser())
             {
+                Console.WriteLine("User not authorized");
                 return RedirectUnauthorized("Admin access required.");
             }
 
             try
             {
-                if (ModelState.IsValid)
+                Console.WriteLine($"ModelState IsValid: {ModelState.IsValid}");
+                Console.WriteLine($"SessionTitle: {session?.SessionTitle ?? "NULL"}");
+                Console.WriteLine($"CourseId: {session?.CourseId ?? 0}");
+                Console.WriteLine($"DurationMinutes: {session?.DurationMinutes ?? 0}");
+
+                if (ModelState.IsValid && session != null)
                 {
+                    Console.WriteLine("ModelState is valid, creating session...");
+
                     session.CreatedBy = User.Identity?.Name ?? "System";
                     session.CreatedAt = DateTime.Now;
                     session.IsActive = true;
                     session.Token = Guid.NewGuid().ToString();
 
+                    Console.WriteLine("Calling CreateSessionAsync...");
+
                     var createdSession = await _qrCodeService.CreateSessionAsync(session);
 
+                    Console.WriteLine($"Session created with ID: {createdSession?.Id ?? 0}");
+
                     TempData["Success"] = $"QR session '{session.SessionTitle}' created successfully!";
-                    return RedirectToAction("SessionCreated", new { id = createdSession.Id });
+                    return RedirectToAction("SessionCreated", new { id = createdSession?.Id ?? 0 });
+                }
+                else
+                {
+                    Console.WriteLine("ModelState is INVALID or session is null!");
+
+                    // ✅ FIXED: Null-safe iteration
+                    foreach (var key in ModelState.Keys)
+                    {
+                        var state = ModelState[key];
+                        // ✅ Check for null before accessing Errors
+                        if (state?.Errors != null && state.Errors.Any())
+                        {
+                            Console.WriteLine($"  {key}:");
+                            foreach (var error in state.Errors)
+                            {
+                                Console.WriteLine($"    - {error?.ErrorMessage ?? "Unknown error"}");
+                            }
+                        }
+                    }
                 }
 
+                // Get courses for dropdown
                 var courses = await _courseService.GetAllCoursesAsync();
-                ViewBag.Courses = new SelectList(courses, "Id", "CourseCodeName", session.CourseId);
+
+                // ✅ FIXED: Null-safe SelectList creation
+                if (courses != null && courses.Any())
+                {
+                    ViewBag.Courses = new SelectList(courses, "Id", "CourseCodeName", session?.CourseId);
+                }
+                else
+                {
+                    ViewBag.Courses = new SelectList(new List<Course>(), "Id", "CourseCodeName");
+                }
+
                 return View(session);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating QR session");
-                var errorMessage = ex.Message;
+                Console.WriteLine($"=== CREATE ERROR ===");
+                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Stack: {ex.StackTrace}");
+
                 if (ex.InnerException != null)
                 {
-                    errorMessage += $" | Inner: {ex.InnerException.Message}";
+                    Console.WriteLine($"Inner: {ex.InnerException.Message}");
                 }
 
-                TempData["Error"] = $"Error creating session: {errorMessage}";
+                TempData["Error"] = $"Error creating session: {ex.Message}";
 
+                // Get courses for dropdown
                 var courses = await _courseService.GetAllCoursesAsync();
-                ViewBag.Courses = new SelectList(courses, "Id", "CourseCodeName", session.CourseId);
+
+                // ✅ FIXED: Null-safe SelectList creation
+                if (courses != null && courses.Any())
+                {
+                    ViewBag.Courses = new SelectList(courses, "Id", "CourseCodeName", session?.CourseId);
+                }
+                else
+                {
+                    ViewBag.Courses = new SelectList(new List<Course>(), "Id", "CourseCodeName");
+                }
+
                 return View(session);
             }
         }
 
-        
+
+
+
         public async Task<IActionResult> ActiveSessions()
         {
             var sessions = await _qrCodeService.GetActiveSessionsAsync();
@@ -866,158 +980,143 @@ namespace StudentManagementSystem.Controllers
         }
 
         [HttpPost]
-        [AllowAnonymous]
+        [AllowAnonymous]        
         public async Task<JsonResult> Scan([FromBody] ScanRequest request)
         {
             try
             {
                 Console.WriteLine($"=== SCAN DEBUG START ===");
-
-                // ✅ NULL CHECK: Request object
-                if (request == null)
-                {
-                    Console.WriteLine("ERROR: Request is null!");
-                    return Json(new { success = false, message = "Invalid request data" });
-                }
-
                 Console.WriteLine($"Token: {request.Token}");
-                Console.WriteLine($"StudentId from request: {request.StudentId}");
+                Console.WriteLine($"StudentId: {request.StudentId}");
 
-                // ✅ NULL CHECK: Database context
-                if (_context == null)
-                {
-                    Console.WriteLine("ERROR: _context is null!");
-                    return Json(new { success = false, message = "Database context is not available" });
-                }
-
-                // ✅ NULL CHECK: Token
+                // Validate input
                 if (string.IsNullOrEmpty(request.Token))
                 {
-                    Console.WriteLine("ERROR: Token is null or empty!");
                     return Json(new { success = false, message = "Invalid token" });
                 }
 
+                if (string.IsNullOrEmpty(request.StudentId))
+                {
+                    return Json(new { success = false, message = "Student ID is required" });
+                }
+
                 // ✅ Find active session
-                Console.WriteLine("Looking for session...");
                 var session = await _context.QRCodeSessions
                     .FirstOrDefaultAsync(s => s.Token == request.Token && s.IsActive);
 
-                Console.WriteLine($"Session found: {session != null}");
                 if (session == null)
                 {
                     return Json(new { success = false, message = "Session not found or inactive" });
                 }
 
-                // ✅ NULL CHECK: Session properties
-                if (session.CreatedAt == default)
-                {
-                    Console.WriteLine("ERROR: Session CreatedAt is not set!");
-                    return Json(new { success = false, message = "Session configuration error" });
-                }
-
-                Console.WriteLine($"Session ID: {session.Id}, Title: {session.SessionTitle}");
-
-                // ✅ Check expiration
-                Console.WriteLine("Checking expiration...");
-                var expiresAt = session.CreatedAt.AddMinutes(session.DurationMinutes);
-                Console.WriteLine($"CreatedAt: {session.CreatedAt}, Duration: {session.DurationMinutes}, ExpiresAt: {expiresAt}, Now: {DateTime.Now}");
-
-                if (expiresAt < DateTime.Now)
+                // ✅ Check expiration using ExpiresAt property
+                if (session.ExpiresAt < DateTime.Now)
                 {
                     session.IsActive = false;
                     await _context.SaveChangesAsync();
                     return Json(new { success = false, message = "Session expired" });
                 }
 
-                // ✅ STUDENT LOOKUP
-                Console.WriteLine($"Looking for student with StudentId: '{request.StudentId}'");
-
-                string studentIdString = request.StudentId.ToString();
-                Console.WriteLine($"Converted to string: '{studentIdString}'");
-
+                // ✅ Find student by StudentId (string)
                 var student = await _context.Students
-                    .FirstOrDefaultAsync(s => s.StudentId == studentIdString);
-
-                Console.WriteLine($"Student found: {student != null}");
+                    .FirstOrDefaultAsync(s => s.StudentId == request.StudentId);
 
                 if (student == null)
                 {
-                    return Json(new { success = false, message = $"Student ID '{studentIdString}' not found" });
+                    return Json(new { success = false, message = $"Student ID '{request.StudentId}' not found" });
                 }
-
-                // ✅ NULL CHECK: Student properties
-                if (student.Id == 0)
-                {
-                    Console.WriteLine("ERROR: Student ID is 0!");
-                    return Json(new { success = false, message = "Invalid student record" });
-                }
-
-                Console.WriteLine($"Student details - ID: {student.Id}, StudentId: {student.StudentId}, Name: {student.Name}");
 
                 // ✅ Check for existing attendance
-                Console.WriteLine("Checking existing attendance...");
                 var existingAttendance = await _context.QRAttendances
                     .FirstOrDefaultAsync(a => a.QRCodeSessionId == session.Id && a.StudentId == student.Id);
-
-                Console.WriteLine($"Existing attendance found: {existingAttendance != null}");
 
                 if (existingAttendance != null && !session.AllowMultipleScans)
                 {
                     return Json(new { success = false, message = "Already scanned this session" });
                 }
 
-                // ✅ Create attendance
-                Console.WriteLine("Creating attendance record...");
+                // ✅ Create attendance record
                 var attendance = new QRAttendance
                 {
                     QRCodeSessionId = session.Id,
-                    StudentId = student.Id,
-                    DeviceInfo = request.DeviceInfo ?? Request.Headers["User-Agent"],
+                    StudentId = student.Id, // Use student.Id (int), not student.StudentId (string)
+                    DeviceInfo = request.DeviceInfo ?? HttpContext.Request.Headers["User-Agent"].ToString(),
                     IPAddress = request.IPAddress ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
                     ScannedAt = DateTime.Now
                 };
 
-                Console.WriteLine($"Attendance object created: SessionId={attendance.QRCodeSessionId}, StudentId={attendance.StudentId}");
-
-                // ✅ NULL CHECK: Attendance object
-                if (attendance == null)
-                {
-                    Console.WriteLine("ERROR: Failed to create attendance object!");
-                    return Json(new { success = false, message = "Failed to create attendance record" });
-                }
-
                 _context.QRAttendances.Add(attendance);
-                Console.WriteLine("Saving to database...");
                 await _context.SaveChangesAsync();
 
                 Console.WriteLine($"=== ATTENDANCE SAVED SUCCESSFULLY ===");
-                return Json(new { success = true, message = "Attendance marked successfully!" });
+                return Json(new
+                {
+                    success = true,
+                    message = "Attendance marked successfully!",
+                    studentName = student.Name,
+                    studentId = student.StudentId
+                });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"=== SCAN ERROR ===");
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"=== SCAN ERROR: {ex.Message} ===");
                 Console.WriteLine($"Stack: {ex.StackTrace}");
-
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                    Console.WriteLine($"Inner Stack: {ex.InnerException.StackTrace}");
-                }
-
-                return Json(new
-                {
-                    success = false,
-                    message = $"Error: {ex.Message}"
-                });
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> TestSimpleCreate()
+        {
+            try
+            {
+                // Create a simple session
+                var session = new QRCodeSession
+                {
+                    SessionTitle = "Test Session " + DateTime.Now.ToString("HH:mm:ss"),
+                    CourseId = 1, // Make sure this course exists!
+                    DurationMinutes = 15,
+                    CreatedBy = "Test User",
+                    CreatedAt = DateTime.Now,
+                    IsActive = true
+                };
+
+                // Let the service handle token and ExpiresAt
+                var result = await _qrCodeService.CreateSessionAsync(session);
+
+                return Content($"SUCCESS!<br>" +
+                              $"ID: {result.Id}<br>" +
+                              $"Title: {result.SessionTitle}<br>" +
+                              $"Token: {result.Token}<br>" +
+                              $"ExpiresAt: {result.ExpiresAt}<br>" +
+                              $"CourseId: {result.CourseId}");
+            }
+            catch (Exception ex)
+            {
+                return Content($"ERROR: {ex.Message}<br><br>" +
+                              $"Stack: {ex.StackTrace}");
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CheckCourses()
+        {
+            var courses = await _courseService.GetAllCoursesAsync();
+            var result = $"Total Courses: {courses.Count}<br><br>";
+
+            foreach (var course in courses.Take(10))
+            {
+                result += $"ID: {course.Id}, Code: {course.CourseCode}, Name: {course.CourseName}<br>";
+            }
+
+            return Content(result);
         }
 
 
         public class ScanRequest
         {
             public string Token { get; set; } = string.Empty;
-            public long StudentId { get; set; }
+            public string StudentId { get; set; } = string.Empty;
             public string? DeviceInfo { get; set; }
             public string? IPAddress { get; set; }
         }

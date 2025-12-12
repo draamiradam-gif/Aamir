@@ -106,7 +106,7 @@
                                     <p class="mb-1">
                                         <span class="badge @GetAdminTypeBadgeClass(admin.AdminType)">@admin.AdminTypeName</span>
                                     </p>
-                                    <small class="text-muted">@admin.PermissionCount</small>
+                                    <small class="text-muted">@(admin.Permissions?.Count ?? 0)</small>
                                 </div>
                             }
                         </div>
