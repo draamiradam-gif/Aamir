@@ -285,13 +285,17 @@
                                                     @if (app.Status == ApplicationStatus.Approved)
                                                     {
                                                         <!-- ADD THIS BUTTON FOR APPROVED APPLICATIONS -->
-                                                        <form method="post" action="@Url.Action("CreateAdminFromApplication", "Applications", new { id = app.Id })"
+                                                        @* <form method="post" action="@Url.Action("CreateAdminFromApplication", "Applications", new { id = app.Id })"
                                                               class="d-inline" onsubmit="return confirm('Create admin account for this approved application?');">
                                                             @Html.AntiForgeryToken()
                                                             <button type="submit" class="btn btn-outline-info ms-1" title="Create Admin Account">
                                                                 <i class="fas fa-user-plus"></i> Create Admin
                                                             </button>
-                                                        </form>
+                                                        </form> *@
+                                                        <button type="button" class="btn btn-outline-info ms-1" title="Create Admin Account"
+                                                                onclick="createAdmin(@app.Id)">
+                                                            <i class="fas fa-user-plus"></i> Create Admin
+                                                        </button>
                                                     }
 
                                                     @if (app.IsBlocked)
@@ -370,7 +374,7 @@
     </style>
 }
 
-@section Scripts {
+@* @section Scripts {
     <script>
         $(document).ready(function() {
             // Initialize DataTable
@@ -454,7 +458,7 @@
             });
         });
     </script>
-}
+} *@
 
 @functions {
     public string GetStatusBadgeClass(string status)
@@ -486,4 +490,116 @@
             _ => "bg-secondary"
         };
     }
+}
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#applicationsTable').DataTable({
+                pageLength: 25,
+                responsive: true,
+                order: [[6, 'desc']], // Sort by Applied Date descending
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search applications...",
+                    lengthMenu: "_MENU_ records per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ applications",
+                    infoEmpty: "No applications found",
+                    infoFiltered: "(filtered from _MAX_ total)"
+                },
+                columnDefs: [
+                    { orderable: false, targets: [7] } // Disable sorting on Actions column
+                ]
+            });
+
+            // Global search
+            $('#globalSearch').on('keyup', function() {
+                table.search(this.value).draw();
+            });
+
+            // Apply filters
+            $('#applyFilters').on('click', function() {
+                var status = $('#statusFilter').val();
+                var type = $('#typeFilter').val();
+                var dateFrom = $('#dateFrom').val();
+                var dateTo = $('#dateTo').val();
+
+                // Combine filters
+                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                    var rowStatus = table.row(dataIndex).data()[5]; // Status column
+                    var rowType = table.row(dataIndex).data()[3]; // Type column
+                    var rowDate = table.row(dataIndex).data()[6]; // Date column
+
+                    var statusMatch = status === '' || rowStatus.includes(status);
+                    var typeMatch = type === '' || rowType.includes(type);
+                    var dateMatch = true;
+
+                    if (dateFrom || dateTo) {
+                        var rowDateObj = new Date(rowDate);
+                        var fromDate = dateFrom ? new Date(dateFrom) : null;
+                        var toDate = dateTo ? new Date(dateTo) : null;
+
+                        if (fromDate && rowDateObj < fromDate) dateMatch = false;
+                        if (toDate && rowDateObj > toDate) dateMatch = false;
+                    }
+
+                    return statusMatch && typeMatch && dateMatch;
+                });
+
+                table.draw();
+                $.fn.dataTable.ext.search.pop(); // Remove filter function
+            });
+
+            // Clear filters
+            $('#clearFilters').on('click', function() {
+                $('#statusFilter').val('');
+                $('#typeFilter').val('');
+                $('#dateFrom').val('');
+                $('#dateTo').val('');
+                $('#globalSearch').val('');
+                table.search('').draw();
+                table.columns().search('').draw();
+            });
+
+            // Reject modal function
+            window.showRejectModal = function(appId) {
+                document.getElementById('appId').value = appId;
+                document.getElementById('rejectForm').action = '@Url.Action("Reject", "Applications")' + '/' + appId;
+                const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+                modal.show();
+            };
+
+            // Auto focus on reject notes when modal opens
+            $('#rejectModal').on('shown.bs.modal', function() {
+                $('#rejectNotes').focus();
+            });
+        });
+
+        function createAdmin(applicationId) {
+            Swal.fire({
+                title: 'Create admin account?',
+                text: "This will create an admin account for this approved application.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Create',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Simulate AJAX success for redirect
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Admin account created!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        // Redirect exactly like approveApplication
+                        window.location.href = '@Url.Action("SetupAdmin", "AdminManagement", new { applicationId = "__ID__" })'.replace("__ID__", applicationId);
+                    });
+                }
+            });
+        }
+
+
+    </script>
 }

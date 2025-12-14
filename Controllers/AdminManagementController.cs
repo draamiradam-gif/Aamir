@@ -721,30 +721,70 @@ namespace StudentManagementSystem.Controllers
             return RedirectToAction("Index", "Settings");
         }
 
+        //[HttpPost]
+        //[Authorize(Policy = "SuperAdminOnly")]
+        //public async Task<IActionResult> ReviewApplication(int id, Models.ApplicationStatus status, string reviewNotes)
+        //{
+        //    var result = await _adminService.ReviewApplicationAsync(id, status, User.Identity?.Name ?? "System", reviewNotes);
+        //    if (result)
+        //    {
+        //        if (status == Models.ApplicationStatus.Approved)
+        //        {
+        //            TempData["SuccessMessage"] = "Application approved. Please complete admin account setup.";
+        //            return RedirectToAction("SetupAdmin", new { applicationId = id });
+        //        }
+        //        else
+        //        {
+        //            TempData["SuccessMessage"] = $"Application {status.ToString().ToLower()} successfully";
+        //        }
+        //    }
+        //    else
+        //    {
+        //        TempData["ErrorMessage"] = "Failed to review application";
+        //    }
+
+        //    return RedirectToAction("Applications");
+        //}
+
         [HttpPost]
         [Authorize(Policy = "SuperAdminOnly")]
-        public async Task<IActionResult> ReviewApplication(int id, Models.ApplicationStatus status, string reviewNotes)
+        public async Task<IActionResult> ReviewApplication(
+    int id,
+    Models.ApplicationStatus status,
+    string reviewNotes)
         {
-            var result = await _adminService.ReviewApplicationAsync(id, status, User.Identity?.Name ?? "System", reviewNotes);
-            if (result)
+            var result = await _adminService.ReviewApplicationAsync(
+                id,
+                status,
+                User.Identity?.Name ?? "System",
+                reviewNotes);
+
+            if (!result)
             {
-                if (status == Models.ApplicationStatus.Approved)
+                return Json(new
                 {
-                    TempData["SuccessMessage"] = "Application approved. Please complete admin account setup.";
-                    return RedirectToAction("SetupAdmin", new { applicationId = id });
-                }
-                else
-                {
-                    TempData["SuccessMessage"] = $"Application {status.ToString().ToLower()} successfully";
-                }
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "Failed to review application";
+                    success = false,
+                    message = "Failed to review application"
+                });
             }
 
-            return RedirectToAction("Applications");
+            if (status == Models.ApplicationStatus.Approved)
+            {
+                return Json(new
+                {
+                    success = true,
+                    redirectUrl = Url.Action("SetupAdmin", new { applicationId = id })
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                message = $"Application {status.ToString().ToLower()} successfully",
+                redirectUrl = Url.Action("Applications")
+            });
         }
+
 
         [HttpGet]
         [Authorize(Policy = "SuperAdminOnly")]
@@ -2538,12 +2578,111 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
+        //[HttpPost]
+        //[Authorize(Policy = "SuperAdminOnly")]
+        //public async Task<IActionResult> SetupAdmin(int applicationId, CreateAdminViewModel model)
+        //{
+        //    try
+        //    {
+        //        var application = await _context.AdminApplications
+        //            .Include(a => a.University)
+        //            .Include(a => a.Faculty)
+        //            .Include(a => a.Department)
+        //            .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+        //        if (application == null)
+        //        {
+        //            TempData["ErrorMessage"] = "Application not found";
+        //            return RedirectToAction("Index");
+        //        }
+
+        //        if (!ModelState.IsValid)
+        //        {
+        //            _logger.LogWarning("ModelState Invalid");
+        //            foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+        //                _logger.LogWarning(error.ErrorMessage);
+        //            // Reload dropdowns and return to view
+        //            model.Universities = await _context.Universities.ToListAsync();
+        //            model.Colleges = await _context.Colleges.ToListAsync();
+        //            model.Departments = await _context.Departments.ToListAsync();
+        //            model.AvailableTemplates = await _context.AdminPrivilegeTemplates
+        //                .Where(t => t.IsActive)
+        //                .ToListAsync();
+
+        //            ViewBag.ApplicationId = applicationId;
+        //            return View(model);
+        //        }
+
+        //        // Create the admin using your existing CreateAdmin logic
+        //        var createViewModel = new CreateAdminViewModel
+        //        {
+        //            Email = model.Email,
+        //            FullName = model.FullName,
+        //            AdminType = model.AdminType,
+        //            SelectedPermissions = model.SelectedPermissions,
+        //            TemplateId = model.TemplateId,
+        //            UniversityScope = model.UniversityScope,
+        //            FacultyScope = model.FacultyScope,
+        //            DepartmentScope = model.DepartmentScope,
+        //            Password = GenerateRandomPassword(12), // Generate password
+        //            ConfirmPassword = "" // Will be validated in service
+        //        };
+
+        //        var currentUser = User.Identity?.Name ?? "System";
+        //        var result = await _adminService.CreateAdminWithPrivilegesAsync(createViewModel, currentUser);
+
+        //        if (result)
+        //        {
+        //            // Update application with the actual admin ID
+        //            var newAdmin = await _userManager.FindByEmailAsync(model.Email);
+        //            if (newAdmin != null)
+        //            {
+        //                application.ApplicantId = newAdmin.Id;
+        //                application.Status = ApplicationStatus.Approved;
+        //                application.ReviewedBy = currentUser;
+        //                application.ReviewedDate = DateTime.Now;
+
+        //                await _context.SaveChangesAsync();
+        //            }
+
+        //            TempData["SuccessMessage"] = "Admin account created successfully from application";
+        //            //return RedirectToAction("Index");
+
+        //            return RedirectToAction("Index", "AdminManagement");
+        //        }
+        //        else
+        //        {
+        //            TempData["ErrorMessage"] = "Failed to create admin account. Please check the logs.";
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error setting up admin from application");
+        //        TempData["ErrorMessage"] = $"Error creating admin account: {ex.Message}";
+        //    }
+
+        //    // Reload data if failed
+        //    model.Universities = await _context.Universities.ToListAsync();
+        //    model.Colleges = await _context.Colleges.ToListAsync();
+        //    model.Departments = await _context.Departments.ToListAsync();
+        //    model.AvailableTemplates = await _context.AdminPrivilegeTemplates
+        //        .Where(t => t.IsActive)
+        //        .ToListAsync();
+
+        //    ViewBag.ApplicationId = applicationId;
+        //    return View(model);
+        //}
+
         [HttpPost]
         [Authorize(Policy = "SuperAdminOnly")]
-        public async Task<IActionResult> SetupAdmin(int applicationId, CreateAdminViewModel model)
+        public async Task<IActionResult> SetupAdmin(CreateAdminViewModel model)
         {
             try
             {
+                // ✅ استخرج الـ applicationId من الموديل
+                var applicationId = model.ApplicationId;
+
+                // ✅ DbSet هو اللي عليه Include (مش int)
                 var application = await _context.AdminApplications
                     .Include(a => a.University)
                     .Include(a => a.Faculty)
@@ -2553,12 +2692,13 @@ namespace StudentManagementSystem.Controllers
                 if (application == null)
                 {
                     TempData["ErrorMessage"] = "Application not found";
-                    return RedirectToAction("Index");
+                    return RedirectToAction("Index", "AdminManagement");
                 }
 
                 if (!ModelState.IsValid)
                 {
-                    // Reload dropdowns and return to view
+                    _logger.LogWarning("ModelState Invalid");
+
                     model.Universities = await _context.Universities.ToListAsync();
                     model.Colleges = await _context.Colleges.ToListAsync();
                     model.Departments = await _context.Departments.ToListAsync();
@@ -2566,11 +2706,10 @@ namespace StudentManagementSystem.Controllers
                         .Where(t => t.IsActive)
                         .ToListAsync();
 
-                    ViewBag.ApplicationId = applicationId;
                     return View(model);
                 }
 
-                // Create the admin using your existing CreateAdmin logic
+                // Create admin
                 var createViewModel = new CreateAdminViewModel
                 {
                     Email = model.Email,
@@ -2581,8 +2720,8 @@ namespace StudentManagementSystem.Controllers
                     UniversityScope = model.UniversityScope,
                     FacultyScope = model.FacultyScope,
                     DepartmentScope = model.DepartmentScope,
-                    Password = GenerateRandomPassword(12), // Generate password
-                    ConfirmPassword = "" // Will be validated in service
+                    Password = model.Password,
+                    ConfirmPassword = model.ConfirmPassword
                 };
 
                 var currentUser = User.Identity?.Name ?? "System";
@@ -2590,7 +2729,6 @@ namespace StudentManagementSystem.Controllers
 
                 if (result)
                 {
-                    // Update application with the actual admin ID
                     var newAdmin = await _userManager.FindByEmailAsync(model.Email);
                     if (newAdmin != null)
                     {
@@ -2602,21 +2740,22 @@ namespace StudentManagementSystem.Controllers
                         await _context.SaveChangesAsync();
                     }
 
-                    TempData["SuccessMessage"] = "Admin account created successfully from application";
-                    return RedirectToAction("Index");
+                    TempData["SuccessMessage"] =
+                        "Admin account created successfully from application";
+
+                    // ✅ نفس CreateAdmin بالظبط
+                    return RedirectToAction("Index", "AdminManagement");
                 }
-                else
-                {
-                    TempData["ErrorMessage"] = "Failed to create admin account. Please check the logs.";
-                }
+
+                TempData["ErrorMessage"] = "Failed to create admin account.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error setting up admin from application");
-                TempData["ErrorMessage"] = $"Error creating admin account: {ex.Message}";
+                _logger.LogError(ex, "Error setting up admin");
+                TempData["ErrorMessage"] = ex.Message;
             }
 
-            // Reload data if failed
+            // reload data
             model.Universities = await _context.Universities.ToListAsync();
             model.Colleges = await _context.Colleges.ToListAsync();
             model.Departments = await _context.Departments.ToListAsync();
@@ -2624,10 +2763,8 @@ namespace StudentManagementSystem.Controllers
                 .Where(t => t.IsActive)
                 .ToListAsync();
 
-            ViewBag.ApplicationId = applicationId;
             return View(model);
         }
-
 
         //[HttpGet]
         //[Authorize(Policy = "SuperAdminOnly")]
@@ -3398,7 +3535,8 @@ namespace StudentManagementSystem.Controllers
                 client.UseDefaultCredentials = false;
                 client.Credentials = new System.Net.NetworkCredential("dr.aamir.adam@gmail.com", "amrc ocji pqhh ruql");
 
-                await client.SendMailAsync(message);
+                //await client.SendMailAsync(message);
+                await _emailService.SendEmailAsync(testEmail, subject, body, new List<string>());
 
                 return Json(new { success = true, message = "Test email sent successfully!" });
             }

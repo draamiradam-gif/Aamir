@@ -123,8 +123,71 @@ namespace StudentManagementSystem.Controllers
         //    // Debug: Check what we set
         //    Console.WriteLine($"DEBUG: Set {ViewBag.AdminTypes?.Count} admin types");
 
-        //    return View("ReviewApplication", "AdminManagement"); 
+        //    return View("ReviewApplication", "Applications"); 
         //}
+        public async Task<IActionResult> Review(int id)
+        {
+            var application = await _context.AdminApplications
+                .Include(a => a.University)
+                .Include(a => a.Faculty)
+                .Include(a => a.Department)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (application == null)
+                return NotFound();
+
+            var model = new AdminApplicationViewModel
+            {
+                Id = application.Id,
+                ApplicantName = application.ApplicantName,
+                Email = application.Email,
+                Phone = application.Phone,
+
+                AppliedAdminType = application.AppliedAdminType, // مهم
+                AppliedDate = application.AppliedDate,
+                Status = application.Status,
+
+                UniversityName = application.University?.Name,
+                FacultyName = application.Faculty?.Name,
+                DepartmentName = application.Department?.Name,
+
+                Justification = application.Justification,
+                Experience = application.Experience,
+                Qualifications = application.Qualifications,
+
+                ReviewedDate = application.ReviewedDate,
+                ReviewedBy = application.ReviewedBy,
+                ReviewNotes = application.ReviewNotes
+            };
+
+            return View("ReviewApplication", model);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReviewApplication(int id, ApplicationStatus status, string reviewNotes)
+        {
+            var application = await _context.AdminApplications.FindAsync(id);
+            if (application == null)
+                return Json(new { success = false, message = "Application not found." });
+
+            try
+            {
+                application.Status = status;
+                application.ReviewedDate = DateTime.UtcNow;
+                application.ReviewedBy = User.Identity?.Name;
+                application.ReviewNotes = reviewNotes;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = $"Application {status} successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Failed to review application: {ex.Message}" });
+            }
+        }
+
+
 
         [HttpGet]
         [Authorize(Roles = "SuperAdmin,Admin")]
@@ -154,22 +217,50 @@ namespace StudentManagementSystem.Controllers
                 new { Id = 8, Name = "CustomAdmin" }
             };
 
-            return View("~/Views/AdminManagement/ReviewApplication.cshtml", application);
+            //return View("~/Views/AdminManagement/ReviewApplication.cshtml", application);
+            return View("~/Views/Applications/Details.cshtml", application);
         }
 
-        
+
         // POST: Applications/Reject - Reject application
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Reject(int id, string reviewNotes)
+        //{
+        //    var application = await _context.AdminApplications.FindAsync(id);
+
+        //    if (application == null)
+        //    {
+        //        TempData["ErrorMessage"] = "Application not found.";
+        //        return RedirectToAction("Index");
+        //    }
+
+        //    try
+        //    {
+        //        application.Status = ApplicationStatus.Rejected;
+        //        application.ReviewedDate = DateTime.UtcNow;
+        //        application.ReviewedBy = User.Identity?.Name;
+        //        application.ReviewNotes = reviewNotes;
+
+        //        await _context.SaveChangesAsync();
+
+        //        TempData["SuccessMessage"] = "Application has been rejected.";
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        TempData["ErrorMessage"] = $"Failed to reject application: {ex.Message}";
+        //    }
+
+        //    return RedirectToAction("Index");
+        //}
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reject(int id, string reviewNotes)
         {
             var application = await _context.AdminApplications.FindAsync(id);
-
             if (application == null)
-            {
-                TempData["ErrorMessage"] = "Application not found.";
-                return RedirectToAction("Index");
-            }
+                return Json(new { success = false, message = "Application not found." });
 
             try
             {
@@ -180,15 +271,23 @@ namespace StudentManagementSystem.Controllers
 
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Application has been rejected.";
+                // أضف redirectUrl للقائمة
+                return Json(new
+                {
+                    success = true,
+                    message = "Application has been rejected.",
+                    redirectUrl = Url.Action("Index", "Applications")
+                });
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Failed to reject application: {ex.Message}";
+                return Json(new { success = false, message = $"Failed to reject application: {ex.Message}" });
             }
-
-            return RedirectToAction("Index");
         }
+
+
+
+
 
         // POST: Applications/Block - Block user from applying again
         [HttpPost]

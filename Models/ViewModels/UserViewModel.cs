@@ -109,7 +109,7 @@ namespace StudentManagementSystem.Models
     {
         public string AdminId { get; set; } = string.Empty;
         public string AdminName { get; set; } = string.Empty;
-
+        public int ApplicationId { get; set; }
 
         [Required]
         [EmailAddress]

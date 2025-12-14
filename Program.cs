@@ -69,6 +69,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Email configuration
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddSingleton(provider =>
+    provider.GetRequiredService<IOptions<EmailSettings>>().Value);
 
 // Remove unconditional EmailService registration
 // builder.Services.AddTransient<IEmailService, EmailService>();

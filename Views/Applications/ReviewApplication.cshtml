@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Review Application";
 }
+@Html.AntiForgeryToken() <!-- مهم جدًا للـ POST -->
 
 <div class="container-fluid">
     <div class="row">
@@ -11,7 +12,8 @@
                     <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Review Application</h5>
                 </div>
                 <div class="card-body">
-                    <!-- Application Details -->
+
+                    <!-- Applicant Information -->
                     <h6>Applicant Information</h6>
                     <div class="row mb-3">
                         <div class="col-md-6">
@@ -22,7 +24,7 @@
                         <div class="col-md-6">
                             <p><strong>Applied For:</strong> <span class="badge bg-info">@Model.AppliedAdminTypeName</span></p>
                             <p><strong>Applied Date:</strong> @Model.AppliedDate.ToString("MMM dd, yyyy")</p>
-                            <p><strong>Status:</strong> <span class="badge bg-warning">@Model.Status</span></p>
+                            <p><strong>Status:</strong> <span class="@Model.StatusBadgeClass">@Model.Status</span></p>
                         </div>
                     </div>
 
@@ -53,7 +55,7 @@
 
                     <!-- Action Buttons -->
                     <div class="d-flex justify-content-between mt-4">
-                        <a href="@Url.Action("Applications")" class="btn btn-outline-secondary">
+                        <a href="@Url.Action("Index", "Application")" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-1"></i>Back
                         </a>
                         <div>
@@ -65,6 +67,7 @@
                             </button>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -72,51 +75,91 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // ==== APPROVE ====
         function approveApplication() {
-            var notes = prompt("Enter approval notes (optional):");
-            if (notes !== null) {
-                $.ajax({
-                    url: '@Url.Action("ReviewApplication", "AdminManagement")',
-                    type: 'POST',
-                    data: {
-                        id: @Model.Id,
-                        status: 'Approved',
-                        reviewNotes: notes
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            alert('Application approved successfully!');
-                            window.location.href = '@Url.Action("Applications")';
-                        } else {
-                            alert('Failed to approve: ' + response.message);
+            Swal.fire({
+                title: 'Approve Application?',
+                input: 'textarea',
+                inputLabel: 'Approval Notes (optional)',
+                showCancelButton: true,
+                confirmButtonText: 'Approve',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    $.ajax({
+                        url: '@Url.Action("ReviewApplication", "AdminManagement")', // Controller صح
+                        type: 'POST',
+                        data: {
+                            id: @Model.Id,
+                            status: 'Approved',
+                            reviewNotes: result.value,
+                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        success: function(response) {
+                            if(response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Application approved!',
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                }).then(() => {
+                                    if(response.redirectUrl) window.location.href = response.redirectUrl;
+                                });
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Server Error', xhr.status + ' ' + xhr.statusText, 'error');
                         }
-                    }
-                });
-            }
+                    });
+                }
+            });
         }
 
+        // ==== REJECT ====
         function rejectApplication() {
-            var notes = prompt("Enter rejection reason:");
-            if (notes !== null) {
-                $.ajax({
-                    url: '@Url.Action("ReviewApplication", "AdminManagement")',
-                    type: 'POST',
-                    data: {
-                        id: @Model.Id,
-                        status: 'Rejected',
-                        reviewNotes: notes
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            alert('Application rejected successfully!');
-                            window.location.href = '@Url.Action("Applications")';
-                        } else {
-                            alert('Failed to reject: ' + response.message);
+            Swal.fire({
+                title: 'Reject Application?',
+                input: 'textarea',
+                inputLabel: 'Rejection Reason',
+                inputPlaceholder: 'Enter reason here...',
+                inputValidator: (value) => {
+                    if(!value) return 'You must enter a rejection reason!';
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Reject',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    $.ajax({
+                        url: '@Url.Action("Reject", "Applications")', // Controller
+                        type: 'POST',
+                        data: {
+                            id: @Model.Id,
+                            reviewNotes: result.value,
+                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: response.success ? 'success' : 'error',
+                                title: response.message
+                            }).then(() => {
+                                if(response.success && response.redirectUrl) {
+                                    window.location.href = response.redirectUrl;
+                                }
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Server Error', xhr.status + ' ' + xhr.statusText, 'error');
                         }
-                    }
-                });
-            }
+                    });
+                }
+            });
         }
+
+
     </script>
 }
