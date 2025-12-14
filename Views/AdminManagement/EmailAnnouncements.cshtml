@@ -25,7 +25,9 @@
                     <h5 class="mb-0">Compose Announcement</h5>
                 </div>
                 <div class="card-body">
-                    <form asp-action="SendAnnouncement" method="post">
+                    @*<form asp-action="SendAnnouncement" method="post">
+                    <form id="announcementForm" asp-action="SendAnnouncement" method="post">*@
+                    <form id="announcementForm" asp-action="SendAnnouncement" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
 
                         <div class="mb-3">
@@ -93,6 +95,9 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-paper-plane me-2"></i>Send Announcement
                             </button>
+                            @*<button id="testAnnouncement" class="btn btn-warning mt-3">
+                                <i class="fas fa-bug me-2"></i>Test AJAX
+                            </button> *@                           
                         </div>
                     </form>
                 </div>
@@ -140,6 +145,8 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
+            console.log("Email announcements page loaded");
+
             // Handle recipient selection
             $('input[name="selectionType"]').change(function() {
                 if ($(this).val() === 'custom') {
@@ -157,15 +164,20 @@
                 });
             });
 
-            // Form submission
-            $('form').submit(function(e) {
+            // Form submission with AJAX
+            $('#announcementForm').on('submit', function(e) {
+                e.preventDefault(); // Prevent normal form submission
+
+                console.log("Form submission started...");
+
+                // Collect form data
+                const formData = new FormData(this);
+
                 // Collect selected users
                 const selectedUsers = $('#userSelect').val() || [];
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: 'SelectedUsers',
-                    value: selectedUsers.join(',')
-                }).appendTo(this);
+                if (selectedUsers.length > 0) {
+                    formData.set('SelectedUsers', selectedUsers.join(','));
+                }
 
                 // Collect custom emails
                 const customEmails = $('#customSelection textarea').val()
@@ -174,116 +186,146 @@
                     .filter(email => email.length > 0);
 
                 if (customEmails.length > 0) {
-                    $('<input>').attr({
-                        type: 'hidden',
-                        name: 'CustomEmails',
-                        value: customEmails.join(',')
-                    }).appendTo(this);
+                    formData.set('CustomEmails', customEmails.join(','));
                 }
-            });
-        });
 
-        function selectAllAdmins() {
-            // Check "All Administrators" radio
-            $('#sendAdmins').prop('checked', true);
-            $('input[name="selectionType"]').prop('checked', false);
-            $('#customSelection').hide();
-        }
+                // Show loading state
+                const $submitBtn = $(this).find('button[type="submit"]');
+                const originalText = $submitBtn.html();
+                $submitBtn.prop('disabled', true)
+                    .html('<i class="fas fa-spinner fa-spin me-2"></i>Sending...');
 
+                // Clear previous messages
+                $('#successMessage, #errorMessage').remove();
 
-
-
-
-                // Handle individual delete button clicks
-        $(document).on('click', '.delete-admin-btn', function(e) {
-            e.preventDefault();
-
-            const adminId = $(this).data('id');
-            const adminName = $(this).data('name');
-
-            if (confirm(`Are you sure you want to delete ${adminName}? This action cannot be undone!`)) {
+                // Send AJAX request
                 $.ajax({
-                    url: '@Url.Action("DeleteAdmin", "AdminManagement")',
+                    url: $(this).attr('action'),
                     type: 'POST',
-                    data: { adminId: adminId },
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     success: function(response) {
+                        console.log("Server response:", response);
+
                         if (response.success) {
-                            showToast('success', response.message);
-                            // Reload the page after 1 second
-                            setTimeout(() => location.reload(), 1000);
+                            // Show success message
+                            const successHtml = `
+                                <div id="successMessage" class="alert alert-success alert-dismissible fade show mt-3">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    ${response.message}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>`;
+                            $(successHtml).insertBefore('#announcementForm');
+
+                            // Reset form after successful submission
+                            $('#announcementForm')[0].reset();
+                            $('#customSelection').hide();
                         } else {
-                            showToast('error', response.message);
+                            // Show error message
+                            let errorHtml = `<div id="errorMessage" class="alert alert-danger alert-dismissible fade show mt-3">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                ${response.message}`;
+
+                            if (response.errors && response.errors.length > 0) {
+                                errorHtml += '<ul class="mb-0 mt-2">';
+                                response.errors.forEach(error => {
+                                    errorHtml += `<li>${error}</li>`;
+                                });
+                                errorHtml += '</ul>';
+                            }
+
+                            errorHtml += `<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+                            $(errorHtml).insertBefore('#announcementForm');
                         }
                     },
-                    error: function() {
-                        showToast('error', 'Error deleting admin');
+                    error: function(xhr, status, error) {
+                        console.error("AJAX error:", error, xhr.responseText);
+
+                        const errorHtml = `
+                            <div id="errorMessage" class="alert alert-danger alert-dismissible fade show mt-3">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                Server error occurred. Please try again.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>`;
+                        $(errorHtml).insertBefore('#announcementForm');
+                    },
+                    complete: function() {
+                        // Restore button state
+                        $submitBtn.prop('disabled', false).html(originalText);
                     }
                 });
+            });
+
+            function selectAllAdmins() {
+                // Check "All Administrators" radio
+                $('#sendAdmins').prop('checked', true);
+                $('input[name="selectionType"]').prop('checked', false);
+                $('#customSelection').hide();
             }
+            $.get('/AdminManagement/DebugEmailSettings', function(r) {
+            console.log("🔧 Email Settings Debug:", r);
+            });
+
+
+            // Test 1: Debug settings
+            $.get('/AdminManagement/DebugEmailSettings', function(r) {
+                console.log("Settings:", r);
+                alert(r.success ? "Settings loaded" : "Error: " + r.error);
+            });
+
+            // Test 2: Test with EmailService
+            // Test with real service
+            $.post('/AdminManagement/TestEmail', {
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                }, function(r) {
+                    console.log("Test with real service:", r);
+                    alert(r.success ? "✅ REAL email sent! Check inbox/spam" : "❌ " + r.message);
+            });
+
+            // Test 3: Raw MailKit test
+            $.post('/AdminManagement/RawMailKitTest', {
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            }, function(r) {
+                console.log("Raw MailKit:", r);
+                alert(r.success ? "✅ Raw test sent!" : "❌ " + r.message);
+            });
+
+            $.get('/AdminManagement/CheckEmailService', function(r) {
+                console.log("Service check:", r);
+                alert(r.isMock ? "❌ Using MOCK service!" : "✅ Using real service");
+            });
+
+
         });
-
-        // Show toast notifications
-        function showToast(type, message) {
-            const toastHtml = `
-                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0"
-                     role="alert" aria-live="assertive" aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body">
-                            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
-                            ${message}
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                    </div>
-                </div>`;
-
-            $('.toast-container').append(toastHtml);
-            $('.toast').last().toast('show');
-
-            // Remove toast after 5 seconds
-            setTimeout(() => {
-                $('.toast').last().remove();
-            }, 5000);
-        }
-
-                // Handle send email button clicks
-        $(document).on('click', '.send-email-btn', function(e) {
-            e.preventDefault();
-
-            const email = $(this).data('email');
-
-            // Show email modal or redirect to email page
-            $('#sendEmailModal').modal('show');
-            $('#recipientEmail').val(email);
-        });
-
-        // Or if you want a simple prompt
-        $(document).on('click', '.send-email-btn', function(e) {
-            e.preventDefault();
-
-            const email = $(this).data('email');
-            const subject = prompt('Enter email subject:');
-            if (!subject) return;
-
-            const message = prompt('Enter email message:');
-            if (!message) return;
+    </script>
+    <script>
+        $('#testAnnouncement').click(function() {
+            const testData = new FormData();
+            testData.append('Subject', 'Test Announcement');
+            testData.append('Message', 'This is a test message');
+            testData.append('SendToEveryone', 'true');
+            testData.append('__RequestVerificationToken', $('input[name="__RequestVerificationToken"]').val());
 
             $.ajax({
-                url: '@Url.Action("SendEmail", "AdminManagement")',
+                url: '@Url.Action("SendAnnouncement", "AdminManagement")',
                 type: 'POST',
-                data: {
-                    to: email,
-                    subject: subject,
-                    message: message
+                data: testData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 success: function(response) {
-                    if (response.success) {
-                        alert('Email sent successfully!');
-                    } else {
-                        alert('Error: ' + response.message);
-                    }
+                    console.log("Test response:", response);
+                    alert(response.success ? "✅ " + response.message : "❌ " + response.message);
                 },
-                error: function() {
-                    alert('Error sending email');
+                error: function(xhr) {
+                    console.log("Test error:", xhr.responseText);
+                    alert("❌ AJAX Error - Check console");
                 }
             });
         });

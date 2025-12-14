@@ -62,6 +62,8 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddScoped<IImportService, ImportService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IEmailConfigurationService, EmailConfigurationService>();
+
 
 
 // Remove duplicate IStudentService registration
@@ -76,16 +78,16 @@ builder.Services.AddSingleton(provider =>
 // builder.Services.AddTransient<IEmailService, EmailService>();
 
 // Conditional Email Service registration
-if (builder.Environment.IsDevelopment())
-{
-    // Use MockEmailService in development (logs to file instead of sending real emails)
-    builder.Services.AddTransient<IEmailService, MockEmailService>();
-}
-else
-{
-    // Use real EmailService in production
-    builder.Services.AddTransient<IEmailService, EmailService>();
-}
+//if (builder.Environment.IsDevelopment())
+//{
+//    // Use MockEmailService in development (logs to file instead of sending real emails)
+//    builder.Services.AddTransient<IEmailService, MockEmailService>();
+//}
+//else
+//{
+//    // Use real EmailService in production
+//    builder.Services.AddTransient<IEmailService, EmailService>();
+//}
 
 builder.Services.AddMemoryCache();
 builder.Services.AddLogging();

@@ -237,10 +237,27 @@
                                         </a>
 
                                         <!-- Delete User -->
-                                        <button class="btn btn-outline-danger"
+                                        @*<button class="btn btn-outline-danger"
                                                 onclick="confirmDelete('@user.Id', '@(user.UserName ?? "Unknown")')" title="Delete">
                                             <i class="fas fa-trash"></i>
-                                        </button>
+                                        </button>*@
+                                        <form method="post"
+                                              action="@Url.Action("Delete", "UserManagement")"
+                                              class="d-inline"
+                                              onsubmit="return confirmDelete(this, '@(user.UserName ?? "Unknown")')">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden" name="id" value="@user.Id" />
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger"
+                                                    title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+
+
                                     </div>
                                 </td>
                             </tr>
@@ -254,13 +271,14 @@
 
 @section Scripts {
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
+
             // Initialize DataTable
             var table = $('#usersTable').DataTable({
                 pageLength: 25,
                 responsive: true,
                 columnDefs: [
-                    { orderable: false, targets: [6] } // Disable sorting on Actions column
+                    { orderable: false, targets: [6] } // Actions column
                 ],
                 language: {
                     search: "_INPUT_",
@@ -273,19 +291,32 @@
             });
 
             // Search functionality
-            $('#userSearch').on('keyup', function() {
+            $('#userSearch').on('keyup', function () {
                 table.search(this.value).draw();
             });
 
-            // Delete confirmation with null handling
-            window.confirmDelete = function(userId, userName) {
-                if (confirm(`Are you sure you want to delete user "${userName}"?`)) {
-                    window.location.href = '@Url.Action("Delete", "UserManagement")' + '?id=' + userId;
-                }
-            };
         });
+
+        // ✅ SweetAlert Delete Confirmation (POST safe)
+        function confirmDelete(form, userName) {
+            Swal.fire({
+                title: 'Delete User?',
+                text: `Are you sure you want to delete "${userName}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit(); // POST with AntiForgery
+                }
+            });
+
+            return false; // prevent normal submit
+        }
     </script>
 }
+
 
 @functions {
     public string GetAdminTypeBadgeClass(AdminType adminType)
@@ -302,5 +333,6 @@
             AdminType.CustomAdmin => "bg-indigo",
             _ => "bg-secondary"
         };
-    }
+    } 
+
 }

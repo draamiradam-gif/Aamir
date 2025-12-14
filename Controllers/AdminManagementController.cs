@@ -42,6 +42,8 @@ namespace StudentManagementSystem.Controllers
         private readonly IEmailService _emailService;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly EmailSettings _emailSettings;
+        private readonly IConfiguration _configuration;
+        private readonly IEmailConfigurationService _emailConfigService;
 
         public AdminManagementController(
             IAdminService adminService,
@@ -51,7 +53,9 @@ namespace StudentManagementSystem.Controllers
             ILogger<CollegesController> logger,
             IEmailService emailService,
             ICompositeViewEngine viewEngine,
-            EmailSettings emailSettings)  // Add this parameter
+            EmailSettings emailSettings,
+            IEmailConfigurationService emailConfigService,
+            IConfiguration configuration)  // Add this parameter
         {
             _adminService = adminService;
             _userManager = userManager;
@@ -61,6 +65,8 @@ namespace StudentManagementSystem.Controllers
             _emailService = emailService;
             _viewEngine = viewEngine;  // Add this
             _emailSettings = emailSettings;
+            _emailConfigService = emailConfigService;
+            _configuration = configuration;
         }
 
         //[Authorize(Policy = "SuperAdminOnly")]
@@ -3359,17 +3365,123 @@ namespace StudentManagementSystem.Controllers
             return View(model);
         }
 
+        //[HttpPost]
+        //[Authorize(Policy = "SuperAdminOnly")]
+        //public async Task<IActionResult> SendAnnouncement(EmailAnnouncementsViewModel model)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return View("EmailAnnouncements", model);
+        //    }
+
+        //    try
+        //    {
+        //        List<string> recipients = new List<string>();
+
+        //        // Get recipients based on selection
+        //        if (model.SendToEveryone)
+        //        {
+        //            var allUsers = await _userManager.Users
+        //                .Where(u => u.EmailConfirmed && !string.IsNullOrEmpty(u.Email))
+        //                .Select(u => u.Email!)
+        //                .ToListAsync();
+        //            recipients.AddRange(allUsers.Where(email => !string.IsNullOrEmpty(email)));
+        //        }
+        //        else
+        //        {
+        //            if (model.SendToAllAdmins)
+        //            {
+        //                var adminEmails = await _context.AdminPrivileges
+        //                    .Include(ap => ap.Admin)
+        //                    .Where(ap => ap.Admin != null && ap.Admin.EmailConfirmed && !string.IsNullOrEmpty(ap.Admin.Email))
+        //                    .Select(ap => ap.Admin!.Email!)
+        //                    .ToListAsync();
+        //                recipients.AddRange(adminEmails.Where(email => !string.IsNullOrEmpty(email)));
+        //            }
+
+        //            if (model.SelectedUsers != null && model.SelectedUsers.Any())
+        //            {
+        //                var selectedEmails = await _userManager.Users
+        //                    .Where(u => model.SelectedUsers.Contains(u.Id) &&
+        //                           u.EmailConfirmed &&
+        //                           !string.IsNullOrEmpty(u.Email))
+        //                    .Select(u => u.Email!)
+        //                    .ToListAsync();
+        //                recipients.AddRange(selectedEmails.Where(email => !string.IsNullOrEmpty(email)));
+        //            }
+
+        //            if (model.CustomEmails != null && model.CustomEmails.Any())
+        //            {
+        //                // Filter out null/empty/whitespace emails
+        //                var validCustomEmails = model.CustomEmails
+        //                    .Where(email => !string.IsNullOrWhiteSpace(email))
+        //                    .Select(email => email!.Trim()) // Use ! to assert non-null
+        //                    .ToList();
+        //                recipients.AddRange(validCustomEmails);
+        //            }
+        //        }
+
+        //        // Remove duplicates and ensure no nulls
+        //        recipients = recipients
+        //            .Where(email => !string.IsNullOrEmpty(email))
+        //            .Distinct()
+        //            .ToList();
+
+        //        if (!recipients.Any())
+        //        {
+        //            TempData["ErrorMessage"] = "No valid recipients found";
+        //            return RedirectToAction("EmailAnnouncements");
+        //        }
+
+        //        // Send email to each recipient
+        //        foreach (var email in recipients)
+        //        {
+        //            await _emailService.SendEmailAsync(
+        //                email,
+        //                model.Subject,
+        //                model.Message,
+        //                new List<string>()
+        //            );
+        //        }
+
+        //        TempData["SuccessMessage"] = $"Announcement sent to {recipients.Count} recipients successfully";
+        //        return RedirectToAction("EmailAnnouncements");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error sending announcement");
+        //        TempData["ErrorMessage"] = $"Error sending announcement: {ex.Message}";
+        //        return RedirectToAction("EmailAnnouncements");
+        //    }
+        //}
+
         [HttpPost]
         [Authorize(Policy = "SuperAdminOnly")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendAnnouncement(EmailAnnouncementsViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View("EmailAnnouncements", model);
-            }
-
             try
             {
+                if (!ModelState.IsValid)
+                {
+                    // Return JSON for AJAX requests
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        var errors = ModelState.Values
+                            .SelectMany(v => v.Errors)
+                            .Select(e => e.ErrorMessage)
+                            .ToList();
+                        return Json(new
+                        {
+                            success = false,
+                            message = "Validation failed",
+                            errors = errors
+                        });
+                    }
+
+                    return View("EmailAnnouncements", model);
+                }
+
                 List<string> recipients = new List<string>();
 
                 // Get recipients based on selection
@@ -3406,10 +3518,9 @@ namespace StudentManagementSystem.Controllers
 
                     if (model.CustomEmails != null && model.CustomEmails.Any())
                     {
-                        // Filter out null/empty/whitespace emails
                         var validCustomEmails = model.CustomEmails
                             .Where(email => !string.IsNullOrWhiteSpace(email))
-                            .Select(email => email!.Trim()) // Use ! to assert non-null
+                            .Select(email => email!.Trim())
                             .ToList();
                         recipients.AddRange(validCustomEmails);
                     }
@@ -3423,6 +3534,16 @@ namespace StudentManagementSystem.Controllers
 
                 if (!recipients.Any())
                 {
+                    // Return JSON for AJAX
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = "No valid recipients found"
+                        });
+                    }
+
                     TempData["ErrorMessage"] = "No valid recipients found";
                     return RedirectToAction("EmailAnnouncements");
                 }
@@ -3438,12 +3559,34 @@ namespace StudentManagementSystem.Controllers
                     );
                 }
 
+                // Return JSON for AJAX requests
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = $"Announcement sent to {recipients.Count} recipients successfully",
+                        count = recipients.Count
+                    });
+                }
+
                 TempData["SuccessMessage"] = $"Announcement sent to {recipients.Count} recipients successfully";
                 return RedirectToAction("EmailAnnouncements");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending announcement");
+
+                // Return JSON for AJAX requests
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"Error: {ex.Message}"
+                    });
+                }
+
                 TempData["ErrorMessage"] = $"Error sending announcement: {ex.Message}";
                 return RedirectToAction("EmailAnnouncements");
             }
@@ -3467,65 +3610,61 @@ namespace StudentManagementSystem.Controllers
             return Json(users);
         }
 
+        //public async Task SendEmailAsync(string to, string subject, string body, List<string> attachments)
+        //{
+        //    try
+        //    {
+        //        Console.WriteLine($"Attempting to send email to: {to}");
+        //        Console.WriteLine($"Using SMTP: {_emailSettings.SmtpServer}:{_emailSettings.SmtpPort}");
+        //        Console.WriteLine($"Username: {_emailSettings.Username}");
+
+        //        var message = new MimeMessage();
+        //        message.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
+        //        message.To.Add(new MailboxAddress("", to));
+        //        message.Subject = subject;
+
+        //        var bodyBuilder = new BodyBuilder
+        //        {
+        //            HtmlBody = body
+        //        };
+
+        //        message.Body = bodyBuilder.ToMessageBody();
+
+        //        using var client = new SmtpClient();
+
+        //        // Add event handlers for debugging
+        //        client.AuthenticationMechanisms.Remove("XOAUTH2");
+
+        //        await client.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.SmtpPort, SecureSocketOptions.StartTls);
+        //        Console.WriteLine("Connected to SMTP server");
+
+        //        await client.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
+        //        Console.WriteLine("Authenticated successfully");
+
+        //        await client.SendAsync(message);
+        //        Console.WriteLine($"Email sent successfully to {to}");
+
+        //        await client.DisconnectAsync(true);
+        //        Console.WriteLine("Disconnected from SMTP server");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"Email sending failed: {ex.Message}");
+        //        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        //        throw;
+        //    }
+        //}
+
         public async Task SendEmailAsync(string to, string subject, string body, List<string> attachments)
         {
             try
             {
-                Console.WriteLine($"Attempting to send email to: {to}");
-                Console.WriteLine($"Using SMTP: {_emailSettings.SmtpServer}:{_emailSettings.SmtpPort}");
-                Console.WriteLine($"Username: {_emailSettings.Username}");
+                _logger.LogInformation($"Attempting to send email to: {to}");
+                _logger.LogInformation($"Subject: {subject}");
 
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
-                message.To.Add(new MailboxAddress("", to));
-                message.Subject = subject;
-
-                var bodyBuilder = new BodyBuilder
-                {
-                    HtmlBody = body
-                };
-
-                message.Body = bodyBuilder.ToMessageBody();
-
-                using var client = new SmtpClient();
-
-                // Add event handlers for debugging
-                client.AuthenticationMechanisms.Remove("XOAUTH2");
-
-                await client.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.SmtpPort, SecureSocketOptions.StartTls);
-                Console.WriteLine("Connected to SMTP server");
-
-                await client.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
-                Console.WriteLine("Authenticated successfully");
-
-                await client.SendAsync(message);
-                Console.WriteLine($"Email sent successfully to {to}");
-
-                await client.DisconnectAsync(true);
-                Console.WriteLine("Disconnected from SMTP server");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Email sending failed: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                throw;
-            }
-        }
-
-        [HttpPost]
-        [Authorize(Policy = "SuperAdminOnly")]
-        public async Task<IActionResult> TestEmail()
-        {
-            try
-            {
-                var testEmail = "dr.aamir.adam@gmail.com";
-                var subject = "Test Email from Student Management System";
-                var body = $"<h1>Test Email</h1><p>This is a test email sent at {DateTime.Now}</p>";
-
-                // Use fully qualified names
                 using var message = new System.Net.Mail.MailMessage();
                 message.From = new System.Net.Mail.MailAddress("dr.aamir.adam@gmail.com", "Student Management System");
-                message.To.Add(new System.Net.Mail.MailAddress(testEmail));
+                message.To.Add(new System.Net.Mail.MailAddress(to));
                 message.Subject = subject;
                 message.Body = body;
                 message.IsBodyHtml = true;
@@ -3535,49 +3674,113 @@ namespace StudentManagementSystem.Controllers
                 client.UseDefaultCredentials = false;
                 client.Credentials = new System.Net.NetworkCredential("dr.aamir.adam@gmail.com", "amrc ocji pqhh ruql");
 
-                //await client.SendMailAsync(message);
-                await _emailService.SendEmailAsync(testEmail, subject, body, new List<string>());
+                // Add timeout and event handlers for debugging
+                client.Timeout = 30000; // 30 seconds
 
-                return Json(new { success = true, message = "Test email sent successfully!" });
+                _logger.LogInformation("Connecting to SMTP server...");
+                await client.SendMailAsync(message);
+                _logger.LogInformation($"✅ Email sent successfully to: {to}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending test email");
+                _logger.LogError(ex, $"❌ Failed to send email to {to}");
+                throw;
+            }
+        }
+        [HttpPost]
+        [Authorize(Policy = "SuperAdminOnly")]
+        public async Task<IActionResult> TestEmail()
+        {
+            try
+            {
+                var testEmail = "dr.aamir.adam@gmail.com";
+                var subject = $"MailKit Test - {DateTime.Now:HH:mm:ss}";
+                var body = $@"
+        <div style='font-family: Arial; padding: 20px;'>
+            <h2>📧 MailKit Email Test</h2>
+            <p><strong>Time:</strong> {DateTime.Now:yyyy-MM-dd HH:mm:ss}</p>
+            <p><strong>Test ID:</strong> {Guid.NewGuid()}</p>
+            <p><strong>Using:</strong> MailKit with Gmail SMTP</p>
+            <hr>
+            <p style='color: green; font-weight: bold;'>
+                If you see this, your email service is working!
+            </p>
+        </div>";
+
+                // Use your EmailService
+                await _emailService.SendEmailAsync(testEmail, subject, body);
+
+                _logger.LogInformation($"✅ Test email sent to {testEmail} using MailKit");
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Test email sent to {testEmail} at {DateTime.Now:HH:mm:ss}",
+                    method = "MailKit"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ MailKit test email failed");
                 return Json(new
                 {
                     success = false,
-                    message = $"Error: {ex.Message}"
+                    message = $"MailKit Error: {ex.Message}",
+                    details = ex.InnerException?.Message,
+                    stack = ex.StackTrace
                 });
             }
         }
-        //[HttpPost]
-        //[Authorize(Policy = "SuperAdminOnly")]
-        //public async Task<IActionResult> TestEmail()
-        //{
-        //    try
-        //    {
-        //        using var message = new System.Net.Mail.MailMessage();
-        //        message.From = new System.Net.Mail.MailAddress("dr.aamir.adam@gmail.com", "Student Management System");
-        //        message.To.Add("dr.aamir.adam@gmail.com");
-        //        message.Subject = "Test Email";
-        //        message.Body = "<h1>Test</h1><p>This is a test</p>";
-        //        message.IsBodyHtml = true;
 
-        //        using var client = new System.Net.Mail.SmtpClient("smtp.gmail.com", 587);
-        //        client.EnableSsl = true;
-        //        client.UseDefaultCredentials = false;
-        //        client.Credentials = new System.Net.NetworkCredential("dr.aamir.adam@gmail.com", "amrc ocji pqhh ruql");
+        [HttpPost]
+        [Authorize(Policy = "SuperAdminOnly")]
+        public async Task<IActionResult> RawMailKitTest()
+        {
+            try
+            {
+                var email = "dr.aamir.adam@gmail.com";
+                var password = "zwfi tiuv ghsr qdsj"; // Your app password
 
-        //        await client.SendMailAsync(message);
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("SMS Raw Test", "dr.aamir.adam@gmail.com"));
+                message.To.Add(new MailboxAddress("", "dr.aamir.adam@gmail.com"));
+                message.Subject = $"Raw MailKit Test - {DateTime.Now:HH:mm:ss}";
 
-        //        return Json(new { success = true, message = "Email sent!" });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return Json(new { success = false, message = ex.Message });
-        //    }
-        //}
+                var bodyBuilder = new BodyBuilder
+                {
+                    HtmlBody = $"<h1>Raw MailKit Test</h1><p>Sent at {DateTime.Now}</p>",
+                    TextBody = $"Raw MailKit Test - Sent at {DateTime.Now}"
+                };
 
+                message.Body = bodyBuilder.ToMessageBody();
+
+                using var client = new MailKit.Net.Smtp.SmtpClient();
+
+                // Try different connection options
+                await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
+
+                // Note: You must have 2-Step Verification enabled for app passwords to work
+                await client.AuthenticateAsync(email, password);
+
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Raw MailKit test successful!"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"Raw MailKit failed: {ex.Message}",
+                    errorType = ex.GetType().Name
+                });
+            }
+        }
 
         //[HttpGet]
         //[AllowAnonymous]
@@ -3635,9 +3838,148 @@ namespace StudentManagementSystem.Controllers
         //    _signInManager = signInManager;
         //    _logger = logger; // Add this
         //}
+        [HttpGet]
+        [Authorize(Policy = "SuperAdminOnly")]
+        public IActionResult DebugEmailSettings()
+        {
+            try
+            {
+                // Check what's in configuration
+                var configSettings = new
+                {
+                    SmtpServer = _configuration["EmailSettings:SmtpServer"],
+                    SmtpPort = _configuration["EmailSettings:SmtpPort"],
+                    SenderEmail = _configuration["EmailSettings:SenderEmail"],
+                    SenderName = _configuration["EmailSettings:SenderName"],
+                    Username = _configuration["EmailSettings:Username"],
+                    Password = _configuration["EmailSettings:Password"]?.Length > 0 ? "***SET***" : "MISSING"
+                };
 
+                // Check injected settings (if available)
+                string injectedSettings = "Not available";
+                try
+                {
+                    var emailSettings = HttpContext.RequestServices.GetService<IOptions<EmailSettings>>();
+                    if (emailSettings != null)
+                    {
+                        injectedSettings = $"Injected: {emailSettings.Value.SmtpServer}:{emailSettings.Value.SmtpPort}";
+                    }
+                }
+                catch { }
+
+                return Json(new
+                {
+                    success = true,
+                    configSettings = configSettings,
+                    injectedSettings = injectedSettings,
+                    note = "If password shows '***SET***', it exists in config"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Policy = "SuperAdminOnly")]
+        public IActionResult CheckEmailService()
+        {
+            var serviceType = _emailService.GetType().Name;
+            var isMock = serviceType.Contains("Mock");
+
+            return Json(new
+            {
+                success = true,
+                serviceType = serviceType,
+                isMock = isMock,
+                message = isMock ?
+                    "⚠️ Using MOCK service - emails won't be sent!" :
+                    "✅ Using REAL EmailService"
+            });
+        }
+
+        //[HttpGet]
+        //[Authorize(Policy = "SuperAdminOnly")]
+        //public IActionResult EmailSettings()
+        //{
+        //    var model = _emailSettings; // Assuming _emailSettings is injected
+        //    return View(model);
+        //}
+
+
+        //[HttpPost]
+        //[Authorize(Policy = "SuperAdminOnly")]
+        //public async Task<IActionResult> EmailSettings(EmailSettings model)
+        //{
+        //    if (ModelState.IsValid)
+        //    {
+        //        // In a real app, you'd save these to appsettings.json or database
+        //        // For now, we'll just update the in-memory settings
+
+        //        TempData["SuccessMessage"] = "Email settings updated successfully";
+        //        return RedirectToAction("EmailSettings");
+        //    }
+
+        //    return View(model);
+        //}
+
+        [HttpGet]
+        [Authorize(Policy = "SuperAdminOnly")]
+        public async Task<IActionResult> EmailSettings()
+        {
+            try
+            {
+                var configs = await _emailConfigService.GetAllConfigurationsAsync();
+                var activeConfig = configs.FirstOrDefault(c => c.IsActive) ?? new EmailConfiguration();
+
+                return View(activeConfig);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading email settings");
+                TempData["ErrorMessage"] = "Error loading email settings";
+                return View(new EmailConfiguration());
+            }
+        }
+
+        [HttpPost]
+        [Authorize(Policy = "SuperAdminOnly")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EmailSettings(EmailConfiguration model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return View(model);
+                }
+
+                var currentUser = User.Identity?.Name ?? "System";
+                var success = await _emailConfigService.SaveConfigurationAsync(model, currentUser);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Email settings saved successfully!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to save email settings.";
+                }
+
+                return RedirectToAction("EmailSettings");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving email settings");
+                TempData["ErrorMessage"] = $"Error: {ex.Message}";
+                return View(model);
+            }
+        }
     }
 
+    
+    
     public class AnalyticsViewModel
     {
         public int TotalUsers { get; set; }

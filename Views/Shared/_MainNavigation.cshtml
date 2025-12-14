@@ -208,6 +208,12 @@
                         <i class="fas fa-bullhorn me-2"></i>Email Announcements
                     </a>
                 </li>
+                <!-- Add to System dropdown or create new menu -->
+                <li>
+                    <a class="dropdown-item" href="@Url.Action("EmailSettings", "AdminManagement")">
+                        <i class="fas fa-envelope me-2"></i>Email Settings
+                    </a>
+                </li>
                 <!-- In your navbar or homepage -->
                 @* @if (!IsUserAuthenticated() || !IsUserAdmin())
                 {

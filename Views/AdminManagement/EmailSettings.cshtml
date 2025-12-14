@@ -1,0 +1,178 @@
+﻿@model StudentManagementSystem.Models.EmailConfiguration
+@{
+    ViewData["Title"] = "Email Settings";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-cog me-2"></i>@ViewData["Title"]
+            </h1>
+            <p class="text-muted">Configure email sending preferences and privacy settings</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Email Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="EmailSettings" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <!-- SMTP Settings -->
+                        <h6 class="border-bottom pb-2 mb-3">SMTP Settings</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="SmtpServer" class="form-label">SMTP Server</label>
+                                <input asp-for="SmtpServer" class="form-control" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="SmtpPort" class="form-label">SMTP Port</label>
+                                <input asp-for="SmtpPort" class="form-control" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="SenderName" class="form-label">Sender Name</label>
+                                <input asp-for="SenderName" class="form-control">
+                                <small class="text-muted">Display name shown in emails</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="SenderEmail" class="form-label">Sender Email</label>
+                                <input asp-for="SenderEmail" class="form-control" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Settings -->
+                        <h6 class="border-bottom pb-2 mb-3 mt-4">Privacy & Forwarding</h6>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="ShowSenderEmail" class="form-check-input" type="checkbox">
+                                <label asp-for="ShowSenderEmail" class="form-check-label">
+                                    <strong>Show Sender Email Address</strong>
+                                </label>
+                                <div class="form-text">
+                                    When disabled, recipients will only see "Student Management System" instead of "Student Management System &lt;email@domain.com&gt;"
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="BccSystemEmail" class="form-check-input" type="checkbox"
+                                       id="bccToggle">
+                                <label asp-for="BccSystemEmail" class="form-check-label">
+                                    <strong>Send Copy to System Email</strong>
+                                </label>
+                                <div class="form-text">
+                                    When enabled, all outgoing emails will be BCC'd to the system email address for record-keeping
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="bccEmailField" style="@(Model.BccSystemEmail ? "" : "display: none;")">
+                            <label asp-for="SystemBccEmail" class="form-label">System BCC Email</label>
+                            <input asp-for="SystemBccEmail" class="form-control"
+                                   placeholder="Enter email address to receive copies">
+                            <small class="text-muted">All emails sent will be copied to this address</small>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Settings
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Admin
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Current Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>SMTP Server</span>
+                            <code>@Model.SmtpServer:@Model.SmtpPort</code>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>Sender Display</span>
+                            <span>@Model.SenderName</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>Email Privacy</span>
+                            <span class="badge @(Model.ShowSenderEmail ? "bg-success" : "bg-secondary")">
+                                @(Model.ShowSenderEmail ? "Email Visible" : "Email Hidden")
+                            </span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>System Copy</span>
+                            <span class="badge @(Model.BccSystemEmail ? "bg-success" : "bg-secondary")">
+                                @(Model.BccSystemEmail ? "Enabled" : "Disabled")
+                            </span>
+                        </div>
+                        @if (Model.BccSystemEmail && !string.IsNullOrEmpty(Model.SystemBccEmail))
+                        {
+                            <div class="list-group-item">
+                                <small class="text-muted">Copies sent to:</small>
+                                <div class="fw-bold">@Model.SystemBccEmail</div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-4">
+                        <h6>Test Email</h6>
+                        <button id="testEmailBtn" class="btn btn-outline-info w-100">
+                            <i class="fas fa-paper-plane me-2"></i>Send Test Email
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Toggle BCC email field
+            $('#bccToggle').change(function() {
+                if ($(this).is(':checked')) {
+                    $('#bccEmailField').show();
+                } else {
+                    $('#bccEmailField').hide();
+                }
+            });
+
+            // Test email button
+            $('#testEmailBtn').click(function() {
+                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Sending...');
+
+                $.post('@Url.Action("TestEmail", "AdminManagement")', {
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                })
+                .done(function(response) {
+                    alert(response.success ? '✅ Test email sent!' : '❌ ' + response.message);
+                })
+                .fail(function() {
+                    alert('❌ Error sending test email');
+                })
+                .always(function() {
+                    $('#testEmailBtn').prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Send Test Email');
+                });
+            });
+        });
+    </script>
+}

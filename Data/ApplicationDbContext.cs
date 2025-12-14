@@ -53,6 +53,7 @@ namespace StudentManagementSystem.Data
         public DbSet<AdminPrivilegeTemplate> AdminPrivilegeTemplates { get; set; }
         public DbSet<CourseMaterial> CourseMaterials { get; set; }
         public DbSet<BlockedUser> BlockedUsers { get; set; }
+        public DbSet<EmailConfiguration> EmailConfigurations { get; set; }
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -603,6 +604,10 @@ namespace StudentManagementSystem.Data
                     .HasForeignKey(e => e.CourseId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
+
+            builder.Entity<EmailConfiguration>()
+            .HasIndex(e => e.IsActive)
+            .HasFilter("IsActive = 1");
 
 
         }
