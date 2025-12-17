@@ -221,7 +221,8 @@
             loadRecentActivity();
 
             function loadRecentActivity() {
-                $.get('/api/EnrollmentApi/recent-activity')  // CHANGED
+                // $.get('/api/EnrollmentApi/recent-activity')  // CHANGED
+                $.get('@Url.Action("GetRecentActivity", "Enrollment")')
                     .done(function(data) {
                         $('#recentActivity').html(data);
                     })

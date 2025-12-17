@@ -1,0 +1,1126 @@
+﻿@model StudentManagementSystem.Models.BulkEligibilityResult
+@{
+    ViewData["Title"] = "Eligibility Check Results";
+    var request = ViewBag.EligibilityRequest as StudentManagementSystem.Models.BulkEligibilityRequest;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-search me-2"></i>Eligibility Check Results
+        </h2>
+        <div class="btn-group">
+            <a href="@Url.Action("BulkEnrollment")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Bulk Enrollment
+            </a>
+        </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Eligibility Check Progress</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span id="progressText">Checking eligibility...</span>
+                    <span id="progressPercentage">0%</span>
+                </div>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar"
+                         style="width: 0%"
+                         id="eligibilityProgressBar">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="border rounded p-3">
+                        <div class="h3 mb-0" id="totalStudents">0</div>
+                        <small class="text-muted">Total Students</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3">
+                        <div class="h3 mb-0 text-success" id="eligibleStudents">0</div>
+                        <small class="text-muted">Eligible</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3">
+                        <div class="h3 mb-0 text-warning" id="partialStudents">0</div>
+                        <small class="text-muted">Partially Eligible</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded p-3">
+                        <div class="h3 mb-0 text-danger" id="ineligibleStudents">0</div>
+                        <small class="text-muted">Ineligible</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Container -->
+    <div id="resultsContainer" style="display: none;">
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-chart-pie me-2"></i>Eligibility Summary
+                    </h5>
+                    <p>
+                        Based on the eligibility check, here are the results for 
+                        <strong id="summaryStudentCount">0</strong> students and 
+                        <strong id="summaryCourseCount">0</strong> courses.
+                    </p>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success rounded-circle p-2 me-3">
+                                    <i class="fas fa-check text-white"></i>
+                                </div>
+                                <div>
+                                    <h4 class="mb-0" id="summaryEligible">0</h4>
+                                    <small>Fully Eligible Students</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-warning rounded-circle p-2 me-3">
+                                    <i class="fas fa-exclamation text-white"></i>
+                                </div>
+                                <div>
+                                    <h4 class="mb-0" id="summaryPartial">0</h4>
+                                    <small>Partially Eligible</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-danger rounded-circle p-2 me-3">
+                                    <i class="fas fa-times text-white"></i>
+                                </div>
+                                <div>
+                                    <h4 class="mb-0" id="summaryIneligible">0</h4>
+                                    <small>Not Eligible</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Results Tabs -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="resultsTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="eligible-tab" data-bs-toggle="tab" 
+                                data-bs-target="#eligible" type="button" role="tab">
+                            <i class="fas fa-check-circle me-1"></i> Eligible
+                            <span class="badge bg-success ms-1" id="eligibleBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="partial-tab" data-bs-toggle="tab" 
+                                data-bs-target="#partial" type="button" role="tab">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Partial
+                            <span class="badge bg-warning ms-1" id="partialBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="ineligible-tab" data-bs-toggle="tab" 
+                                data-bs-target="#ineligible" type="button" role="tab">
+                            <i class="fas fa-times-circle me-1"></i> Ineligible
+                            <span class="badge bg-danger ms-1" id="ineligibleBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="conflicts-tab" data-bs-toggle="tab" 
+                                data-bs-target="#conflicts" type="button" role="tab">
+                            <i class="fas fa-exclamation-circle me-1"></i> Conflicts
+                            <span class="badge bg-info ms-1" id="conflictsBadge">0</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="resultsTabContent">
+                    <!-- Eligible Students Tab -->
+                    <div class="tab-pane fade show active" id="eligible" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="eligibleTable">
+                                <thead>
+                                    <tr>
+                                        <th width="50">
+                                            <input type="checkbox" id="selectAllEligible">
+                                        </th>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>GPA</th>
+                                        <th>Passed Hours</th>
+                                        <th>Eligible Courses</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="eligibleTableBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-success" id="enrollSelectedEligible">
+                                <i class="fas fa-user-plus me-1"></i> Enroll Selected Students
+                            </button>
+                            <button class="btn btn-primary" id="enrollAllEligible">
+                                <i class="fas fa-users me-1"></i> Enroll All Eligible Students
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Partial Students Tab -->
+                    <div class="tab-pane fade" id="partial" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="partialTable">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>Eligible Courses</th>
+                                        <th>Ineligible Courses</th>
+                                        <th>Reasons</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="partialTableBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Ineligible Students Tab -->
+                    <div class="tab-pane fade" id="ineligible" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="ineligibleTable">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>GPA</th>
+                                        <th>Passed Hours</th>
+                                        <th>Reasons</th>
+                                        <th>Courses Affected</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ineligibleTableBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Conflicts Tab -->
+                    <div class="tab-pane fade" id="conflicts" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="conflictsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Conflict Type</th>
+                                        <th>Description</th>
+                                        <th>Details</th>
+                                        <th>Affected Students</th>
+                                        <th>Affected Courses</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="conflictsTableBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course-wise Analysis -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-book me-2"></i>Course-wise Eligibility Analysis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="courseAnalysisTable">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Available Seats</th>
+                                <th>Eligible Students</th>
+                                <th>Ineligible Students</th>
+                                <th>Common Issues</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courseAnalysisTableBody">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button class="btn btn-outline-primary" id="exportResultsBtn">
+                            <i class="fas fa-download me-1"></i> Export Results
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="window.print()">
+                            <i class="fas fa-print me-1"></i> Print Report
+                        </button>
+                    </div>
+                    <div>
+                        <a href="@Url.Action("BulkEnrollment")" class="btn btn-secondary me-2">
+                            <i class="fas fa-redo me-1"></i> New Eligibility Check
+                        </a>
+                        <button class="btn btn-success" id="startEnrollmentBtn">
+                            <i class="fas fa-play me-1"></i> Start Enrollment Process
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="text-center py-5">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="mt-3">Checking Eligibility...</h4>
+        <p class="text-muted">Please wait while we analyze student eligibility for the selected courses.</p>
+    </div>
+</div>
+
+<!-- Enrollment Progress Modal -->
+<div class="modal fade" id="enrollmentProgressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-spinner fa-spin me-2"></i> Enrollment Progress
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span id="enrollmentProgressText">Starting enrollment...</span>
+                        <span id="enrollmentProgressPercentage">0%</span>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                             role="progressbar"
+                             style="width: 0%"
+                             id="enrollmentProgressBar">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="enrollmentProgressDetails" style="max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px;">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin me-2"></i> Preparing enrollment...
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="row">
+                        <div class="col-4 text-center">
+                            <div class="border rounded p-2">
+                                <div class="h4 mb-0" id="enrollmentTotal">0</div>
+                                <small class="text-muted">Total</small>
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="border rounded p-2">
+                                <div class="h4 mb-0 text-success" id="enrollmentSuccess">0</div>
+                                <small class="text-muted">Success</small>
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="border rounded p-2">
+                                <div class="h4 mb-0 text-danger" id="enrollmentFailed">0</div>
+                                <small class="text-muted">Failed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeEnrollmentModalBtn" style="display: none;">
+                    <i class="fas fa-check me-1"></i> Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+<style>
+    .student-status-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .student-status-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .eligibility-reason {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        margin-right: 0.25rem;
+        margin-bottom: 0.25rem;
+        display: inline-block;
+    }
+    
+    .reason-prerequisite { background-color: #fff3cd; color: #856404; }
+    .reason-gpa { background-color: #f8d7da; color: #721c24; }
+    .reason-hours { background-color: #d1ecf1; color: #0c5460; }
+    .reason-capacity { background-color: #cce5ff; color: #004085; }
+    .reason-conflict { background-color: #d4edda; color: #155724; }
+    
+    .course-chip {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        margin: 0.125rem;
+        border-radius: 15px;
+        font-size: 0.85rem;
+        background-color: #e9ecef;
+    }
+    
+    .course-chip.eligible { background-color: #d1e7dd; color: #0f5132; }
+    .course-chip.ineligible { background-color: #f8d7da; color: #842029; }
+    
+    .tab-content {
+        padding-top: 20px;
+    }
+    
+    #loadingSpinner {
+        transition: opacity 0.5s ease;
+    }
+
+
+
+        /* Eligibility Check Styles */
+        .eligibility-progress {
+            position: relative;
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 0.375rem;
+            overflow: hidden;
+        }
+
+        .eligibility-progress-bar {
+            height: 100%;
+            background-color: #0d6efd;
+            transition: width 0.3s ease;
+        }
+
+        .eligibility-reason-badge {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.4rem;
+            margin-right: 0.25rem;
+            margin-bottom: 0.25rem;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .course-status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+
+        .student-card {
+            border-left: 4px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+            .student-card.eligible {
+                border-left-color: #198754;
+            }
+
+            .student-card.partial {
+                border-left-color: #ffc107;
+            }
+
+            .student-card.ineligible {
+                border-left-color: #dc3545;
+            }
+
+        .analysis-chart {
+            height: 300px;
+            min-height: 300px;
+        }
+</style>
+}
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        // ========================
+        // GLOBAL VARIABLES
+        // ========================
+        let eligibilityResults = {};
+        let selectedStudentIds = [];
+        let selectedCourseIds = [];
+        let semesterId = 0;
+        let studentDetails = {};
+        let courseDetails = {};
+        
+        // ========================
+        // INITIALIZATION
+        // ========================
+        initializePage();
+        startEligibilityCheck();
+        
+        // ========================
+        // FUNCTIONS
+        // ========================
+        function initializePage() {
+            // Get data from URL or localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            semesterId = urlParams.get('semesterId') || 0;
+            
+            // Try to get data from localStorage
+            const storedData = localStorage.getItem('eligibilityRequest');
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                selectedStudentIds = data.studentIds || [];
+                selectedCourseIds = data.courseIds || [];
+                semesterId = data.semesterId || semesterId;
+                
+                // Update UI with stored counts
+                $('#totalStudents').text(selectedStudentIds.length);
+                updateProgress(0, selectedStudentIds.length * selectedCourseIds.length);
+            }
+        }
+        
+        async function startEligibilityCheck() {
+            if (selectedStudentIds.length === 0 || selectedCourseIds.length === 0) {
+                showError('No selection data found. Please go back and select students and courses.');
+                return;
+            }
+            
+            try {
+                // First, load student and course details for display
+                await loadStudentDetails();
+                await loadCourseDetails();
+                
+                // Start the eligibility check process
+                await processEligibilityCheck();
+                
+            } catch (error) {
+                console.error('Eligibility check error:', error);
+                showError('An error occurred during eligibility check: ' + error.message);
+            }
+        }
+        
+        async function loadStudentDetails() {
+            // Load student details for display
+            try {
+                const response = await $.get('@Url.Action("GetActiveStudents", "Enrollment")');
+                studentDetails = {};
+                response.forEach(student => {
+                    studentDetails[student.id] = student;
+                });
+            } catch (error) {
+                console.error('Error loading student details:', error);
+            }
+        }
+        
+        async function loadCourseDetails() {
+            // Load course details for display
+            try {
+                const url = semesterId > 0 ? 
+                    `@Url.Action("GetCoursesForSemester", "Enrollment")?semesterId=${semesterId}` :
+                    `@Url.Action("GetActiveCourses", "Enrollment")`;
+                
+                const response = await $.get(url);
+                courseDetails = {};
+                response.forEach(course => {
+                    courseDetails[course.id] = course;
+                });
+            } catch (error) {
+                console.error('Error loading course details:', error);
+            }
+        }
+        
+        async function processEligibilityCheck() {
+            const totalOperations = selectedStudentIds.length * selectedCourseIds.length;
+            let processed = 0;
+            
+            // Prepare request
+            const request = {
+                semesterId: parseInt(semesterId),
+                studentIds: selectedStudentIds,
+                courseIds: selectedCourseIds
+            };
+            
+            // Start progress updates
+            const progressInterval = setInterval(() => {
+                if (processed >= totalOperations) {
+                    clearInterval(progressInterval);
+                    return;
+                }
+                
+                // Simulate progress (in real implementation, this would come from server)
+                processed += Math.min(5, totalOperations - processed);
+                updateProgress(processed, totalOperations);
+                
+            }, 300);
+            
+            try {
+                // Call the server endpoint
+                const result = await $.ajax({
+                    url: '@Url.Action("CheckBulkEligibility", "Enrollment")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(request)
+                });
+                
+                clearInterval(progressInterval);
+                updateProgress(totalOperations, totalOperations);
+                
+                // Process and display results
+                eligibilityResults = result;
+                displayResults(result);
+                
+                // Hide loading spinner, show results
+                setTimeout(() => {
+                    $('#loadingSpinner').fadeOut(300, function() {
+                        $('#resultsContainer').fadeIn(500);
+                    });
+                }, 1000);
+                
+            } catch (error) {
+                clearInterval(progressInterval);
+                showError('Server error during eligibility check: ' + error.statusText);
+            }
+        }
+        
+        function updateProgress(processed, total) {
+            const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+            
+            $('#eligibilityProgressBar').css('width', percentage + '%');
+            $('#progressPercentage').text(percentage + '%');
+            
+            if (percentage < 100) {
+                $('#progressText').text(`Checking ${processed} of ${total} combinations...`);
+            } else {
+                $('#progressText').text('Eligibility check completed!');
+                $('#eligibilityProgressBar').removeClass('progress-bar-animated');
+            }
+        }
+        
+        function displayResults(results) {
+            // Update summary counts
+            const eligibleCount = calculateEligibleCount(results);
+            const partialCount = calculatePartialCount(results);
+            const ineligibleCount = calculateIneligibleCount(results);
+            
+            $('#eligibleStudents').text(eligibleCount);
+            $('#partialStudents').text(partialCount);
+            $('#ineligibleStudents').text(ineligibleCount);
+            
+            // Update summary section
+            $('#summaryStudentCount').text(selectedStudentIds.length);
+            $('#summaryCourseCount').text(selectedCourseIds.length);
+            $('#summaryEligible').text(eligibleCount);
+            $('#summaryPartial').text(partialCount);
+            $('#summaryIneligible').text(ineligibleCount);
+            
+            // Update badge counts
+            $('#eligibleBadge').text(eligibleCount);
+            $('#partialBadge').text(partialCount);
+            $('#ineligibleBadge').text(ineligibleCount);
+            $('#conflictsBadge').text(results.conflicts?.length || 0);
+            
+            // Populate tables
+            populateEligibleTable(results);
+            populatePartialTable(results);
+            populateIneligibleTable(results.ineligibleStudents || []);
+            populateConflictsTable(results.conflicts || []);
+            populateCourseAnalysisTable(results);
+            
+            // Initialize event handlers
+            initializeTableHandlers();
+        }
+        
+        function calculateEligibleCount(results) {
+            // Count students who are eligible for all selected courses
+            let count = 0;
+            selectedStudentIds.forEach(studentId => {
+                const studentIneligible = (results.ineligibleStudents || [])
+                    .some(s => s.studentId === studentId);
+                if (!studentIneligible) {
+                    count++;
+                }
+            });
+            return count;
+        }
+        
+        function calculatePartialCount(results) {
+            // Count students who are eligible for some but not all courses
+            return selectedStudentIds.length - 
+                   calculateEligibleCount(results) - 
+                   (results.ineligibleStudents?.length || 0);
+        }
+        
+        function calculateIneligibleCount(results) {
+            return results.ineligibleStudents?.length || 0;
+        }
+        
+        function populateEligibleTable(results) {
+            const tbody = $('#eligibleTableBody');
+            tbody.empty();
+            
+            selectedStudentIds.forEach(studentId => {
+                const student = studentDetails[studentId];
+                const isIneligible = (results.ineligibleStudents || [])
+                    .some(s => s.studentId === studentId);
+                
+                if (student && !isIneligible) {
+                    const row = `
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="eligible-student-checkbox" 
+                                       value="${studentId}" data-student-id="${studentId}">
+                            </td>
+                            <td>${student.studentId}</td>
+                            <td>${student.name}</td>
+                            <td>${student.department || 'N/A'}</td>
+                            <td>${student.gpa}</td>
+                            <td>${student.passedHours}</td>
+                            <td>
+                                ${selectedCourseIds.map(courseId => {
+                                    const course = courseDetails[courseId];
+                                    return course ? 
+                                        `<span class="course-chip eligible">${course.courseCode}</span>` : '';
+                                }).join('')}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-success enroll-student-btn" 
+                                        data-student-id="${studentId}">
+                                    <i class="fas fa-user-plus"></i> Enroll
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                }
+            });
+        }
+        
+        function populatePartialTable(results) {
+            const tbody = $('#partialTableBody');
+            tbody.empty();
+            
+            // This would be populated with students who are partially eligible
+            // Implementation depends on your data structure
+        }
+        
+        function populateIneligibleTable(ineligibleStudents) {
+            const tbody = $('#ineligibleTableBody');
+            tbody.empty();
+            
+            ineligibleStudents.forEach(item => {
+                const student = studentDetails[item.studentId];
+                if (student) {
+                    const row = `
+                        <tr>
+                            <td>${student.studentId}</td>
+                            <td>${student.name}</td>
+                            <td>${student.department || 'N/A'}</td>
+                            <td>${student.gpa}</td>
+                            <td>${student.passedHours}</td>
+                            <td>
+                                <span class="eligibility-reason reason-${getReasonClass(item.reason)}">
+                                    ${item.reason}
+                                </span>
+                            </td>
+                            <td>${item.courseCode || 'Multiple courses'}</td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                }
+            });
+        }
+        
+        function populateConflictsTable(conflicts) {
+            const tbody = $('#conflictsTableBody');
+            tbody.empty();
+            
+            conflicts.forEach(conflict => {
+                const row = `
+                    <tr>
+                        <td>${conflict.type}</td>
+                        <td>${conflict.description}</td>
+                        <td>${conflict.details}</td>
+                        <td>${conflict.affectedStudents || 'Multiple'}</td>
+                        <td>${conflict.affectedCourses || 'Multiple'}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+        
+        function populateCourseAnalysisTable(results) {
+            const tbody = $('#courseAnalysisTableBody');
+            tbody.empty();
+            
+            selectedCourseIds.forEach(courseId => {
+                const course = courseDetails[courseId];
+                if (course) {
+                    const eligibleCount = calculateEligibleForCourse(courseId, results);
+                    const ineligibleCount = selectedStudentIds.length - eligibleCount;
+                    
+                    const row = `
+                        <tr>
+                            <td>${course.courseCode}</td>
+                            <td>${course.courseName}</td>
+                            <td>
+                                <span class="badge ${course.currentEnrollment < course.maxStudents ? 'bg-success' : 'bg-danger'}">
+                                    ${course.maxStudents - course.currentEnrollment} seats
+                                </span>
+                            </td>
+                            <td>${eligibleCount}</td>
+                            <td>${ineligibleCount}</td>
+                            <td>
+                                ${getCommonIssues(courseId, results)}
+                            </td>
+                            <td>
+                                ${getCourseStatus(course, eligibleCount)}
+                            </td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                }
+            });
+        }
+        
+        function calculateEligibleForCourse(courseId, results) {
+            // Count students eligible for this specific course
+            let count = 0;
+            selectedStudentIds.forEach(studentId => {
+                const isIneligibleForCourse = (results.ineligibleStudents || [])
+                    .some(s => s.studentId === studentId && s.courseCode === courseDetails[courseId]?.courseCode);
+                if (!isIneligibleForCourse) {
+                    count++;
+                }
+            });
+            return count;
+        }
+        
+        function getCommonIssues(courseId, results) {
+            const issues = [];
+            const courseCode = courseDetails[courseId]?.courseCode;
+            
+            if (!courseCode) return 'No data';
+            
+            // Count different types of issues
+            const courseIneligible = (results.ineligibleStudents || [])
+                .filter(s => s.courseCode === courseCode);
+            
+            const gpaIssues = courseIneligible.filter(s => s.reason?.includes('GPA')).length;
+            const prerequisiteIssues = courseIneligible.filter(s => s.reason?.includes('prereq')).length;
+            const hourIssues = courseIneligible.filter(s => s.reason?.includes('hours')).length;
+            
+            if (gpaIssues > 0) issues.push(`${gpaIssues} GPA issues`);
+            if (prerequisiteIssues > 0) issues.push(`${prerequisiteIssues} prerequisite issues`);
+            if (hourIssues > 0) issues.push(`${hourIssues} hour requirements`);
+            
+            return issues.length > 0 ? issues.join(', ') : 'None';
+        }
+        
+        function getCourseStatus(course, eligibleCount) {
+            const utilization = course.maxStudents > 0 ? 
+                (course.currentEnrollment * 100 / course.maxStudents) : 0;
+            
+            if (utilization >= 90) {
+                return '<span class="badge bg-danger">Full</span>';
+            } else if (utilization >= 70) {
+                return '<span class="badge bg-warning">High Demand</span>';
+            } else if (eligibleCount > (course.maxStudents - course.currentEnrollment)) {
+                return '<span class="badge bg-info">Over Capacity</span>';
+            } else {
+                return '<span class="badge bg-success">Available</span>';
+            }
+        }
+        
+        function getReasonClass(reason) {
+            if (!reason) return 'other';
+            if (reason.includes('GPA')) return 'gpa';
+            if (reason.includes('prereq')) return 'prerequisite';
+            if (reason.includes('hours')) return 'hours';
+            if (reason.includes('capacity') || reason.includes('full')) return 'capacity';
+            if (reason.includes('conflict')) return 'conflict';
+            return 'other';
+        }
+        
+        function initializeTableHandlers() {
+            // Select all checkbox
+            $('#selectAllEligible').on('change', function() {
+                $('.eligible-student-checkbox').prop('checked', this.checked);
+                updateSelectedCount();
+            });
+            
+            // Individual checkbox change
+            $(document).on('change', '.eligible-student-checkbox', updateSelectedCount);
+            
+            // Enroll selected students
+            $('#enrollSelectedEligible').on('click', function() {
+                const selectedIds = $('.eligible-student-checkbox:checked')
+                    .map(function() { return $(this).data('student-id'); })
+                    .get();
+                
+                if (selectedIds.length === 0) {
+                    showAlert('warning', 'No Selection', 'Please select at least one student to enroll.');
+                    return;
+                }
+                
+                startEnrollmentProcess(selectedIds);
+            });
+            
+            // Enroll all eligible students
+            $('#enrollAllEligible').on('click', function() {
+                const allIds = $('.eligible-student-checkbox')
+                    .map(function() { return $(this).data('student-id'); })
+                    .get();
+                
+                if (allIds.length === 0) {
+                    showAlert('warning', 'No Students', 'No eligible students found.');
+                    return;
+                }
+                
+                startEnrollmentProcess(allIds);
+            });
+            
+            // Individual enroll button
+            $(document).on('click', '.enroll-student-btn', function() {
+                const studentId = $(this).data('student-id');
+                startEnrollmentProcess([studentId]);
+            });
+            
+            // Start enrollment button
+            $('#startEnrollmentBtn').on('click', function() {
+                const allEligibleIds = $('.eligible-student-checkbox')
+                    .map(function() { return $(this).data('student-id'); })
+                    .get();
+                
+                if (allEligibleIds.length === 0) {
+                    showAlert('warning', 'No Eligible Students', 'No eligible students to enroll.');
+                    return;
+                }
+                
+                startEnrollmentProcess(allEligibleIds);
+            });
+        }
+        
+        function updateSelectedCount() {
+            const selectedCount = $('.eligible-student-checkbox:checked').length;
+            const totalCount = $('.eligible-student-checkbox').length;
+            
+            $('#enrollSelectedEligible').html(
+                `<i class="fas fa-user-plus me-1"></i> Enroll Selected (${selectedCount})`
+            );
+        }
+        
+        async function startEnrollmentProcess(studentIds) {
+            // Show enrollment progress modal
+            $('#enrollmentProgressModal').modal('show');
+            
+            // Initialize progress
+            $('#enrollmentProgressBar').css('width', '0%');
+            $('#enrollmentProgressPercentage').text('0%');
+            $('#enrollmentTotal').text(studentIds.length);
+            $('#enrollmentSuccess').text('0');
+            $('#enrollmentFailed').text('0');
+            $('#enrollmentProgressDetails').html(
+                '<div class="text-center text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Starting enrollment...</div>'
+            );
+            
+            // Prepare enrollment request
+            const request = {
+                semesterId: parseInt(semesterId),
+                studentIds: studentIds,
+                courseIds: selectedCourseIds,
+                type: 0, // Regular enrollment
+                requestedBy: 'Eligibility Check System'
+            };
+            
+            try {
+                // Call enrollment endpoint
+                const result = await $.ajax({
+                    url: '@Url.Action("ProcessBulkEnrollment", "Enrollment")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(request)
+                });
+                
+                // Update progress to 100%
+                $('#enrollmentProgressBar').css('width', '100%');
+                $('#enrollmentProgressPercentage').text('100%');
+                $('#enrollmentSuccess').text(result.successfullyEnrolled || 0);
+                $('#enrollmentFailed').text(result.failedEnrollments || 0);
+                
+                // Show result message
+                const message = result.success ? 
+                    `<div class="alert alert-success">
+                        <strong><i class="fas fa-check-circle me-2"></i>Enrollment Completed!</strong><br>
+                        Successfully enrolled ${result.successfullyEnrolled} students.<br>
+                        ${result.failedEnrollments > 0 ? `${result.failedEnrollments} enrollments failed.` : ''}
+                    </div>` :
+                    `<div class="alert alert-danger">
+                        <strong><i class="fas fa-times-circle me-2"></i>Enrollment Failed</strong><br>
+                        ${result.message || 'An error occurred during enrollment.'}
+                    </div>`;
+                
+                $('#enrollmentProgressDetails').html(message);
+                $('#closeEnrollmentModalBtn').show();
+                
+                // Show alert on main page
+                showAlert(result.success ? 'success' : 'error', 
+                    result.success ? 'Enrollment Complete' : 'Enrollment Failed',
+                    result.message || (result.success ? 'Students enrolled successfully!' : 'Enrollment failed.'));
+                
+            } catch (error) {
+                console.error('Enrollment error:', error);
+                $('#enrollmentProgressDetails').html(
+                    `<div class="alert alert-danger">
+                        <strong><i class="fas fa-times-circle me-2"></i>Enrollment Error</strong><br>
+                        ${error.responseJSON?.message || error.statusText || 'An error occurred.'}
+                    </div>`
+                );
+                $('#closeEnrollmentModalBtn').show();
+            }
+        }
+        
+        function showError(message) {
+            $('#loadingSpinner').html(`
+                <div class="alert alert-danger">
+                    <h4><i class="fas fa-exclamation-triangle me-2"></i>Error</h4>
+                    <p>${message}</p>
+                    <a href="@Url.Action("BulkEnrollment")" class="btn btn-primary mt-3">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Bulk Enrollment
+                    </a>
+                </div>
+            `);
+        }
+        
+        function showAlert(type, title, message) {
+            const alertClass = type === 'success' ? 'alert-success' :
+                              type === 'warning' ? 'alert-warning' : 'alert-danger';
+            
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <strong>${title}</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Remove any existing alert
+            $('.alert-dismissible').alert('close');
+            
+            // Add new alert at top
+            $('.container-fluid').prepend(alertHtml);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                $('.alert-dismissible').alert('close');
+            }, 5000);
+        }
+        
+        // Export results button
+        $('#exportResultsBtn').on('click', function() {
+            exportResultsToCSV();
+        });
+        
+        function exportResultsToCSV() {
+            // Create CSV content
+            let csvContent = "Eligibility Check Results\n\n";
+            
+            // Add summary
+            csvContent += "SUMMARY\n";
+            csvContent += `Total Students,${selectedStudentIds.length}\n`;
+            csvContent += `Total Courses,${selectedCourseIds.length}\n`;
+            csvContent += `Fully Eligible,${$('#summaryEligible').text()}\n`;
+            csvContent += `Partially Eligible,${$('#summaryPartial').text()}\n`;
+            csvContent += `Ineligible,${$('#summaryIneligible').text()}\n\n`;
+            
+            // Add eligible students
+            csvContent += "ELIGIBLE STUDENTS\n";
+            csvContent += "Student ID,Name,Department,GPA,Passed Hours\n";
+            $('.eligible-student-checkbox').each(function() {
+                const row = $(this).closest('tr');
+                const cells = row.find('td');
+                const studentData = [
+                    cells.eq(1).text(),
+                    cells.eq(2).text(),
+                    cells.eq(3).text(),
+                    cells.eq(4).text(),
+                    cells.eq(5).text()
+                ];
+                csvContent += studentData.join(',') + '\n';
+            });
+            
+            csvContent += "\nINELIGIBLE STUDENTS\n";
+            csvContent += "Student ID,Name,Department,Reason\n";
+            $('#ineligibleTableBody tr').each(function() {
+                const cells = $(this).find('td');
+                if (cells.length >= 7) {
+                    const studentData = [
+                        cells.eq(0).text(),
+                        cells.eq(1).text(),
+                        cells.eq(2).text(),
+                        cells.eq(5).text().replace(/\n/g, ' ') // Clean up reason
+                    ];
+                    csvContent += studentData.join(',') + '\n';
+                }
+            });
+            
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `eligibility-check-${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    });
+</script>
+}

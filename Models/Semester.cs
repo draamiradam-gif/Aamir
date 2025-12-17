@@ -57,6 +57,8 @@ namespace StudentManagementSystem.Models
         [Display(Name = "Registration Open")]
         public bool IsRegistrationOpen { get; set; } = true;
 
+        public DateTime? DropDeadline { get; set; }
+
         // Navigation properties
         public virtual Department? Department { get; set; }
         public virtual Branch? Branch { get; set; }

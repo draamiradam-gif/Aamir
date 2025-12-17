@@ -413,4 +413,8 @@ namespace StudentManagementSystem.Controllers
         public int TotalRoles { get; set; }
         public DateTime ServerTime => DateTime.Now;
     }
+
+    
+
+
 }

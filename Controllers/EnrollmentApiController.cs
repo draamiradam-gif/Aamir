@@ -475,6 +475,8 @@ namespace StudentManagementSystem.Controllers
             }
         }
 
+
+
         /*
          [HttpGet("recent-activity")]
         public async Task<IActionResult> GetRecentActivity()

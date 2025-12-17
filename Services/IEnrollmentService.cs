@@ -37,8 +37,10 @@ namespace StudentManagementSystem.Services
         Task<BulkEnrollmentResult> BulkEnrollInCoursesAsync(int semesterId, List<int> courseIds, List<int> studentIds);
         Task<List<WaitlistEntry>> GetAllWaitlistEntriesAsync();
         Task<BulkEnrollmentResult> ProcessBulkEnrollmentAsync(BulkEnrollmentRequest request);
+        
+        Task<BulkEnrollmentDetailedResult> ProcessBulkEnrollmentWithDetailsAsync(BulkEnrollmentRequest request);
+        Task<BulkEnrollmentDetailedResult> CheckBulkEligibilityWithDetailsAsync(BulkEnrollmentRequest request);
 
 
-    
     }
 }

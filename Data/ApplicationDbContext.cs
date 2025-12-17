@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using StudentManagementSystem.Controllers;
 using StudentManagementSystem.Models;
 using System.Reflection.Emit;
 using Department = StudentManagementSystem.Models.Department;
@@ -54,6 +55,10 @@ namespace StudentManagementSystem.Data
         public DbSet<CourseMaterial> CourseMaterials { get; set; }
         public DbSet<BlockedUser> BlockedUsers { get; set; }
         public DbSet<EmailConfiguration> EmailConfigurations { get; set; }
+        public DbSet<SystemLog> SystemLogs { get; set; }
+        public DbSet<SystemSettings> SystemSettings { get; set; }
+        public DbSet<SystemStats> SystemStats { get; set; }
+
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -608,6 +613,23 @@ namespace StudentManagementSystem.Data
             builder.Entity<EmailConfiguration>()
             .HasIndex(e => e.IsActive)
             .HasFilter("IsActive = 1");
+
+
+            builder.Entity<SystemStats>()
+            .HasKey(s => s.Id);
+
+            builder.Entity<SystemStats>()
+                .Property(s => s.AverageEnrollmentRate)
+                .HasPrecision(5, 2);
+
+            builder.Entity<SystemStats>()
+                .Property(s => s.AverageEligibilityRate)
+                .HasPrecision(5, 2);
+
+            // Ensure only one stats record exists
+            builder.Entity<SystemStats>()
+                .HasIndex(s => s.Id)
+                .IsUnique();
 
 
         }

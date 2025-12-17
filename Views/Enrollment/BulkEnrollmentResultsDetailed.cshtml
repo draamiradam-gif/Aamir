@@ -1,0 +1,1014 @@
+﻿@model StudentManagementSystem.Models.BulkEnrollmentDetailedResult?
+@{
+    ViewData["Title"] = "Bulk Enrollment Detailed Results";
+
+    // Handle null model
+    if (Model == null)
+    {
+        <div class="container-fluid">
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>No Results Found</h5>
+                <p>The enrollment results could not be loaded. Please try again.</p>
+                <a href="@Url.Action("BulkEnrollment")" class="btn btn-primary mt-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Bulk Enrollment
+                </a>
+            </div>
+        </div>
+        return;
+    }
+
+    var request = ViewBag.Request as StudentManagementSystem.Models.BulkEnrollmentRequest;
+    var semester = ViewBag.Semester as StudentManagementSystem.Models.Semester;
+    var students = ViewBag.Students as List<StudentManagementSystem.Models.Student>;
+    var courses = ViewBag.Courses as List<StudentManagementSystem.Models.Course>;
+    var checkOnly = ViewBag.CheckOnly as bool? ?? false;
+    var enrollmentType = ViewBag.EnrollmentType as StudentManagementSystem.Models.EnrollmentType? ?? StudentManagementSystem.Models.EnrollmentType.Regular;
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas @(checkOnly ? "fa-search" : "fa-users") me-2"></i>
+                @(checkOnly ? "Eligibility Check" : "Bulk Enrollment") Detailed Results
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="@Url.Action("Dashboard")">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="@Url.Action("BulkEnrollment")">Bulk Enrollment</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Detailed Results</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="btn-group">
+            <a href="@Url.Action("BulkEnrollment")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Bulk Enrollment
+            </a>
+            <button class="btn btn-outline-primary" onclick="window.print()">
+                <i class="fas fa-print me-1"></i> Print Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Error Alert -->
+    @if (Model.HasErrors)
+    {
+        <div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Processing Error</h5>
+            <p>@Model.ErrorMessage</p>
+        </div>
+    }
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Overall Statistics -->
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-6 col-md-3 text-center mb-3">
+                                    <div class="border rounded p-3">
+                                        <div class="h2 mb-0 text-primary">@Model.TotalStudents</div>
+                                        <small class="text-muted">Total Students</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 text-center mb-3">
+                                    <div class="border rounded p-3">
+                                        <div class="h2 mb-0 text-info">@Model.TotalCourses</div>
+                                        <small class="text-muted">Total Courses</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 text-center mb-3">
+                                    <div class="border rounded p-3">
+                                        <div class="h2 mb-0 text-success">@Model.SuccessfulEnrollments</div>
+                                        <small class="text-muted">@(checkOnly ? "Eligible" : "Successful")</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 text-center mb-3">
+                                    <div class="border rounded p-3">
+                                        <div class="h2 mb-0 text-danger">@Model.FailedEnrollments</div>
+                                        <small class="text-muted">@(checkOnly ? "Ineligible" : "Failed")</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>@(checkOnly ? "Eligibility" : "Success") Rate</span>
+                                    <span>@Model.SuccessRate.ToString("F1")%</span>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar progress-bar-striped
+                                         @(Model.SuccessRate >= 80 ? "bg-success" :
+                                                                                    Model.SuccessRate >= 50 ? "bg-warning" : "bg-danger")"
+                                         role="progressbar"
+                                         style="width: @(Model.SuccessRate)%"
+                                         aria-valuenow="@Model.SuccessRate"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Details Panel -->
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="fas fa-info-circle me-2"></i>Details</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Semester:</strong></td>
+                                            <td>@(semester?.Name ?? "Unknown")</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Type:</strong></td>
+                                            <td>@enrollmentType</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Processed:</strong></td>
+                                            <td>@Model.ProcessedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Requested By:</strong></td>
+                                            <td>@(Model.RequestedBy ?? "System")</td>
+                                        </tr>
+                                        @if (!checkOnly)
+                                        {
+                                            <tr>
+                                                <td><strong>Processed Students:</strong></td>
+                                                <td>@Model.ProcessedStudents / @Model.TotalStudents</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student-wise Results Tabs -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="resultsTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button">
+                        <i class="fas fa-user-graduate me-1"></i> Students
+                        <span class="badge bg-primary ms-1">@Model.StudentDetails.Count</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="courses-tab" data-bs-toggle="tab" data-bs-target="#courses" type="button">
+                        <i class="fas fa-book me-1"></i> Courses
+                        <span class="badge bg-info ms-1">@courses?.Count</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="requirements-tab" data-bs-toggle="tab" data-bs-target="#requirements" type="button">
+                        <i class="fas fa-clipboard-check me-1"></i> Requirements Analysis
+                    </button>
+                </li>
+                @if (!checkOnly)
+                {
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="enrollments-tab" data-bs-toggle="tab" data-bs-target="#enrollments" type="button">
+                            <i class="fas fa-list-check me-1"></i> Created Enrollments
+                        </button>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <div class="card-body">
+            <div class="tab-content" id="resultsTabContent">
+
+                <!-- Students Tab -->
+                <div class="tab-pane fade show active" id="students" role="tabpanel">
+                    <div class="table-responsive" style="max-height: 600px;">
+                        <table class="table table-hover table-striped" id="studentsTable">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th style="width: 120px;">Student ID</th>
+                                    <th style="width: 200px;">Name</th>
+                                    <th style="width: 80px;">GPA</th>
+                                    <th style="width: 100px;">Grade Level</th>
+                                    <th style="width: 150px;">Status</th>
+                                    <th style="width: 150px;">@(checkOnly ? "Eligible Courses" : "Enrolled Courses")</th>
+                                    <th style="width: 100px;">Success Rate</th>
+                                    <th style="width: 100px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var studentDetail in Model.StudentDetails.Select((value, index) => new { Index = index + 1, Detail = value }))
+                                {
+                                    var student = studentDetail.Detail;
+                                    var successRate = student.TotalCoursesAttempted > 0 ?
+                                    (checkOnly ? student.EligibleCourses : student.SuccessfulEnrollments) * 100 / student.TotalCoursesAttempted : 0;
+
+                                    <tr class="@GetStudentRowClass(student.Status)">
+                                        <td>@studentDetail.Index</td>
+                                        <td>
+                                            <span class="badge bg-secondary">@student.StudentCode</span>
+                                        </td>
+                                        <td>@student.StudentName</td>
+                                        <td>
+                                            <span class="badge @(student.GPA >= 3.0m ? "bg-success" : student.GPA >= 2.0m ? "bg-warning" : "bg-danger")">
+                                                @student.GPA.ToString("0.00")
+                                            </span>
+                                        </td>
+                                        <td>@student.GradeLevel</td>
+                                        <td>
+                                            @GetStatusBadge(student.Status)
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar @GetProgressBarClass(successRate)"
+                                                     role="progressbar"
+                                                     style="width: @successRate%"
+                                                     title="@(checkOnly? student.EligibleCourses: student.SuccessfulEnrollments) of @student.TotalCoursesAttempted">
+                                                    @(checkOnly? student.EligibleCourses: student.SuccessfulEnrollments)/@student.TotalCoursesAttempted
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>@successRate.ToString("F1")%</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info view-details-btn"
+                                                    data-student-id="@student.StudentId"
+                                                    data-student-name="@student.StudentName">
+                                                <i class="fas fa-eye"></i> Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Courses Tab -->
+                <div class="tab-pane fade" id="courses" role="tabpanel">
+                    <div class="table-responsive" style="max-height: 600px;">
+                        <table class="table table-hover" id="coursesTable">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Credits</th>
+                                    <th>Department</th>
+                                    <th>Capacity</th>
+                                    <th>Current</th>
+                                    <th>Available</th>
+                                    <th>@(checkOnly ? "Eligible Students" : "Enrolled Students")</th>
+                                    <th>Success Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var course in courses ?? new List<Course>())
+                                {
+                                    var courseDetails = Model.StudentDetails
+                                    .SelectMany(s => s.EnrollmentDetails)
+                                    .Where(e => e.CourseId == course.Id)
+                                    .ToList();
+
+                                    var successfulCount = checkOnly ?
+                                    courseDetails.Count(e => e.IsEligible) :
+                                    courseDetails.Count(e => e.Status == StudentManagementSystem.Models.EnrollmentProcessStatus.Enrolled);
+
+                                    var totalCount = courseDetails.Count;
+                                    var successRate = totalCount > 0 ? (decimal)successfulCount / totalCount * 100 : 0;
+                                    var currentEnrollment = course.CourseEnrollments?.Count(e => e.IsActive) ?? 0;
+                                    var availableSeats = course.MaxStudents - currentEnrollment;
+
+                                    <tr>
+                                        <td><strong>@course.CourseCode</strong></td>
+                                        <td>@course.CourseName</td>
+                                        <td>@course.Credits</td>
+                                        <td>@course.Department</td>
+                                        <td>@course.MaxStudents</td>
+                                        <td>@currentEnrollment</td>
+                                        <td>
+                                            <span class="badge @(availableSeats > 0 ? "bg-success" : "bg-danger")">
+                                                @availableSeats
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar @GetProgressBarClass(successRate)"
+                                                     role="progressbar"
+                                                     style="width: @successRate%"
+                                                     title="@successfulCount of @totalCount">
+                                                    @successfulCount/@totalCount
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>@successRate.ToString("F1")%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Requirements Analysis Tab -->
+                <div class="tab-pane fade" id="requirements" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="table-responsive" style="max-height: 600px;">
+                                <table class="table table-hover" id="requirementsTable">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th>Requirement</th>
+                                            <th>Total Checks</th>
+                                            <th>Passed</th>
+                                            <th>Failed</th>
+                                            <th>Pass Rate</th>
+                                            <th>Common Issues</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{
+                                            var allChecks = Model.StudentDetails
+                                            .SelectMany(s => s.EnrollmentDetails)
+                                            .SelectMany(e => e.EligibilityChecks)
+                                            .ToList();
+
+                                            var requirementGroups = allChecks
+                                            .GroupBy(c => c.Name)
+                                            .Select(g => new
+                                            {
+                                                Name = g.Key,
+                                                Total = g.Count(),
+                                                Passed = g.Count(c => c.IsMet),
+                                                Failed = g.Count(c => !c.IsMet),
+                                                CommonIssues = g.Where(c => !c.IsMet)
+                                            .GroupBy(c => c.Details)
+                                            .OrderByDescending(gi => gi.Count())
+                                            .Take(3)
+                                            .Select(gi => gi.Key)
+                                            })
+                                            .ToList();
+                                        }
+
+                                        @foreach (var req in requirementGroups)
+                                        {
+                                            var passRate = req.Total > 0 ? (decimal)req.Passed / req.Total * 100 : 0;
+
+                                            <tr>
+                                                <td><strong>@req.Name</strong></td>
+                                                <td>@req.Total</td>
+                                                <td>
+                                                    <span class="badge bg-success">@req.Passed</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-danger">@req.Failed</span>
+                                                </td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar @GetProgressBarClass(passRate)"
+                                                             role="progressbar"
+                                                             style="width: @passRate%">
+                                                            @passRate.ToString("F1")%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    @if (req.CommonIssues.Any())
+                                                    {
+                                                        <ul class="mb-0">
+                                                            @foreach (var issue in req.CommonIssues)
+                                                            {
+                                                                <li><small class="text-danger">@issue</small></li>
+                                                            }
+                                                        </ul>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">No common issues</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enrollments Tab (Only for actual enrollment) -->
+                @if (!checkOnly)
+                {
+                    <div class="tab-pane fade" id="enrollments" role="tabpanel">
+                        <div class="table-responsive" style="max-height: 600px;">
+                            <table class="table table-hover" id="enrollmentsTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Course</th>
+                                        <th>Status</th>
+                                        <th>Enrollment Date</th>
+                                        <th>Requirements Check</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var studentDetail in Model.StudentDetails)
+                                    {
+                                        foreach (var enrollment in studentDetail.EnrollmentDetails.Where(e => e.Status == StudentManagementSystem.Models.EnrollmentProcessStatus.Enrolled))
+                                        {
+                                            <tr class="table-success">
+                                                <td>@studentDetail.StudentName</td>
+                                                <td>@enrollment.CourseCode - @enrollment.CourseName</td>
+                                                <td>
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check"></i> Enrolled
+                                                    </span>
+                                                </td>
+                                                <td>@enrollment.EnrollmentDate?.ToString("yyyy-MM-dd HH:mm")</td>
+                                                <td>
+                                                    @if (enrollment.EligibilityChecks != null)
+                                                    {
+                                                        <span class="badge bg-success">@enrollment.EligibilityChecks.Count(c => c.IsMet)/@enrollment.EligibilityChecks.Count</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-info view-enrollment-details"
+                                                            data-student="@studentDetail.StudentName"
+                                                            data-course="@enrollment.CourseName"
+                                                            data-checks="@Json.Serialize(enrollment.EligibilityChecks)">
+                                                        <i class="fas fa-info-circle"></i> View
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Details Modal -->
+    <div class="modal fade" id="studentDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        <span id="modalStudentName"></span> - Enrollment Details
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="studentDetailsContent">
+                        <!-- Content will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between">
+                <div>
+                    @if (checkOnly && !Model.HasErrors)
+                    {
+                        <form method="post" action="@Url.Action("ProcessBulkEnrollmentFromCheck", "Enrollment")" class="d-inline">
+                            <input type="hidden" name="semesterId" value="@request?.SemesterId" />
+                            <input type="hidden" name="studentIds" value="@string.Join(",", request?.StudentIds ?? new List<int>())" />
+                            <input type="hidden" name="courseIds" value="@string.Join(",", request?.CourseIds ?? new List<int>())" />
+                            <input type="hidden" name="type" value="@((int)enrollmentType)" />
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-play me-1"></i> Proceed with Enrollment
+                            </button>
+                        </form>
+                    }
+                    <button class="btn btn-outline-primary" id="exportResultsBtn">
+                        <i class="fas fa-download me-1"></i> Export Results
+                    </button>
+                </div>
+                <div>
+                    <a href="@Url.Action("BulkEnrollment")" class="btn btn-primary">
+                        <i class="fas fa-redo me-1"></i> New @(checkOnly ? "Check" : "Enrollment")
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        /* Enhanced Table Styling */
+        .table-responsive {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 0.35rem 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 0.375rem;
+        }
+
+        /* Progress Bars */
+        .progress {
+            border-radius: 0.375rem;
+            background-color: #e9ecef;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: width 0.6s ease;
+        }
+
+        /* Modal Customization */
+        .modal-xl {
+            max-width: 1200px;
+        }
+
+        /* Requirement Check Icons */
+        .requirement-check {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .requirement-pass {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .requirement-fail {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+        /* Hover Effects */
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+            transform: translateX(2px);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Sticky Headers with Shadow */
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Print Styles */
+        @@media print {
+            .btn, .modal, .breadcrumb, .nav-tabs {
+                display: none !important;
+            }
+
+            .container-fluid {
+                padding: 0;
+            }
+
+            .table-responsive {
+                overflow: visible !important;
+                border: none !important;
+            }
+
+            .progress-bar {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // Tab Persistence
+            const activeTab = localStorage.getItem('bulkResultsActiveTab') || 'students-tab';
+            $(`#${activeTab}`).tab('show');
+
+            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+                localStorage.setItem('bulkResultsActiveTab', e.target.id);
+            });
+
+            // Student Details Modal
+            $('.view-details-btn').on('click', function() {
+                const studentId = $(this).data('student-id');
+                const studentName = $(this).data('student-name');
+
+                $('#modalStudentName').text(studentName);
+
+                // Load student details
+                loadStudentDetails(studentId);
+
+                $('#studentDetailsModal').modal('show');
+            });
+
+            // Enrollment Details
+            $('.view-enrollment-details').on('click', function() {
+                const student = $(this).data('student');
+                const course = $(this).data('course');
+                const checks = $(this).data('checks');
+
+                showEnrollmentDetails(student, course, checks);
+            });
+
+            // Export Results
+            $('#exportResultsBtn').on('click', function() {
+                exportResultsToCSV();
+            });
+
+            // Auto-scroll to top on page load
+            $('html, body').animate({ scrollTop: 0 }, 500);
+
+            // Functions
+            function loadStudentDetails(studentId) {
+                // Find the student in the model data
+                    const studentDetail = @Html.Raw(Json.Serialize(Model.StudentDetails));
+                    const student = studentDetail.find(s => s.studentId === parseInt(studentId));
+
+                    if (!student) {
+                        $('#studentDetailsContent').html('<div class="alert alert-warning">Student details not found</div>');
+                        return;
+                }
+
+                let html = `
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Student Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tr><td><strong>ID:</strong></td><td>${studentDetail.studentCode}</td></tr>
+                                        <tr><td><strong>Name:</strong></td><td>${studentDetail.studentName}</td></tr>
+                                        <tr><td><strong>GPA:</strong></td><td>${studentDetail.gpa.toFixed(2)}</td></tr>
+                                        <tr><td><strong>Passed Hours:</strong></td><td>${studentDetail.passedHours}</td></tr>
+                                        <tr><td><strong>Grade Level:</strong></td><td>${studentDetail.gradeLevel}</td></tr>
+                                        <tr><td><strong>Status:</strong></td><td>${getStatusBadgeHtml(studentDetail.status)}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Summary</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tr><td><strong>Courses Attempted:</strong></td><td>${studentDetail.totalCoursesAttempted}</td></tr>
+                                        <tr><td><strong>${@(checkOnly ? "Eligible Courses" : "Enrolled Courses")}:</strong></td><td>${@(checkOnly ? "studentDetail.eligibleCourses" : "studentDetail.successfulEnrollments")}</td></tr>
+                                        <tr><td><strong>Success Rate:</strong></td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar ${getProgressBarClass(studentDetail.successRate)}"
+                                                         style="width: ${studentDetail.successRate}%">
+                                                        ${studentDetail.successRate.toFixed(1)}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Course-wise Details</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 400px;">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th>Course</th>
+                                            <th>Status</th>
+                                            <th>Requirements</th>
+                                            <th>Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+
+                studentDetail.enrollmentDetails.forEach(enrollment => {
+                    html += `
+                        <tr class="${enrollment.status === 'Enrolled' || enrollment.isEligible ? 'table-success' : 'table-danger'}">
+                            <td>
+                                <strong>${enrollment.courseCode}</strong><br>
+                                <small class="text-muted">${enrollment.courseName}</small>
+                            </td>
+                            <td>@GetEnrollmentStatusDisplay(StudentManagementSystem.Models.EnrollmentProcessStatus.Enrolled, true)</td>`;
+                            <td>
+                                <div class="d-flex flex-wrap">`;
+
+                    if (enrollment.eligibilityChecks) {
+                        enrollment.eligibilityChecks.forEach(check => {
+                            html += `
+                                <span class="requirement-check ${check.isMet ? 'requirement-pass' : 'requirement-fail'} mb-1">
+                                    <i class="fas fa-${check.isMet ? 'check' : 'times'} me-1"></i>
+                                    ${check.name}
+                                </span>`;
+                        });
+                    }
+
+                    html += `</div></td>
+                            <td><small class="text-muted">${enrollment.message || 'No details'}</small></td>
+                        </tr>`;
+                });
+
+                html += `</tbody></table></div></div></div>`;
+
+                $('#studentDetailsContent').html(html);
+            }
+
+            function showEnrollmentDetails(student, course, checks) {
+                let html = `
+                    <div class="alert alert-info">
+                        <h6>${student} - ${course}</h6>
+                    </div>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Requirement</th>
+                                <th>Status</th>
+                                <th>Required Value</th>
+                                <th>Actual Value</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                checks.forEach(check => {
+                    html += `
+                        <tr class="${check.isMet ? 'table-success' : 'table-danger'}">
+                            <td>${check.name}</td>
+                            <td>
+                                <span class="badge bg-${check.isMet ? 'success' : 'danger'}">
+                                    <i class="fas fa-${check.isMet ? 'check' : 'times'}"></i>
+                                    ${check.isMet ? 'Pass' : 'Fail'}
+                                </span>
+                            </td>
+                            <td>${check.requiredValue || 'N/A'}</td>
+                            <td>${check.actualValue || 'N/A'}</td>
+                            <td>${check.details}</td>
+                        </tr>`;
+                });
+
+                html += `</tbody></table>`;
+
+                // Show in modal
+                $('#studentDetailsContent').html(html);
+                $('#modalStudentName').text('Enrollment Requirements');
+                $('#studentDetailsModal').modal('show');
+            }
+
+            function exportResultsToCSV() {
+                let csvContent = "Bulk Enrollment Detailed Results\n\n";
+
+                // Summary
+                csvContent += "SUMMARY\n";
+                csvContent += `Processed,${new Date().toLocaleString()}\n`;
+                csvContent += `Type,${@(checkOnly ? "Eligibility Check" : "Bulk Enrollment")}\n`;
+                csvContent += `Total Students,${@Model.TotalStudents}\n`;
+                csvContent += `Total Courses,${@Model.TotalCourses}\n`;
+                csvContent += `Total Attempts,${@Model.TotalEnrollmentsAttempted}\n`;
+                csvContent += `Successful,${@Model.SuccessfulEnrollments}\n`;
+                csvContent += `Failed,${@Model.FailedEnrollments}\n`;
+                csvContent += `Success Rate,${@Model.SuccessRate:F1}%\n\n`;
+
+                // Student Details
+                csvContent += "STUDENT DETAILS\n";
+                csvContent += "Student ID,Student Name,GPA,Passed Hours,Grade Level,Status,Total Courses,Eligible Courses,Success Rate\n";
+
+                @foreach (var student in Model.StudentDetails)
+                {
+                        var successRate = student.TotalCoursesAttempted > 0 ?
+                                (checkOnly ? student.EligibleCourses : student.SuccessfulEnrollments) * 100 / student.TotalCoursesAttempted : 0;
+
+                        <text>
+                        csvContent += `"@student.StudentCode","@student.StudentName",@student.GPA,@student.PassedHours,@student.GradeLevel,"@student.Status",@student.TotalCoursesAttempted,@(checkOnly? student.EligibleCourses: student.SuccessfulEnrollments),@successRate:F1%\n`;
+                        </text>
+                }
+
+                csvContent += "\nCOURSE DETAILS\n";
+                csvContent += "Course Code,Course Name,Credits,Department,Capacity,Available Seats,Eligible Students,Success Rate\n";
+
+                @foreach (var course in courses ?? new List<Course>())
+                {
+                        var courseDetails = Model.StudentDetails
+                                .SelectMany(s => s.EnrollmentDetails)
+                                .Where(e => e.CourseId == course.Id)
+                                .ToList();
+
+                        var successfulCount = checkOnly ?
+                                courseDetails.Count(e => e.IsEligible) :
+                                courseDetails.Count(e => e.Status == StudentManagementSystem.Models.EnrollmentProcessStatus.Enrolled);
+
+                        var totalCount = courseDetails.Count;
+                        var successRate = totalCount > 0 ? (decimal)successfulCount / totalCount * 100 : 0;
+                        var currentEnrollment = course.CourseEnrollments?.Count(e => e.IsActive) ?? 0;
+                        var availableSeats = course.MaxStudents - currentEnrollment;
+
+                        <text>
+                        csvContent += `"@course.CourseCode","@course.CourseName",@course.Credits,"@course.Department",@course.MaxStudents,@availableSeats,@successfulCount,@successRate:F1%\n`;
+                        </text>
+                }
+
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `bulk-enrollment-results-${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // Helper functions
+            function getStatusBadgeHtml(status) {
+                const statusClasses = {
+                    'Fully Enrolled': 'bg-success',
+                    'Partially Enrolled': 'bg-warning',
+                    'Not Enrolled': 'bg-danger',
+                    'Fully Eligible': 'bg-success',
+                    'Partially Eligible': 'bg-warning',
+                    'Not Eligible': 'bg-danger',
+                    'Pending': 'bg-secondary'
+                };
+
+                const className = statusClasses[status] || 'bg-secondary';
+                return `<span class="badge ${className} status-badge">${status}</span>`;
+            }            
+
+            function getEnrollmentStatusBadge(status, isEligible) {
+                // Check if status is a number (enum value) or string
+                const statusStr = status.toString().toLowerCase();
+
+                if (statusStr.includes('enrolled') || status === 4) {
+                    return '<span class="badge bg-success">Enrolled</span>';
+                }
+                if (statusStr.includes('eligible') || status === 2 || isEligible) {
+                    return '<span class="badge bg-success">Eligible</span>';
+                }
+                if (statusStr.includes('noteligible') || statusStr.includes('not eligible') || status === 3) {
+                    return '<span class="badge bg-danger">Not Eligible</span>';
+                }
+                if (statusStr.includes('failed') || status === 5) {
+                    return '<span class="badge bg-danger">Failed</span>';
+                }
+                if (statusStr.includes('capacity') || status === 6) {
+                    return '<span class="badge bg-warning">Capacity Full</span>';
+                }
+                if (statusStr.includes('duplicate') || status === 7) {
+                    return '<span class="badge bg-warning">Duplicate</span>';
+                }
+                if (statusStr.includes('error') || status === 8) {
+                    return '<span class="badge bg-danger">Error</span>';
+                }
+
+                // Default
+                return '<span class="badge bg-secondary">Pending</span>';
+            }
+
+            function getProgressBarClass(rate) {
+                if (rate >= 80) return 'bg-success';
+                if (rate >= 50) return 'bg-warning';
+                return 'bg-danger';
+            }
+        });
+    console.log('Status:', status, 'Type:', typeof status, 'IsEligible:', isEligible);
+    </script>
+}
+
+@functions {
+    string GetStudentRowClass(string status)
+    {
+        return status switch
+        {
+            "Fully Enrolled" or "Fully Eligible" => "table-success",
+            "Partially Enrolled" or "Partially Eligible" => "table-warning",
+            "Not Enrolled" or "Not Eligible" => "table-danger",
+            _ => ""
+        };
+    }
+
+    string GetStatusBadge(string status)
+    {
+        var badgeClass = status switch
+        {
+            "Fully Enrolled" or "Fully Eligible" => "bg-success",
+            "Partially Enrolled" or "Partially Eligible" => "bg-warning",
+            "Not Enrolled" or "Not Eligible" => "bg-danger",
+            _ => "bg-secondary"
+        };
+
+        return $"<span class='badge {badgeClass}'>{status}</span>";
+    }
+
+    string GetProgressBarClass(decimal rate)
+    {
+        return rate >= 80 ? "bg-success" :
+               rate >= 50 ? "bg-warning" : "bg-danger";
+    }
+
+    string GetEnrollmentStatusDisplay(EnrollmentProcessStatus status, bool isEligible)
+    {
+        switch (status)
+        {
+            case EnrollmentProcessStatus.Enrolled:
+                return "<span class='badge bg-success'>Enrolled</span>";
+            case EnrollmentProcessStatus.Eligible:
+                return "<span class='badge bg-success'>Eligible</span>";
+            case EnrollmentProcessStatus.NotEligible:
+                return "<span class='badge bg-danger'>Not Eligible</span>";
+            case EnrollmentProcessStatus.Failed:
+                return "<span class='badge bg-danger'>Failed</span>";
+            case EnrollmentProcessStatus.CapacityFull:
+                return "<span class='badge bg-warning'>Capacity Full</span>";
+            case EnrollmentProcessStatus.Duplicate:
+                return "<span class='badge bg-warning'>Duplicate</span>";
+            case EnrollmentProcessStatus.Error:
+                return "<span class='badge bg-danger'>Error</span>";
+            case EnrollmentProcessStatus.Pending:
+            case EnrollmentProcessStatus.Checking:
+            default:
+                return isEligible
+                    ? "<span class='badge bg-success'>Eligible</span>"
+                    : "<span class='badge bg-secondary'>Pending</span>";
+        }
+    }
+}

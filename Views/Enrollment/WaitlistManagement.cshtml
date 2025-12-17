@@ -68,16 +68,17 @@
                             <th width="150">Actions</th>
                         </tr>
                     </thead>
+                    <!-- Replace lines 73-105 with: -->
                     <tbody>
-                        @if (Model != null) @* FIX: Add null check *@
+                        @if (Model != null && Model.Any())
                         {
                             @foreach (var entry in Model)
                             {
                                 <tr data-entry-id="@entry.Id" data-course-id="@entry.CourseId" data-semester-id="@entry.SemesterId">
                                     <td class="fw-bold">#@entry.Position</td>
-                                    <td>@entry.Student?.Name</td> @* FIX: Null check *@
-                                    <td>@entry.Course?.CourseCode - @entry.Course?.CourseName</td> @* FIX: Null check *@
-                                    <td>@entry.Semester?.Name</td> @* FIX: Null check *@
+                                    <td>@entry.Student?.Name</td>
+                                    <td>@entry.Course?.CourseCode - @entry.Course?.CourseName</td>
+                                    <td>@entry.Semester?.Name</td>
                                     <td>@entry.AddedDate.ToString("MMM dd, yyyy")</td>
                                     <td>
                                         @if (entry.IsActive)
@@ -101,7 +102,6 @@
                                             <button class="btn btn-outline-warning notify-student"
                                                     title="Notify Student"
                                                     data-student-email="@entry.Student?.Email">
-                                                @* FIX: Null check *@
                                                 <i class="fas fa-bell"></i>
                                             </button>
                                             <button class="btn btn-outline-danger remove-waitlist"

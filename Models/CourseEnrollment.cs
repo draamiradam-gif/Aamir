@@ -117,6 +117,19 @@ namespace StudentManagementSystem.Models
             }
         }
 
+        public void Drop(string performedBy, string? reason = null)
+        {
+            if (!IsActive) return;
+
+            IsActive = false;
+            EnrollmentStatus = EnrollmentStatus.Withdrawn;
+            DropDate = DateTime.Now;
+            DropReason = reason;
+
+            AddAuditEntry("Dropped course", performedBy, reason);
+        }
+
+
         // UPDATED: New grading system
         private decimal CalculateGradePoints(decimal grade)
         {

@@ -165,6 +165,26 @@ namespace StudentManagementSystem.Models
         public string StatusText => IsActive ?
             (HasAvailableSeats ? "Active" : "Full") : "Inactive";
 
+
+        [Display(Name = "Schedule Days")]
+        [StringLength(50)]
+        public string? ScheduleDays { get; set; } // e.g., "MWF", "TTh"
+
+        [Display(Name = "Start Time")]
+        public TimeSpan? StartTime { get; set; }
+
+        [Display(Name = "End Time")]
+        public TimeSpan? EndTime { get; set; }
+
+        [Display(Name = "Room Number")]
+        [StringLength(20)]
+        public string? RoomNumber { get; set; }
+
+        // OR if you have a combined schedule string:
+        [Display(Name = "Class Schedule")]
+        [StringLength(100)]
+        public string? ClassSchedule { get; set; } // e.g., "MWF 10:00-11:00 AM, Room 101"
+
     }
 
     public class CoursePrerequisite : BaseEntity

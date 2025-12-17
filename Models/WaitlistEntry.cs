@@ -23,5 +23,18 @@ namespace StudentManagementSystem.Models
 
         [ForeignKey("SemesterId")]
         public virtual Semester? Semester { get; set; }
+
+
+        [StringLength(100)]
+        public string? RequestedBy { get; set; }
+
+        [Display(Name = "Processed Date")]
+        public DateTime? ProcessedDate { get; set; }
+
+        [Display(Name = "Expiration Date")]
+        public DateTime? ExpirationDate { get; set; }
+
+        [Display(Name = "Notification Sent")]
+        public bool NotificationSent { get; set; }
     }
 }

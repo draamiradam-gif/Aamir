@@ -1,0 +1,1821 @@
+﻿@model StudentManagementSystem.Models.BulkEnrollmentRequest
+@{
+    ViewData["Title"] = "Bulk Enrollment";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-users me-2"></i>Bulk Enrollment
+        </h2>
+        <div class="btn-group">
+            <a href="@Url.Action("Dashboard")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Bulk Enrollment Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form id="bulkEnrollmentForm">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Semester <small class="text-muted">(required for enrollment)</small></label>
+                                    <select class="form-select" id="semesterSelect" name="SemesterId">
+                                        <option value="">Select Semester (Required for Enrollment)</option>
+                                        <!-- Will be populated by JavaScript -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Enrollment Type</label>
+                                    <select class="form-select" id="enrollmentType" name="Type">
+                                        <option value="0">Regular</option>
+                                        <option value="1">Audit</option>
+                                        <option value="2">Cross Registration</option>
+                                        <option value="3">Independent Study</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Student Selection -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">Student Selection</h6>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="input-group input-group-sm" style="width: 250px;">
+                                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                                <input type="text" id="studentSearch" class="form-control" placeholder="Search students...">
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAllStudents">
+                                                <label class="form-check-label" for="selectAllStudents">
+                                                    Select All
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive" style="max-height: 400px; overflow: auto;">
+                                            <table class="table table-sm table-hover mb-0" id="studentsTable">
+                                                <thead class="table-light sticky-top">
+                                                    <tr>
+                                                        <th style="width: 50px; min-width: 50px;">
+                                                            <input type="checkbox" class="form-check-input m-0" id="selectAllStudentsCheckbox">
+                                                        </th>
+                                                        <th style="width: 120px; min-width: 120px;" data-sort="studentId">Student ID <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 200px; min-width: 200px;" data-sort="name">Name <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 150px; min-width: 150px;" data-sort="department">Department <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 80px; min-width: 80px;" data-sort="gpa">GPA <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 120px; min-width: 120px;" data-sort="passedHours">Passed Hours <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 100px; min-width: 100px;">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="studentsTableBody">
+                                                    <tr>
+                                                        <td colspan="7" class="text-center text-muted">
+                                                            <i class="fas fa-spinner fa-spin me-2"></i>Loading students...
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="p-3 border-top">
+                                            <span id="selectedStudentsCount" class="badge bg-primary">0</span> students selected
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Course Selection -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">Course Selection</h6>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="input-group input-group-sm" style="width: 250px;">
+                                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                                <input type="text" id="courseSearch" class="form-control" placeholder="Search courses...">
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAllCourses">
+                                                <label class="form-check-label" for="selectAllCourses">
+                                                    Select All
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive" style="max-height: 400px; overflow: auto;">
+                                            <table class="table table-sm table-hover mb-0" id="coursesTable">
+                                                <thead class="table-light sticky-top">
+                                                    <tr>
+                                                        <th style="width: 50px; min-width: 50px;">
+                                                            <input type="checkbox" class="form-check-input m-0" id="selectAllCoursesCheckbox">
+                                                        </th>
+                                                        <th style="width: 120px; min-width: 120px;" data-sort="courseCode">Course Code <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 250px; min-width: 250px;" data-sort="courseName">Course Name <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 80px; min-width: 80px;" data-sort="credits">Credits <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 150px; min-width: 150px;" data-sort="department">Department <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 100px; min-width: 100px;" data-sort="availableSeats">Available <i class="fas fa-sort"></i></th>
+                                                        <th style="width: 200px; min-width: 200px;">Prerequisites</th>
+                                                        <th style="width: 100px; min-width: 100px;">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="coursesTableBody">
+                                                    <tr>
+                                                        <td colspan="8" class="text-center text-muted">
+                                                            <i class="fas fa-spinner fa-spin me-2"></i>Loading courses...
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="p-3 border-top">
+                                            <span id="selectedCoursesCount" class="badge bg-primary">0</span> courses selected
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Enrollment Preview -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Enrollment Preview</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="enrollmentPreview" class="text-muted">
+                                            Select students and courses to see enrollment preview...
+                                        </div>
+                                        <div id="conflictWarnings" class="mt-2" style="display: none;">
+                                            <!-- Conflict warnings will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-info" id="checkEligibilityBtn">
+                                        <i class="fas fa-search me-1"></i> Check Eligibility
+                                    </button>
+                                    <button type="submit" class="btn btn-success" id="startEnrollmentBtn" disabled>
+                                        <i class="fas fa-play me-1"></i> Start Bulk Enrollment
+                                    </button>
+                                    <button type="button" class="btn btn-warning" onclick="testModal()">
+                                        <i class="fas fa-vial me-1"></i> Test Modal
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* <!-- Progress Modal -->
+<div id="progressModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-spinner fa-spin me-2"></i> Bulk Enrollment Progress
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span id="progressText">Initializing...</span>
+                        <span id="progressPercentage">0%</span>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar"
+                             style="width: 0%"
+                             id="progressBar">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="progressDetails" style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px; background-color: #f8f9fa;">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin me-2"></i> Starting bulk enrollment...
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="h4 mb-0" id="processedCount">0</div>
+                                <small class="text-muted">Processed</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="h4 mb-0 text-success" id="successCount">0</div>
+                                <small class="text-muted">Success</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="h4 mb-0 text-danger" id="errorCount">0</div>
+                                <small class="text-muted">Errors</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning" data-bs-dismiss="modal" id="cancelBtn">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="closeModalBtn" style="display: none;">
+                    <i class="fas fa-check me-1"></i> Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div> *@
+
+@*<!-- ADD THE MODAL HERE (outside the container-fluid, before the //@section Scripts) -->*@
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="progressModalLabel">
+                    <i class="fas fa-spinner fa-spin me-2"></i> Bulk Enrollment Progress
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span id="progressText">Initializing...</span>
+                        <span id="progressPercentage">0%</span>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped"
+                             role="progressbar"
+                             id="progressBar"
+                             style="width: 0%">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="progressDetails"
+                     style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px; background-color: #f8f9fa;">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin me-2"></i> Starting bulk enrollment...
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="h4 mb-0" id="processedCount">0</div>
+                                <small class="text-muted">Processed</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="h4 mb-0 text-success" id="successCount">0</div>
+                                <small class="text-muted">Success</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="h4 mb-0 text-danger" id="errorCount">0</div>
+                                <small class="text-muted">Errors</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning" id="cancelBtn">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="closeModalBtn" style="display: none;">
+                    <i class="fas fa-check me-1"></i> Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<button type="button" class="btn btn-info" onclick="testEnrollment()">
+    <i class="fas fa-vial me-1"></i> Test Simple Enrollment
+</button>
+<button type="button" class="btn btn-info" onclick="checkStudentCourseDetails()">
+    <i class="fas fa-search me-1"></i> Check Eligibility Details
+</button>
+<button type="button" class="btn btn-primary" onclick="compareStudentCourseData()">
+    <i class="fas fa-balance-scale me-1"></i> Compare Data
+</button>
+
+
+
+
+@section Styles {
+    <style>
+        /* Table container */
+        .table-responsive {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            overflow: auto;
+        }
+
+        /* Table styling */
+        .table {
+            margin-bottom: 0;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+            .table th {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                background-color: #f8f9fa;
+                border-bottom: 2px solid #dee2e6;
+                font-weight: 600;
+                padding: 0.75rem 0.5rem;
+                position: sticky;
+                top: 0;
+            }
+
+            .table td {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                padding: 0.5rem;
+                vertical-align: middle;
+                border-bottom: 1px solid #dee2e6;
+            }
+
+            /* Ensure columns respect min-width */
+            .table th,
+            .table td {
+                min-width: inherit !important;
+            }
+
+        /* Hover effects */
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+        }
+
+        /* Sortable headers */
+        th[data-sort] {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+            th[data-sort]:hover {
+                background-color: #e9ecef;
+            }
+
+            th[data-sort] i {
+                margin-left: 0.25rem;
+                opacity: 0.5;
+                font-size: 0.8em;
+            }
+
+            th[data-sort]:hover i {
+                opacity: 1;
+            }
+
+        /* Scrollbar styling */
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+            .table-responsive::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
+
+        /* Checkbox alignment */
+        .form-check-input {
+            margin: 0;
+        }
+
+        /* Badge styling */
+        .badge {
+            font-size: 0.7em;
+            font-weight: 500;
+        }
+
+        /* Sort indicators */
+        th[data-sort].sorted-asc::after {
+            content: ' ▲';
+            font-size: 0.8em;
+            color: #0d6efd;
+        }
+
+        th[data-sort].sorted-desc::after {
+            content: ' ▼';
+            font-size: 0.8em;
+            color: #0d6efd;
+        }
+
+        /* Button states */
+        #startEnrollmentBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Progress bar animation */
+        .progress-bar-striped {
+            background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+            background-size: 1rem 1rem;
+        }
+
+        .progress-bar-animated {
+            animation: 1s linear infinite progress-bar-stripes;
+        }
+
+        @@keyframes progress-bar-stripes {
+            0%
+
+        {
+            background-position: 1rem 0;
+        }
+
+        100% {
+            background-position: 0 0;
+        }
+
+        }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+
+            .btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.875rem;
+            }
+
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // ========================
+            // GLOBAL VARIABLES
+            // ========================
+            let selectedStudentIds = [];
+            let selectedCourseIds = [];
+            let eligibilityResults = {};
+            let currentSemesterId = null;
+            let isProcessing = false;
+            let processingCancelled = false;
+
+            // ========================
+            // INITIALIZATION
+            // ========================
+            loadSemesters();
+            loadStudents();
+            loadCourses();
+            initializeEventHandlers();
+            initializeButtonState();
+
+            // ========================
+            // HELPER FUNCTIONS
+            // ========================
+            function showAlert(type, title, message, autoHide = true) {
+                const alertClass = type === 'success' ? 'alert-success' :
+                                  type === 'warning' ? 'alert-warning' :
+                                  'alert-danger';
+
+                const icon = type === 'success' ? 'fa-check-circle' :
+                             type === 'warning' ? 'fa-exclamation-triangle' :
+                             'fa-times-circle';
+
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert" id="tempAlert">
+                        <strong><i class="fas ${icon} me-2"></i>${title}</strong>
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+
+                // Remove any existing temporary alert
+                $('#tempAlert').remove();
+
+                // Insert alert at the top of the container
+                $('.container-fluid').prepend(alertHtml);
+
+                // Auto-hide after 5 seconds if enabled
+                if (autoHide) {
+                    setTimeout(() => {
+                        $('#tempAlert').alert('close');
+                    }, 5000);
+                }
+            }
+
+            function updateProgress(processed, total, success, errors) {
+                const percentage = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+
+                $('#progressBar').css('width', percentage + '%');
+                $('#progressPercentage').text(percentage + '%');
+                $('#processedCount').text(processed);
+                $('#successCount').text(success);
+                $('#errorCount').text(errors);
+
+                if (percentage < 100) {
+                    $('#progressText').text(`Processing... ${percentage}%`);
+                    // Ensure animation is running
+                    if (!$('#progressBar').hasClass('progress-bar-animated')) {
+                        $('#progressBar').addClass('progress-bar-animated progress-bar-striped');
+                    }
+                } else {
+                    $('#progressText').text('Processing completed!');
+                    // Stop animation when done
+                    $('#progressBar').removeClass('progress-bar-animated');
+                }
+            }
+
+            function addProgressMessage(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const icon = type === 'success' ? 'fa-check text-success' :
+                             type === 'error' ? 'fa-times text-danger' :
+                             'fa-info text-info';
+                
+                const messageHtml = `
+                    <div class="d-flex align-items-start mb-2">
+                        <i class="fas ${icon} me-2 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <div class="small">${message}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">${timestamp}</div>
+                        </div>
+                    </div>
+                `;
+                
+                $('#progressDetails').prepend(messageHtml);
+                
+                // Auto-scroll to top
+                const container = $('#progressDetails')[0];
+                container.scrollTop = 0;
+            }
+
+            // ========================
+            // DATA LOADING FUNCTIONS
+            // ========================
+            function loadSemesters() {
+                $.get('@Url.Action("GetActiveSemesters", "Enrollment")')
+                    .done(function(semesters) {
+                        const select = $('#semesterSelect');
+                        select.empty().append('<option value="">Select Semester (Required for Enrollment)</option>');
+
+                        semesters.forEach(semester => {
+                            select.append(`<option value="${semester.id}">${semester.name}</option>`);
+                        });
+                    })
+                    .fail(function(xhr, status, error) {
+                        console.error('Failed to load semesters:', error);
+                        showAlert('error', 'Error', 'Failed to load semesters. Please refresh the page.');
+                    });
+            }
+
+            function loadStudents() {
+                $('#studentsTableBody').html(`
+                    <tr>
+                        <td colspan="7" class="text-center">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading students...
+                        </td>
+                    </tr>
+                `);
+
+                $.get('@Url.Action("GetActiveStudents", "Enrollment")')
+                    .done(function(students) {
+                        const tbody = $('#studentsTableBody');
+                        tbody.empty();
+
+                        if (students.length === 0) {
+                            tbody.html(`
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        No active students found.
+                                    </td>
+                                </tr>
+                            `);
+                        } else {
+                            students.forEach(student => {
+                                const isChecked = selectedStudentIds.includes(student.id);
+                                const row = `
+                                    <tr>
+                                        <td style="width: 50px;">
+                                            <input type="checkbox" class="form-check-input student-checkbox"
+                                                   value="${student.id}" data-student-id="${student.id}"
+                                                   ${isChecked ? 'checked' : ''}>
+                                        </td>
+                                        <td style="width: 120px;">${student.studentId}</td>
+                                        <td style="width: 200px;">${student.name}</td>
+                                        <td style="width: 150px;">${student.department || 'N/A'}</td>
+                                        <td style="width: 80px;">${student.gpa}</td>
+                                        <td style="width: 120px;">${student.passedHours}</td>
+                                        <td style="width: 100px;">
+                                            <span class="badge bg-success">Active</span>
+                                        </td>
+                                    </tr>
+                                `;
+                                tbody.append(row);
+                            });
+                        }
+
+                        updateSelectAllStudentsState();
+                        updateStudentSelection();
+                        initializeSorting('#studentsTable');
+                    })
+                    .fail(function(xhr, status, error) {
+                        console.error('Failed to load students:', error);
+                        $('#studentsTableBody').html(`
+                            <tr>
+                                <td colspan="7" class="text-center text-danger">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Failed to load students
+                                </td>
+                            </tr>
+                        `);
+                    });
+            }
+
+            function loadCourses(semesterId = null) {
+                const url = semesterId ?
+                    `@Url.Action("GetCoursesForSemester", "Enrollment")?semesterId=${semesterId}` :
+                    `@Url.Action("GetActiveCourses", "Enrollment")`;
+
+                $('#coursesTableBody').html(`
+                    <tr>
+                        <td colspan="8" class="text-center">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading courses...
+                        </td>
+                    </tr>
+                `);
+
+                $.get(url)
+                    .done(function(courses) {
+                        const tbody = $('#coursesTableBody');
+                        tbody.empty();
+
+                        if (courses.length === 0) {
+                            let message = 'No courses found.';
+                            if (semesterId) {
+                                message = 'No courses found for the selected semester.';
+                            }
+                            tbody.html(`
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">
+                                        ${message}
+                                    </td>
+                                </tr>
+                            `);
+                        } else {
+                            courses.forEach(course => {
+                                const isChecked = selectedCourseIds.includes(course.id);
+                                const availableSeats = course.maxStudents - course.currentEnrollment;
+                                const utilization = course.maxStudents > 0 ?
+                                    (course.currentEnrollment * 100 / course.maxStudents) : 0;
+
+                                const row = `
+                                    <tr>
+                                        <td style="width: 50px;">
+                                            <input type="checkbox" class="form-check-input course-checkbox"
+                                                   value="${course.id}" data-course-id="${course.id}"
+                                                   ${isChecked ? 'checked' : ''}>
+                                        </td>
+                                        <td style="width: 120px;">${course.courseCode}</td>
+                                        <td style="width: 250px;">${course.courseName}</td>
+                                        <td style="width: 80px;">${course.credits}</td>
+                                        <td style="width: 150px;">${course.department}</td>
+                                        <td style="width: 100px;">
+                                            <span class="badge ${availableSeats > 0 ? 'bg-success' : 'bg-danger'}">
+                                                ${availableSeats}
+                                            </span>
+                                        </td>
+                                        <td style="width: 200px;">
+                                            ${course.prerequisites || 'None'}
+                                        </td>
+                                        <td style="width: 100px;">
+                                            ${utilization >= 90 ? '<span class="badge bg-danger">Full</span>' :
+                                              utilization >= 70 ? '<span class="badge bg-warning">High</span>' :
+                                              '<span class="badge bg-success">Available</span>'}
+                                        </td>
+                                    </tr>
+                                `;
+                                tbody.append(row);
+                            });
+                        }
+
+                        updateSelectAllCoursesState();
+                        updateCourseSelection();
+                        initializeSorting('#coursesTable');
+                    })
+                    .fail(function(xhr, status, error) {
+                        console.error('Failed to load courses:', error);
+                        $('#coursesTableBody').html(`
+                            <tr>
+                                <td colspan="8" class="text-center text-danger">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Failed to load courses
+                                </td>
+                            </tr>
+                        `);
+                    });
+            }
+
+            // ========================
+            // SELECTION MANAGEMENT
+            // ========================
+            function updateSelectAllStudentsState() {
+                const totalStudents = $('.student-checkbox').length;
+                const checkedStudents = $('.student-checkbox:checked').length;
+                const allChecked = totalStudents > 0 && checkedStudents === totalStudents;
+                $('#selectAllStudents').prop('checked', allChecked);
+                $('#selectAllStudentsCheckbox').prop('checked', allChecked);
+            }
+
+            function updateSelectAllCoursesState() {
+                const totalCourses = $('.course-checkbox').length;
+                const checkedCourses = $('.course-checkbox:checked').length;
+                const allChecked = totalCourses > 0 && checkedCourses === totalCourses;
+                $('#selectAllCourses').prop('checked', allChecked);
+                $('#selectAllCoursesCheckbox').prop('checked', allChecked);
+            }
+
+            function updateStudentSelection() {
+                selectedStudentIds = $('.student-checkbox:checked').map(function() {
+                    return parseInt($(this).val());
+                }).get();
+
+                $('#selectedStudentsCount').text(selectedStudentIds.length);
+                updateSelectAllStudentsState();
+                updateEnrollmentPreview();
+            }
+
+            function updateCourseSelection() {
+                selectedCourseIds = $('.course-checkbox:checked').map(function() {
+                    return parseInt($(this).val());
+                }).get();
+
+                $('#selectedCoursesCount').text(selectedCourseIds.length);
+                updateSelectAllCoursesState();
+                updateEnrollmentPreview();
+            }
+
+            function updateEnrollmentPreview() {
+                const studentCount = selectedStudentIds.length;
+                const courseCount = selectedCourseIds.length;
+                const semesterId = $('#semesterSelect').val();
+
+                // Enable button only if we have selections
+                const hasSelections = studentCount > 0 && courseCount > 0;
+                $('#startEnrollmentBtn').prop('disabled', !hasSelections);
+
+                if (hasSelections) {
+                    const totalEnrollments = studentCount * courseCount;
+                    let semesterInfo = '';
+                    let alertClass = 'alert-info';
+                    let warning = '';
+
+                    if (semesterId) {
+                        semesterInfo = `<br>• Semester: ${$('#semesterSelect option:selected').text()}`;
+                    } else {
+                        semesterInfo = `<br>• <span class="text-danger"><i class="fas fa-exclamation-triangle"></i> Semester Required</span>`;
+                        alertClass = 'alert-warning';
+                        warning = '<div class="mt-2"><small class="text-danger">Note: A semester must be selected before starting enrollment</small></div>';
+                    }
+
+                    $('#enrollmentPreview').html(`
+                        <div class="alert ${alertClass}">
+                            <strong>Ready to process:</strong><br>
+                            • ${studentCount} students<br>
+                            • ${courseCount} courses<br>
+                            • ${totalEnrollments} potential enrollments
+                            ${semesterInfo}
+                            ${warning}
+                        </div>
+                    `);
+                } else {
+                    let message = 'Select students and courses to see enrollment preview...';
+                    if (studentCount === 0 && courseCount === 0) {
+                        message = 'Please select at least one student and one course.';
+                    } else if (studentCount === 0) {
+                        message = 'Please select at least one student.';
+                    } else if (courseCount === 0) {
+                        message = 'Please select at least one course.';
+                    }
+
+                    $('#enrollmentPreview').html(`<div class="text-muted">${message}</div>`);
+                }
+            }
+
+            // ========================
+            // ELIGIBILITY CHECK
+            // ========================
+            function checkEligibility() {
+                const semesterId = $('#semesterSelect').val();
+                if (!semesterId) {
+                    showAlert('error', 'Semester Required', 'Please select a semester first to check eligibility.', true);
+                    return;
+                }
+
+                if (selectedStudentIds.length === 0 || selectedCourseIds.length === 0) {
+                    showAlert('error', 'Selection Required', 'Please select at least one student and one course.', true);
+                    return;
+                }
+
+                $('#checkEligibilityBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Checking...');
+
+                const request = {
+                    semesterId: parseInt(semesterId),
+                    studentIds: selectedStudentIds,
+                    courseIds: selectedCourseIds
+                };
+
+                // FIX: Add proper content type header
+                $.ajax({
+                    url: '@Url.Action("CheckBulkEligibility", "Enrollment")',
+                    type: 'POST',
+                    contentType: 'application/json', // This is crucial
+                    data: JSON.stringify(request),
+                    success: function(result) {
+                        eligibilityResults = result;
+                        displayEligibilityResults(result);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Eligibility check failed:', error, xhr.responseText);
+                        showAlert('error', 'Check Failed', 'Error checking eligibility. Status: ' + xhr.status, true);
+                    },
+                    complete: function() {
+                        $('#checkEligibilityBtn').prop('disabled', false).html('<i class="fas fa-search me-1"></i> Check Eligibility');
+                    }
+                });
+            }
+
+            function displayEligibilityResults(results) {
+                let html = '<strong>Eligibility Check Results:</strong><br>';
+
+                if (results.ineligibleStudents && results.ineligibleStudents.length > 0) {
+                    html += '<div class="alert alert-warning mt-2">';
+                    html += '<strong>Ineligible Students:</strong><br>';
+                    results.ineligibleStudents.forEach(student => {
+                        html += `• ${student.studentName}: ${student.reason}<br>`;
+                    });
+                    html += '</div>';
+                }
+
+                if (results.conflicts && results.conflicts.length > 0) {
+                    html += '<div class="alert alert-danger mt-2">';
+                    html += '<strong>Enrollment Conflicts:</strong><br>';
+                    results.conflicts.forEach(conflict => {
+                        html += `• ${conflict.description}<br>`;
+                    });
+                    html += '</div>';
+                }
+
+                if (results.estimatedSuccess > 0) {
+                    html += `<div class="alert alert-success mt-2">
+                        <strong>Estimated Success:</strong> ${results.estimatedSuccess} enrollments expected
+                    </div>`;
+                }
+
+                if (!results.ineligibleStudents?.length && !results.conflicts?.length && results.estimatedSuccess === 0) {
+                    html += '<div class="alert alert-info mt-2">All selected students appear eligible for the selected courses.</div>';
+                }
+
+                $('#enrollmentPreview').html(html);
+            }
+
+            // ========================
+            // BULK ENROLLMENT WITH PROGRESS TRACKING
+            // ========================
+                    // In the startBulkEnrollment function, replace the modal initialization:
+
+            async function startBulkEnrollment() {
+                console.log('Starting bulk enrollment...');
+
+                const semesterId = $('#semesterSelect').val();
+                const enrollmentType = $('#enrollmentType').val();
+
+                // Validate semester
+                if (!semesterId) {
+                    showAlert('error', 'Semester Required', 'Please select a semester before starting enrollment.', true);
+                    $('#semesterSelect').focus();
+                    return;
+                }
+
+                // Validate selections
+                if (selectedStudentIds.length === 0) {
+                    showAlert('error', 'No Students Selected', 'Please select at least one student.', true);
+                    return;
+                }
+
+                if (selectedCourseIds.length === 0) {
+                    showAlert('error', 'No Courses Selected', 'Please select at least one course.', true);
+                    return;
+                }
+
+                if (isProcessing) {
+                    showAlert('warning', 'Already Processing', 'Please wait for the current enrollment to complete.', true);
+                    return;
+                }
+
+                // Reset state
+                isProcessing = true;
+                processingCancelled = false;
+
+                // Prepare request
+                const request = {
+                    semesterId: parseInt(semesterId),
+                    studentIds: selectedStudentIds,
+                    courseIds: selectedCourseIds,
+                    type: parseInt(enrollmentType),
+                    requestedBy: 'Bulk Enrollment UI'
+                };
+
+                console.log('Sending bulk enrollment request:', request);
+
+                // Show progress modal
+                try {
+                    // Get modal element
+                    const modalElement = document.getElementById('progressModal');
+                    if (!modalElement) {
+                        throw new Error('Progress modal not found. Please refresh the page.');
+                    }
+
+                    // Create or get modal instance
+                    let modal = bootstrap.Modal.getInstance(modalElement);
+                    if (!modal) {
+                        modal = new bootstrap.Modal(modalElement, {
+                            backdrop: 'static',
+                            keyboard: false
+                        });
+                    }
+
+                    // Initialize progress UI
+                    const totalOperations = selectedStudentIds.length * selectedCourseIds.length;
+                    updateProgress(0, totalOperations, 0, 0);
+                    $('#progressDetails').html('<div class="text-center text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Starting bulk enrollment...</div>');
+                    $('#cancelBtn').prop('disabled', false).text('Cancel');
+                    $('#closeModalBtn').hide();
+                    $('#progressBar')
+                        .css('width', '0%')
+                        .removeClass('bg-danger bg-warning bg-success')
+                        .addClass('progress-bar-animated');
+
+                    // Show modal
+                    modal.show();
+
+                    // Disable form controls
+                    disableFormControls(true);
+
+                    // Start the bulk enrollment process
+                    const result = await processEnrollmentsWithProgress(request, modal);
+
+                    // Handle result
+                    handleEnrollmentResult(result, modal);
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('error', 'Error', error.message || 'An error occurred', true);
+                    isProcessing = false;
+                    disableFormControls(false);
+                }
+            }
+
+            // Helper function to process enrollments
+            async function processEnrollmentsWithProgress(request, modal) {
+                return new Promise((resolve) => {
+                    const totalOperations = request.studentIds.length * request.courseIds.length;
+
+                    // Show initial progress
+                    updateProgress(0, totalOperations, 0, 0);
+                    addProgressMessage('Connecting to server...', 'info');
+
+                    // Start AJAX request
+                    $.ajax({
+                        url: '@Url.Action("ProcessBulkEnrollment", "Enrollment")',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(request),
+                        beforeSend: function() {
+                            // Start progress simulation
+                            let simulatedProgress = 0;
+                            const progressInterval = setInterval(() => {
+                                if (simulatedProgress < 80 && !processingCancelled) {
+                                    simulatedProgress += 5;
+                                    updateProgress(simulatedProgress, 100, 0, 0);
+                                    addProgressMessage(`Processing... ${simulatedProgress}%`, 'info');
+                                } else {
+                                    clearInterval(progressInterval);
+                                }
+                            }, 300);
+
+                            // Store interval ID for cleanup
+                            modal._progressInterval = progressInterval;
+                        },
+                        success: function(result) {
+                            clearInterval(modal._progressInterval);
+
+                            if (result.success) {
+                                updateProgress(100, 100,
+                                    result.successfullyEnrolled || 0,
+                                    result.failedEnrollments || 0);
+                                addProgressMessage(`Success: ${result.message}`, 'success');
+                                resolve(result);
+                            } else {
+                                updateProgress(100, 100, 0, totalOperations);
+                                addProgressMessage(`Failed: ${result.message}`, 'error');
+                                resolve(result);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            clearInterval(modal._progressInterval);
+                            updateProgress(100, 100, 0, totalOperations);
+
+                            let errorMessage = error;
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+
+                            addProgressMessage(`Server error: ${errorMessage}`, 'error');
+                            resolve({
+                                success: false,
+                                message: `Server error: ${errorMessage}`
+                            });
+                        }
+                    });
+                });
+            }
+
+            // Helper function to handle enrollment result
+            function handleEnrollmentResult(result, modal) {
+                if (processingCancelled) {
+                    $('#progressBar').removeClass('progress-bar-animated').addClass('bg-warning');
+                    $('#progressText').text('Cancelled');
+                    showAlert('warning', 'Cancelled', 'Bulk enrollment was cancelled.', true);
+                } else if (result.success) {
+                    $('#progressBar').removeClass('progress-bar-animated').addClass('bg-success');
+                    $('#progressText').text('Completed');
+                    showAlert('success', 'Success', result.message, false);
+
+                    // Clear selections
+                    selectedStudentIds = [];
+                    selectedCourseIds = [];
+                    $('.student-checkbox, .course-checkbox').prop('checked', false);
+                    updateStudentSelection();
+                    updateCourseSelection();
+                } else {
+                    $('#progressBar').removeClass('progress-bar-animated').addClass('bg-danger');
+                    $('#progressText').text('Failed');
+                    showAlert('error', 'Error', result.message, false);
+                }
+
+                // Enable close button
+                $('#cancelBtn').prop('disabled', true);
+                $('#closeModalBtn').show().focus();
+
+                // Re-enable form controls
+                disableFormControls(false);
+                isProcessing = false;
+            }        
+
+            // Add progress message to details
+            function addProgressMessage(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const icon = type === 'success' ? 'fa-check-circle text-success' :
+                             type === 'error' ? 'fa-times-circle text-danger' :
+                             'fa-info-circle text-info';
+
+                const messageHtml = `
+                    <div class="d-flex align-items-start mb-2">
+                        <i class="fas ${icon} me-2 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <div class="small">${message}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">${timestamp}</div>
+                        </div>
+                    </div>
+                `;
+
+                $('#progressDetails').prepend(messageHtml);
+            }
+
+            // Update progress display
+            function updateProgress(processed, total, success, errors) {
+                const percentage = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+
+                $('#progressBar').css('width', percentage + '%');
+                $('#progressPercentage').text(percentage + '%');
+                $('#processedCount').text(processed);
+                $('#successCount').text(success);
+                $('#errorCount').text(errors);
+                $('#progressText').text(percentage < 100 ? `Processing... ${percentage}%` : 'Completed');
+            }
+                        async function processEnrollmentRequest(request, modal) {
+                console.log('Processing enrollment request:', request);
+
+                return new Promise((resolve, reject) => {
+                    const totalOperations = request.studentIds.length * request.courseIds.length;
+
+                    // Start progress simulation
+                    let progress = 0;
+                    const interval = setInterval(() => {
+                        if (progress < 80 && !processingCancelled) {
+                            progress += 5;
+                            updateProgress(progress, 100, 0, 0);
+                            addProgressMessage(`Processing request... ${progress}%`, 'info');
+                        }
+                    }, 300);
+
+                    modal._progressInterval = interval;
+
+                    // Send actual request
+                    console.log('Sending AJAX request to:', '@Url.Action("ProcessBulkEnrollment", "Enrollment")');
+
+                    $.ajax({
+                        url: '@Url.Action("ProcessBulkEnrollment", "Enrollment")',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(request),
+                        success: function(result) {
+                            console.log('AJAX Success - Response:', result);
+                            clearInterval(modal._progressInterval);
+                            resolve(result);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('AJAX Error:', {
+                                status: status,
+                                error: error,
+                                responseText: xhr.responseText,
+                                statusText: xhr.statusText,
+                                statusCode: xhr.status
+                            });
+                            clearInterval(modal._progressInterval);
+
+                            // Try to parse error message
+                            let errorMessage = error;
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.responseText) {
+                                errorMessage = xhr.responseText.substring(0, 200);
+                            }
+
+                            resolve({
+                                success: false,
+                                message: `Server error: ${errorMessage}`
+                            });
+                        },
+                        complete: function(xhr, status) {
+                            console.log('AJAX Complete - Status:', status);
+                        }
+                    });
+                });
+            }
+
+                  
+            // Helper function to disable/enable form controls
+            function disableFormControls(disable) {
+                $('#startEnrollmentBtn').prop('disabled', disable)
+                    .html(disable ? '<i class="fas fa-spinner fa-spin me-1"></i> Processing...' : '<i class="fas fa-play me-1"></i> Start Bulk Enrollment');
+                $('#checkEligibilityBtn').prop('disabled', disable);
+                $('#semesterSelect').prop('disabled', disable);
+                $('#enrollmentType').prop('disabled', disable);
+                $('.student-checkbox, .course-checkbox').prop('disabled', disable);
+                $('#selectAllStudents, #selectAllCourses, #selectAllStudentsCheckbox, #selectAllCoursesCheckbox').prop('disabled', disable);
+            }
+
+            // Add progress message to details
+            function addProgressMessage(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const icon = type === 'success' ? 'fa-check-circle text-success' :
+                             type === 'error' ? 'fa-times-circle text-danger' :
+                             'fa-info-circle text-info';
+
+                const messageHtml = `
+                    <div class="d-flex align-items-start mb-2">
+                        <i class="fas ${icon} me-2 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <div class="small">${message}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">${timestamp}</div>
+                        </div>
+                    </div>
+                `;
+
+                $('#progressDetails').prepend(messageHtml);
+            }
+
+            // Update progress display
+            function updateProgress(processed, total, success, errors) {
+                const percentage = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+
+                $('#progressBar').css('width', percentage + '%');
+                $('#progressPercentage').text(percentage + '%');
+                $('#processedCount').text(processed);
+                $('#successCount').text(success);
+                $('#errorCount').text(errors);
+                $('#progressText').text(percentage < 100 ? `Processing... ${percentage}%` : 'Completed');
+            }
+
+            // async function processEnrollmentsWithProgress(request) {
+            //     return new Promise((resolve, reject) => {
+            //         let processed = 0;
+            //         let successCount = 0;
+            //         let errorCount = 0;
+            //         const totalOperations = request.studentIds.length * request.courseIds.length;
+                    
+            //         // Use Web Workers or chunking to prevent UI freezing
+            //         const chunkSize = 10; // Process 10 enrollments at a time
+            //         const studentChunks = chunkArray(request.studentIds, chunkSize);
+            //         const courseChunks = chunkArray(request.courseIds, chunkSize);
+                    
+            //         // Process chunks asynchronously
+            //         processChunksSequentially(studentChunks, courseChunks, request);
+                    
+            //         async function processChunksSequentially(studentChunks, courseChunks, request) {
+            //             for (let i = 0; i < studentChunks.length && !processingCancelled; i++) {
+            //                 for (let j = 0; j < courseChunks.length && !processingCancelled; j++) {
+            //                     await processChunk(studentChunks[i], courseChunks[j], request, i * courseChunks.length + j + 1);
+            //                 }
+            //             }
+                        
+            //             if (processingCancelled) {
+            //                 resolve({ success: false, message: 'Processing cancelled by user' });
+            //             } else {
+            //                 // Finalize with the server
+            //                 $.ajax({
+            //                     url: '@Url.Action("ProcessBulkEnrollment", "Enrollment")',
+            //                     type: 'POST',
+            //                     contentType: 'application/json',
+            //                     data: JSON.stringify(request),
+            //                     success: function(result) {
+            //                         resolve(result);
+            //                     },
+            //                     error: function(xhr, status, error) {
+            //                         reject(new Error(error));
+            //                     }
+            //                 });
+            //             }
+            //         }
+                    
+            //         async function processChunk(studentChunk, courseChunk, request, chunkNumber) {
+            //             // Simulate processing with timeout to prevent UI freeze
+            //             return new Promise(resolve => {
+            //                 setTimeout(() => {
+            //                     // Update progress for this chunk
+            //                     const chunkSize = studentChunk.length * courseChunk.length;
+            //                     processed += chunkSize;
+                                
+            //                     // Simulate some successes and errors
+            //                     const chunkSuccess = Math.floor(chunkSize * 0.9); // 90% success rate
+            //                     const chunkErrors = chunkSize - chunkSuccess;
+            //                     successCount += chunkSuccess;
+            //                     errorCount += chunkErrors;
+                                
+            //                     updateProgress(processed, totalOperations, successCount, errorCount);
+            //                     addProgressMessage(`Processed chunk ${chunkNumber}: ${chunkSuccess} successful, ${chunkErrors} errors`);
+                                
+            //                     resolve();
+            //                 }, 100); // Small delay to keep UI responsive
+            //             });
+            //         }
+                    
+            //         function chunkArray(array, size) {
+            //             const chunks = [];
+            //             for (let i = 0; i < array.length; i += size) {
+            //                 chunks.push(array.slice(i, i + size));
+            //             }
+            //             return chunks;
+            //         }
+            //     });
+            // }
+
+            async function processEnrollmentsWithProgress(request) {
+                return new Promise((resolve, reject) => {
+                    const totalOperations = request.studentIds.length * request.courseIds.length;
+                    let progressInterval;
+
+                    // Show initial progress
+                    updateProgress(0, totalOperations, 0, 0);
+                    addProgressMessage('Starting bulk enrollment process...', 'info');
+
+                    // Start the actual enrollment process
+                    $.ajax({
+                        url: '@Url.Action("ProcessBulkEnrollment", "Enrollment")',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(request),
+                        beforeSend: function() {
+                            // Start progress simulation
+                            let simulatedProgress = 0;
+                            progressInterval = setInterval(() => {
+                                if (simulatedProgress < 80) { // Simulate up to 80%
+                                    simulatedProgress += 5;
+                                    updateProgress(simulatedProgress, 100, 0, 0);
+                                    addProgressMessage(`Processing server request... ${simulatedProgress}%`, 'info');
+                                }
+                            }, 300);
+                        },
+                        success: function(result) {
+                            clearInterval(progressInterval);
+
+                            if (result.success) {
+                                // Update to 100% with actual results
+                                updateProgress(100, 100,
+                                    result.successfullyEnrolled || 0,
+                                    result.failedEnrollments || 0);
+
+                                addProgressMessage(`Success: ${result.message}`, 'success');
+                                resolve(result);
+                            } else {
+                                updateProgress(100, 100, 0, totalOperations);
+                                addProgressMessage(`Failed: ${result.message}`, 'error');
+                                resolve(result);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            clearInterval(progressInterval);
+                            updateProgress(100, 100, 0, totalOperations);
+
+                            let errorMessage = error;
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+
+                            addProgressMessage(`Server error: ${errorMessage}`, 'error');
+                            resolve({
+                                success: false,
+                                message: `Server error: ${errorMessage}`
+                            });
+                        }
+                    });
+                });
+            }
+
+            // ========================
+            // SEARCH AND SORT
+            // ========================
+            function initializeSorting(tableId) {
+                $(`${tableId} th[data-sort]`).off('click').on('click', function() {
+                    const column = $(this).data('sort');
+                    const isAscending = !$(this).hasClass('sorted-asc');
+                    sortTable(tableId, column, isAscending);
+                });
+            }
+
+            function sortTable(tableId, column, ascending) {
+                const table = $(tableId);
+                const tbody = table.find('tbody');
+                const rows = tbody.find('tr').get();
+
+                rows.sort(function(a, b) {
+                    const aVal = $(a).find('td').eq(getColumnIndex(tableId, column)).text().toLowerCase();
+                    const bVal = $(b).find('td').eq(getColumnIndex(tableId, column)).text().toLowerCase();
+
+                    // Handle numeric sorting
+                    if (column === 'gpa' || column === 'credits' || column === 'passedHours' || column === 'availableSeats') {
+                        const aNum = parseFloat(aVal) || 0;
+                        const bNum = parseFloat(bVal) || 0;
+                        return ascending ? aNum - bNum : bNum - aNum;
+                    }
+
+                    // Text sorting
+                    return ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                });
+
+                $.each(rows, function(index, row) {
+                    tbody.append(row);
+                });
+
+                // Update sort indicators
+                $(`${tableId} th[data-sort]`).removeClass('sorted-asc sorted-desc');
+                $(`${tableId} th[data-sort="${column}"]`).addClass(ascending ? 'sorted-asc' : 'sorted-desc');
+            }
+
+            function getColumnIndex(tableId, column) {
+                const headers = {
+                    '#studentsTable': { 'studentId': 1, 'name': 2, 'department': 3, 'gpa': 4, 'passedHours': 5 },
+                    '#coursesTable': { 'courseCode': 1, 'courseName': 2, 'credits': 3, 'department': 4, 'availableSeats': 5 }
+                };
+                return headers[tableId][column] || 0;
+            }
+
+            // ========================
+            // EVENT HANDLER INITIALIZATION
+            // ========================
+            function initializeEventHandlers() {
+                // Semester change
+                $('#semesterSelect').on('change', function() {
+                    const newSemesterId = $(this).val();
+                    currentSemesterId = newSemesterId;
+
+                    if (newSemesterId) {
+                        loadCourses(newSemesterId);
+                    } else {
+                        loadCourses();
+                    }
+                });
+
+                // Student selection
+                $('#selectAllStudents').on('change', function() {
+                    const isChecked = $(this).prop('checked');
+                    $('#selectAllStudentsCheckbox').prop('checked', isChecked);
+                    $('.student-checkbox').prop('checked', isChecked);
+                    updateStudentSelection();
+                });
+
+                $('#selectAllStudentsCheckbox').on('change', function() {
+                    const isChecked = $(this).prop('checked');
+                    $('#selectAllStudents').prop('checked', isChecked);
+                    $('.student-checkbox').prop('checked', isChecked);
+                    updateStudentSelection();
+                });
+
+                // Course selection
+                $('#selectAllCourses').on('change', function() {
+                    const isChecked = $(this).prop('checked');
+                    $('#selectAllCoursesCheckbox').prop('checked', isChecked);
+                    $('.course-checkbox').prop('checked', isChecked);
+                    updateCourseSelection();
+                });
+
+                $('#selectAllCoursesCheckbox').on('change', function() {
+                    const isChecked = $(this).prop('checked');
+                    $('#selectAllCourses').prop('checked', isChecked);
+                    $('.course-checkbox').prop('checked', isChecked);
+                    updateCourseSelection();
+                });
+
+                // Check eligibility
+                $('#checkEligibilityBtn').on('click', function(e) {
+                    e.preventDefault();
+                    checkEligibility();
+                });
+
+                // Form submission
+                $('#bulkEnrollmentForm').on('submit', function(e) {
+                    e.preventDefault();
+                    startBulkEnrollment();
+                });
+
+                // Cancel button
+                $('#cancelBtn').on('click', function() {
+                    processingCancelled = true;
+                    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Cancelling...');
+                    addProgressMessage('Cancellation requested...', 'warning');
+                });
+
+                // Close modal button
+                $('#closeModalBtn').on('click', function() {
+                    const modalElement = document.getElementById('progressModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                });
+
+                // When modal is hidden, reset state
+                $('#progressModal').on('hidden.bs.modal', function () {
+                    processingCancelled = false;
+                    isProcessing = false;
+                    $('#cancelBtn').prop('disabled', false).html('<i class="fas fa-times me-1"></i> Cancel');
+                    $('#closeModalBtn').hide();
+                    $('#progressBar')
+                        .css('width', '0%')
+                        .removeClass('progress-bar-animated bg-danger bg-warning bg-success');
+                });
+
+                // Search functionality
+                $('#studentSearch').on('input', function() {
+                    const searchTerm = $(this).val().toLowerCase();
+                    $('#studentsTable tbody tr').each(function() {
+                        const text = $(this).text().toLowerCase();
+                        $(this).toggle(text.includes(searchTerm));
+                    });
+                });
+
+                $('#courseSearch').on('input', function() {
+                    const searchTerm = $(this).val().toLowerCase();
+                    $('#coursesTable tbody tr').each(function() {
+                        const text = $(this).text().toLowerCase();
+                        $(this).toggle(text.includes(searchTerm));
+                    });
+                });
+
+                // Event delegation for dynamic content
+                $(document).on('change', '.student-checkbox', updateStudentSelection);
+                $(document).on('change', '.course-checkbox', updateCourseSelection);
+            }
+
+            function initializeButtonState() {
+                // Initialize button as disabled
+                $('#startEnrollmentBtn').prop('disabled', true);
+            }
+
+            function testModal() {
+                console.log('Testing modal...');
+                const modalElement = document.getElementById('progressModal');
+
+                if (modalElement) {
+                    console.log('Modal found!');
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+
+                    // Auto-hide after 3 seconds
+                    setTimeout(() => {
+                        modal.hide();
+                    }, 3000);
+                } else {
+                    console.error('Modal not found!');
+                    alert('Modal not found in DOM. Please check the HTML.');
+                }
+            }
+
+                    // TEMPORARY FIX: Create modal if it doesn't exist
+        function ensureModalExists() {
+            if ($('#progressModal').length === 0) {
+                console.log('Creating modal dynamically...');
+                const modalHtml = `
+                    <div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="progressModalLabel">
+                                        <i class="fas fa-spinner fa-spin me-2"></i> Bulk Enrollment Progress
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span id="progressText">Initializing...</span>
+                                            <span id="progressPercentage">0%</span>
+                                        </div>
+                                        <div class="progress" style="height: 25px;">
+                                            <div class="progress-bar progress-bar-striped"
+                                                 role="progressbar"
+                                                 id="progressBar"
+                                                 style="width: 0%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="progressDetails"
+                                         style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px; background-color: #f8f9fa;">
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-spinner fa-spin me-2"></i> Starting bulk enrollment...
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="row text-center">
+                                            <div class="col-4">
+                                                <div class="border rounded p-2 bg-light">
+                                                    <div class="h4 mb-0" id="processedCount">0</div>
+                                                    <small class="text-muted">Processed</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="border rounded p-2 bg-light">
+                                                    <div class="h4 mb-0 text-success" id="successCount">0</div>
+                                                    <small class="text-muted">Success</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="border rounded p-2 bg-light">
+                                                    <div class="h4 mb-0 text-danger" id="errorCount">0</div>
+                                                    <small class="text-muted">Errors</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-warning" id="cancelBtn">
+                                        <i class="fas fa-times me-1"></i> Cancel
+                                    </button>
+                                    <button type="button" class="btn btn-primary" id="closeModalBtn" style="display: none;">
+                                        <i class="fas fa-check me-1"></i> Done
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('body').append(modalHtml);
+                console.log('Modal created successfully');
+            }
+        }
+
+        
+
+            // ========================
+            // DEBUG LOGGING (optional)
+            // ========================
+            console.log('Bulk Enrollment page initialized');
+            console.log('Available modal IDs:', $('.modal').map((i, el) => el.id).get());
+            console.log('Modal with id="progressModal":', $('#progressModal').length);
+        });
+    </script>
+    <script>
+                function testEnrollment() {
+            console.log('Testing simple enrollment...');
+
+            // Get real student and course IDs from the page
+            const studentCheckboxes = $('.student-checkbox');
+            const courseCheckboxes = $('.course-checkbox');
+
+            if (studentCheckboxes.length === 0 || courseCheckboxes.length === 0) {
+                alert('Please load students and courses first');
+                return;
+            }
+
+            // Get first available student and course
+            const firstStudentId = $(studentCheckboxes[0]).val();
+            const firstCourseId = $(courseCheckboxes[0]).val();
+            const semesterId = $('#semesterSelect').val();
+
+            if (!semesterId) {
+                alert('Please select a semester first');
+                return;
+            }
+
+            const testRequest = {
+                semesterId: parseInt(semesterId),
+                studentIds: [parseInt(firstStudentId)],
+                courseIds: [parseInt(firstCourseId)],
+                type: 0,
+                requestedBy: 'Test User'
+            };
+
+            console.log('Test request:', testRequest);
+
+            // Show which student and course we're testing
+            const studentName = $(studentCheckboxes[0]).closest('tr').find('td:nth-child(3)').text();
+            const courseName = $(courseCheckboxes[0]).closest('tr').find('td:nth-child(3)').text();
+
+            console.log(`Testing: ${studentName} → ${courseName}`);
+
+            // Make direct AJAX call
+            $.ajax({
+                url: '@Url.Action("ProcessBulkEnrollment", "Enrollment")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(testRequest),
+                success: function(result) {
+                    console.log('Test successful:', result);
+
+                    // Show detailed result
+                    if (result.Results && result.Results.length > 0) {
+                        const studentResult = result.Results[0];
+                        if (studentResult.CourseResults && studentResult.CourseResults.length > 0) {
+                            const courseResult = studentResult.CourseResults[0];
+                            alert(`Test Result:\nStudent: ${studentName}\nCourse: ${courseName}\nSuccess: ${courseResult.Success}\nMessage: ${courseResult.Message}`);
+                        }
+                    } else {
+                        alert('Test completed: ' + result.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Test failed:', error, xhr.responseText);
+                    alert('Test failed: ' + error + '\n' + xhr.responseText);
+                }
+            });
+        }
+
+                        function checkStudentCourseDetails() {
+            const studentId = 1;
+            const courseId = 1;
+            const semesterId = 1; // Changed to 1 based on your URL
+
+            console.log('Checking student and course details...');
+
+            // Make a direct call to check eligibility
+            $.ajax({
+                url: `/api/EnrollmentApi/eligibility/${studentId}/${courseId}/${semesterId}`,
+                type: 'GET',
+                success: function(result) {
+                    console.log('=== ELIGIBILITY CHECK RESULT ===');
+                    console.log('Full object:', result);
+
+                    // Properly check the array content
+                    if (result.missingRequirements && Array.isArray(result.missingRequirements)) {
+                        console.log('Missing Requirements array length:', result.missingRequirements.length);
+                        console.log('Missing Requirements content:', result.missingRequirements);
+
+                        if (result.missingRequirements.length > 0) {
+                            // Show each requirement
+                            result.missingRequirements.forEach((req, index) => {
+                                console.log(`Missing Requirement ${index + 1}:`, req);
+                            });
+
+                            // Alert the first requirement
+                            alert(`Missing Requirement: "${result.missingRequirements[0]}"`);
+                        } else {
+                            console.log('Missing Requirements array is empty');
+                            alert('No missing requirements (array is empty)');
+                        }
+                    } else {
+                        console.log('missingRequirements is not an array or is undefined:', result.missingRequirements);
+                        alert('missingRequirements is not properly formatted');
+                    }
+
+                    // Log other properties
+                    console.log('Is Eligible:', result.isEligible);
+                    console.log('Has Available Seats:', result.hasAvailableSeats);
+                    console.log('Missing Prerequisites:', result.missingPrerequisites);
+                    console.log('Conflicts:', result.conflicts);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error checking eligibility:', error);
+                    console.log('Response:', xhr.responseText);
+                    alert('Error: ' + error);
+                }
+            });
+        }
+
+                function compareStudentCourseData() {
+            console.log('Comparing student and course data...');
+
+            // Get student data
+            $.get('/api/EnrollmentApi/active-students', function(students) {
+                const student = students.find(s => s.id == 1);
+                if (student) {
+                    console.log('=== STUDENT DATA ===');
+                    console.log('ID:', student.id);
+                    console.log('Name:', student.name);
+                    console.log('GPA:', student.gpa);
+                    console.log('Passed Hours:', student.passedHours);
+                    console.log('Department:', student.department);
+
+                    // Get course data
+                    $.get('/api/EnrollmentApi/active-courses', function(courses) {
+                        const course = courses.find(c => c.id == 1);
+                        if (course) {
+                            console.log('=== COURSE DATA ===');
+                            console.log('ID:', course.id);
+                            console.log('Code:', course.courseCode);
+                            console.log('Name:', course.courseName);
+                            console.log('Credits:', course.credits);
+                            console.log('Max Students:', course.maxStudents);
+                            console.log('Current Enrollment:', course.currentEnrollment);
+                            console.log('Prerequisites:', course.prerequisites);
+
+                            // Calculate available seats
+                            const availableSeats = course.maxStudents - course.currentEnrollment;
+                            console.log('Available Seats:', availableSeats);
+
+                            // Show comparison
+                            alert(`Student vs Course:\n\n` +
+                                  `Student GPA: ${student.gpa}\n` +
+                                  `Course Min GPA: Unknown (check database)\n\n` +
+                                  `Student Passed Hours: ${student.passedHours}\n` +
+                                  `Course Min Hours: Unknown (check database)\n\n` +
+                                  `Course Capacity: ${course.currentEnrollment}/${course.maxStudents}\n` +
+                                  `Available Seats: ${availableSeats}`);
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}
